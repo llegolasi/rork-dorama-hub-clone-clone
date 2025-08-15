@@ -45,7 +45,8 @@ function RootLayoutNav() {
         headerTintColor: "#FFFFFF",
         headerBackTitle: "Back",
         contentStyle: {
-          backgroundColor: "#121212"
+          backgroundColor: "#121212",
+          paddingTop: 8,
         }
       }}
     >
