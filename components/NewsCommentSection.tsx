@@ -52,7 +52,8 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
   const scrollRef = useRef<ScrollView | null>(null);
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
-  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
+  const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
+  const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
 
   // Queries
   const commentsQuery = trpc.news.getComments.useQuery({ articleId });
@@ -372,16 +373,17 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior="padding"
+      behavior={keyboardBehavior}
       keyboardVerticalOffset={keyboardOffset}
     >
       <ScrollView 
         ref={scrollRef}
         style={styles.scrollContainer}
-        contentContainerStyle={[styles.contentContainer, { paddingBottom: bottomPadding + 84 }]}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: bottomPadding + 96 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
+        nestedScrollEnabled
       >
         {renderHeader()}
         
@@ -411,7 +413,10 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
         )}
       </ScrollView>
       
-      <View style={[styles.inputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 24 : 0) }]}> 
+      <View style={[
+        styles.inputContainer,
+        { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 32 : 0) }
+      ]}> 
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">
             <Text style={styles.replyText} numberOfLines={1}>Respondendo a {replyTo.full_name || replyTo.username || 'Usuário'}</Text>
@@ -463,7 +468,6 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 32,
   },
   scrollContainer: {
     flex: 1,
