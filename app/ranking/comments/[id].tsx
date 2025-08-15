@@ -16,85 +16,10 @@ import { ArrowLeft, Send, Heart, MessageCircle } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RankingComment } from '@/types/user';
-import type { RankingWithDetails } from '@/types/user';
+
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 
-interface CommentItemProps {
-  comment: RankingComment;
-  onReply: (commentId: string, userName?: string) => void;
-  onLike: (commentId: string) => void;
-}
-
-function CommentItem({ comment, onReply, onLike }: CommentItemProps) {
-  const [showReplies, setShowReplies] = useState(false);
-
-  return (
-    <View style={styles.commentContainer}>
-      <View style={styles.commentHeader}>
-        <Image
-          source={{
-            uri: comment.user.profileImage || 'https://via.placeholder.com/40x40/333/fff?text=U'
-          }}
-          style={styles.userAvatar}
-        />
-        <View style={styles.commentInfo}>
-          <Text style={styles.username}>{comment.user.displayName}</Text>
-          <Text style={styles.commentTime}>
-            {new Date(comment.createdAt).toLocaleDateString('pt-BR')}
-          </Text>
-        </View>
-      </View>
-      
-      <Text style={styles.commentText}>{comment.content}</Text>
-      
-      <View style={styles.commentActions}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => onLike(comment.id)}
-        >
-          <Heart size={16} color={COLORS.textSecondary} />
-          <Text style={styles.actionText}>Curtir</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => onReply(comment.id, comment.user.displayName)}
-        >
-          <MessageCircle size={16} color={COLORS.textSecondary} />
-          <Text style={styles.actionText}>Responder</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {comment.replies && comment.replies.length > 0 && (
-        <View style={styles.repliesContainer}>
-          <TouchableOpacity 
-            onPress={() => setShowReplies(!showReplies)}
-            style={styles.showRepliesButton}
-          >
-            <Text style={styles.showRepliesText}>
-              {showReplies ? 'Ocultar' : 'Ver'} {comment.replies.length} resposta(s)
-            </Text>
-          </TouchableOpacity>
-          
-          {showReplies && (
-            <View style={styles.repliesList}>
-              {comment.replies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  onReply={onReply}
-                  onLike={onLike}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
 
 export default function RankingCommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -176,6 +101,67 @@ export default function RankingCommentsScreen() {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    if (diffInHours < 1) return 'Agora há pouco';
+    if (diffInHours < 24) return `${diffInHours}h atrás`;
+    if (diffInHours < 48) return 'Ontem';
+    return `${Math.floor(diffInHours / 24)}d atrás`;
+  };
+
+  const renderComment = (comment: any) => (
+    <View key={comment.id} style={styles.commentItem}>
+      <View style={styles.commentHeaderRow}>
+        <Image
+          source={{
+            uri: comment.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
+          }}
+          style={styles.commentAvatar}
+        />
+        <View style={styles.commentContentWrap}>
+          <Text style={styles.commentUserName}>{comment.users?.display_name}</Text>
+        </View>
+        <Text style={styles.commentTime}>{formatDate(comment.created_at)}</Text>
+      </View>
+      <Text style={styles.commentText}>{comment.content}</Text>
+
+      <View style={styles.commentActionsRow}>
+        <TouchableOpacity style={styles.replyButton} onPress={() => handleReply(comment.id, comment.users?.display_name)} testID={`reply-${comment.id}`}>
+          <MessageCircle size={16} color={COLORS.textSecondary} />
+          <Text style={styles.replyTextAction}>Responder</Text>
+        </TouchableOpacity>
+      </View>
+
+      {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+        <View style={styles.repliesContainer}>
+          {comment.replies.map((reply: any) => (
+            <View key={reply.id} style={styles.replyItem}>
+              <View style={styles.commentHeaderRow}>
+                <Image
+                  source={{ uri: reply.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
+                  style={styles.commentAvatar}
+                />
+                <View style={styles.commentContentWrap}>
+                  <Text style={styles.commentUserName}>{reply.users?.display_name}</Text>
+                </View>
+                <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
+              </View>
+              <Text style={styles.commentText}>{reply.content}</Text>
+              <View style={styles.commentActionsRow}>
+                <TouchableOpacity style={styles.replyButton} onPress={() => handleReply(comment.id, comment.users?.display_name)} testID={`reply-to-${comment.id}`}>
+                  <MessageCircle size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.replyTextAction}>Responder</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+
   const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
 
@@ -204,7 +190,13 @@ export default function RankingCommentsScreen() {
           <Text style={styles.loadingText}>Carregando...</Text>
         </View>
       ) : ranking ? (
-        <ScrollView style={styles.commentsContainer} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+        <ScrollView
+          style={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
+        >
           {/* Ranking Section */}
           <View style={styles.rankingSection}>
             <View style={styles.rankingHeader}>
@@ -267,48 +259,10 @@ export default function RankingCommentsScreen() {
           </View>
           
           {/* Comments Section */}
-          <View style={styles.commentsHeader}>
+          <View style={styles.commentsSection}>
             <Text style={styles.commentsTitle}>Comentários ({comments.length})</Text>
+            {comments.map(renderComment)}
           </View>
-          
-          {comments.map((comment: any) => (
-            <View key={comment.id} style={styles.commentContainer}>
-              <View style={styles.commentHeader}>
-                <Image
-                  source={{
-                    uri: comment.users?.profile_image || 'https://via.placeholder.com/40x40/333/fff?text=U'
-                  }}
-                  style={styles.userAvatar}
-                />
-                <View style={styles.commentInfo}>
-                  <Text style={styles.username}>{comment.users?.display_name}</Text>
-                  <Text style={styles.commentTime}>
-                    {new Date(comment.created_at).toLocaleDateString('pt-BR')}
-                  </Text>
-                </View>
-              </View>
-              
-              <Text style={styles.commentText}>{comment.content}</Text>
-              
-              <View style={styles.commentActions}>
-                <TouchableOpacity 
-                  style={styles.actionButton}
-                  onPress={() => handleLike(comment.id)}
-                >
-                  <Heart size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.actionText}>Curtir</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.actionButton}
-                  onPress={() => handleReply(comment.id, comment.users?.display_name)}
-                >
-                  <MessageCircle size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.actionText}>Responder</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
         </ScrollView>
       ) : (
         <View style={styles.errorContainer}>
@@ -316,20 +270,20 @@ export default function RankingCommentsScreen() {
         </View>
       )}
       
-      <View style={[styles.inputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
+      <View style={[styles.commentInputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
         {replyingTo && (
-          <View style={styles.replyIndicator}>
-            <Text style={styles.replyText} numberOfLines={1}>Respondendo a {replyingTo.userName ?? 'usuário'}</Text>
-            <TouchableOpacity onPress={() => setReplyingTo(null)}>
-              <Text style={styles.cancelReply}>Cancelar</Text>
+          <View style={styles.replyBanner} testID="reply-banner">
+            <Text style={styles.replyingToText} numberOfLines={1}>Respondendo a {replyingTo.userName ?? 'usuário'}</Text>
+            <TouchableOpacity onPress={() => setReplyingTo(null)} style={styles.cancelReplyBtn} testID="cancel-reply">
+              <Text style={styles.cancelReplyText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         )}
         
-        <View style={[styles.inputRow]}>
+        <View style={styles.commentInputRow}>
           <TextInput
-            style={styles.textInput}
-            placeholder="Escreva um comentário..."
+            style={styles.commentInput}
+            placeholder={replyingTo ? `Respondendo a ${replyingTo.userName ?? 'usuário'}...` : 'Escreva um comentário...'}
             placeholderTextColor={COLORS.textSecondary}
             value={newComment}
             onChangeText={setNewComment}
@@ -359,108 +313,118 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  commentsContainer: {
+  content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
   },
-  commentContainer: {
+  commentsSection: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 16,
+    marginBottom: 16,
+  },
+  commentItem: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 12,
   },
-  commentHeader: {
+  commentHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
+    gap: 12,
   },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+  commentAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
-  commentInfo: {
+  commentContentWrap: {
     flex: 1,
   },
-  username: {
-    color: COLORS.text,
-    fontSize: 16,
+  commentUserName: {
+    fontSize: 14,
     fontWeight: '600',
+    color: COLORS.text,
+    flex: 1,
   },
   commentTime: {
-    color: COLORS.textSecondary,
     fontSize: 12,
-    marginTop: 2,
+    color: COLORS.textSecondary,
   },
   commentText: {
+    fontSize: 14,
     color: COLORS.text,
-    fontSize: 15,
     lineHeight: 20,
-    marginBottom: 12,
   },
-  commentActions: {
+  commentActionsRow: {
     flexDirection: 'row',
-    gap: 16,
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 12,
   },
-  actionButton: {
+  replyButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  actionText: {
+  replyTextAction: {
     color: COLORS.textSecondary,
     fontSize: 14,
+    fontWeight: '500',
   },
   repliesContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  showRepliesButton: {
-    marginBottom: 8,
-  },
-  showRepliesText: {
-    color: COLORS.accent,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  repliesList: {
-    paddingLeft: 16,
+    marginTop: 8,
+    paddingLeft: 44,
     borderLeftWidth: 2,
     borderLeftColor: COLORS.border,
+    gap: 8,
   },
-  inputContainer: {
+  replyItem: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 12,
+  },
+  commentInputContainer: {
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  replyIndicator: {
+  replyBanner: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: COLORS.card,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  replyText: {
+  replyingToText: {
+    flex: 1,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginRight: 12,
+  },
+  cancelReplyBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+  },
+  cancelReplyText: {
     color: COLORS.text,
-    fontSize: 14,
+    fontWeight: '600',
   },
-  cancelReply: {
-    color: COLORS.accent,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  inputRow: {
+  commentInputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     padding: 16,
     gap: 12,
   },
-  textInput: {
+  commentInput: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.surface,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -472,7 +436,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -490,6 +454,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
   },
   rankingHeaderInfo: {
     flex: 1,
@@ -562,13 +532,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
   },
-  commentsHeader: {
-    marginBottom: 16,
-  },
   commentsTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
+    marginBottom: 16,
   },
   loadingContainer: {
     flex: 1,
