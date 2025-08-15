@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform, useWindowDimensions, BackHandler, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions, BackHandler, ScrollView, Pressable } from 'react-native';
 import { Crown, Heart, X } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 
@@ -34,106 +34,102 @@ export default function PremiumLimitModalAndroid({
   if (!visible) return null;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      hardwareAccelerated
-      statusBarTranslucent
-      presentationStyle="overFullScreen"
-      supportedOrientations={[
-        'portrait',
-        'portrait-upside-down',
-        'landscape',
-        'landscape-left',
-        'landscape-right',
-      ]}
-    >
-      <View style={styles.backdrop} testID="premium-limit-overlay" accessibilityLabel="premium-limit-overlay">
-        <View
-          style={[
-            styles.sheet,
-            {
-              maxHeight: screenHeight * 0.92,
-              width: contentWidth,
-            },
-          ]}
-          testID="premium-limit-container"
+    <View style={styles.portal} pointerEvents="box-none" testID="premium-limit-portal">
+      <Pressable style={styles.backdrop} onPress={onClose} testID="premium-limit-overlay" accessibilityLabel="premium-limit-overlay" />
+      <View
+        style={[
+          styles.sheet,
+          {
+            maxHeight: screenHeight * 0.92,
+            width: contentWidth,
+          },
+        ]}
+        testID="premium-limit-container"
+      >
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onClose}
+          accessibilityRole="button"
+          testID="premium-limit-close"
         >
+          <X size={22} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.iconContainer}>
+            <Heart size={48} color={COLORS.accent} />
+          </View>
+
+          <Text style={styles.title} testID="premium-limit-title">Swipes Esgotados!</Text>
+
+          <Text style={styles.description}>
+            Você usou todos os seus {dailyLimit} swipes de hoje. Volte amanhã para descobrir mais K-dramas ou assine o Dorama Hub+ para swipes ilimitados!
+          </Text>
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{swipesUsed}</Text>
+              <Text style={styles.statLabel}>Swipes Hoje</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{dailyLimit}</Text>
+              <Text style={styles.statLabel}>Limite Diário</Text>
+            </View>
+          </View>
+
           <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
+            style={styles.upgradeButton}
+            onPress={onUpgrade}
             accessibilityRole="button"
-            testID="premium-limit-close"
+            testID="premium-limit-upgrade"
           >
-            <X size={22} color={COLORS.textSecondary} />
+            <Crown size={20} color={COLORS.background} />
+            <Text style={styles.upgradeButtonText}>Assinar Dorama Hub+</Text>
           </TouchableOpacity>
 
-          <ScrollView
-            contentContainerStyle={styles.content}
-            bounces={false}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.iconContainer}>
-              <Heart size={48} color={COLORS.accent} />
+          <TouchableOpacity style={styles.laterButton} onPress={onClose} testID="premium-limit-later">
+            <Text style={styles.laterButtonText}>Voltar Amanhã</Text>
+          </TouchableOpacity>
+
+          <View style={styles.premiumFeatures}>
+            <Text style={styles.featuresTitle}>Com Dorama Hub+:</Text>
+            <View style={styles.featuresList}>
+              <Text style={styles.featureItem}>• Swipes ilimitados</Text>
+              <Text style={styles.featureItem}>• Sem anúncios</Text>
+              <Text style={styles.featureItem}>• Recursos exclusivos</Text>
             </View>
-
-            <Text style={styles.title} testID="premium-limit-title">Swipes Esgotados!</Text>
-
-            <Text style={styles.description}>
-              Você usou todos os seus {dailyLimit} swipes de hoje. Volte amanhã para descobrir mais K-dramas ou assine o Dorama Hub+ para swipes ilimitados!
-            </Text>
-
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{swipesUsed}</Text>
-                <Text style={styles.statLabel}>Swipes Hoje</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{dailyLimit}</Text>
-                <Text style={styles.statLabel}>Limite Diário</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.upgradeButton}
-              onPress={onUpgrade}
-              accessibilityRole="button"
-              testID="premium-limit-upgrade"
-            >
-              <Crown size={20} color={COLORS.background} />
-              <Text style={styles.upgradeButtonText}>Assinar Dorama Hub+</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.laterButton} onPress={onClose} testID="premium-limit-later">
-              <Text style={styles.laterButtonText}>Voltar Amanhã</Text>
-            </TouchableOpacity>
-
-            <View style={styles.premiumFeatures}>
-              <Text style={styles.featuresTitle}>Com Dorama Hub+:</Text>
-              <View style={styles.featuresList}>
-                <Text style={styles.featureItem}>• Swipes ilimitados</Text>
-                <Text style={styles.featureItem}>• Sem anúncios</Text>
-                <Text style={styles.featureItem}>• Recursos exclusivos</Text>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
+          </View>
+        </ScrollView>
       </View>
-    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+  portal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
   },
   sheet: {
     backgroundColor: COLORS.background,
@@ -144,6 +140,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
+    maxWidth: 520,
   },
   closeButton: {
     position: 'absolute',
