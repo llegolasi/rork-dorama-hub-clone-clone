@@ -372,7 +372,7 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       keyboardVerticalOffset={keyboardOffset}
     >
       <ScrollView 
@@ -411,7 +411,7 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
         )}
       </ScrollView>
       
-      <View style={[styles.inputContainer, { paddingBottom: bottomPadding }]}>
+      <View style={[styles.inputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 24 : 0) }]}> 
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">
             <Text style={styles.replyText} numberOfLines={1}>Respondendo a {replyTo.full_name || replyTo.username || 'Usuário'}</Text>
@@ -421,7 +421,7 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
           </View>
         )}
         
-        <View style={[styles.inputRow]}>
+        <View style={styles.inputRow}>
           <TextInput
             ref={inputRef}
             style={styles.input}

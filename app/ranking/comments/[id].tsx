@@ -180,7 +180,7 @@ export default function RankingCommentsScreen() {
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       keyboardVerticalOffset={keyboardOffset}
     >
       <Stack.Screen
@@ -202,7 +202,7 @@ export default function RankingCommentsScreen() {
           <Text style={styles.loadingText}>Carregando...</Text>
         </View>
       ) : ranking ? (
-        <ScrollView style={styles.commentsContainer}>
+        <ScrollView style={styles.commentsContainer} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           {/* Ranking Section */}
           <View style={styles.rankingSection}>
             <View style={styles.rankingHeader}>
@@ -314,7 +314,7 @@ export default function RankingCommentsScreen() {
         </View>
       )}
       
-      <View style={[styles.inputContainer, { paddingBottom: bottomPadding }]}>
+      <View style={[styles.inputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
         {replyingTo && (
           <View style={styles.replyIndicator}>
             <Text style={styles.replyText}>Respondendo...</Text>

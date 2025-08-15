@@ -151,7 +151,7 @@ const PostDetailScreen = () => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       keyboardVerticalOffset={keyboardOffset}
     >
       <Stack.Screen
@@ -172,6 +172,7 @@ const PostDetailScreen = () => {
           style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
         >
           {/* Post Content */}
@@ -278,7 +279,7 @@ const PostDetailScreen = () => {
       )}
 
       {/* Comment Input */}
-      <View style={[styles.commentInputContainer, { paddingBottom: bottomPadding }]}>
+      <View style={[styles.commentInputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
         <TextInput
           style={styles.commentInput}
           placeholder="Escreva um comentário..."
