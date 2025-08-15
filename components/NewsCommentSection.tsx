@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
 
 import { Heart, MessageCircle, Send, MoreVertical, X } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -41,6 +42,7 @@ interface NewsCommentSectionProps {
 }
 
 export default function NewsCommentSection({ articleId }: NewsCommentSectionProps) {
+  const insets = useSafeAreaInsets();
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
@@ -48,6 +50,9 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
 
   const inputRef = useRef<TextInput | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
+
+  const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
+  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
 
   // Queries
   const commentsQuery = trpc.news.getComments.useQuery({ articleId });
@@ -368,11 +373,12 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={keyboardOffset}
     >
       <ScrollView 
         ref={scrollRef}
         style={styles.scrollContainer}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: bottomPadding + 84 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -405,7 +411,7 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
         )}
       </ScrollView>
       
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: bottomPadding }]}>
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">
             <Text style={styles.replyText} numberOfLines={1}>Respondendo a {replyTo.full_name || replyTo.username || 'Usuário'}</Text>
@@ -415,10 +421,11 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
           </View>
         )}
         
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow]}>
           <TextInput
             ref={inputRef}
             style={styles.input}
+            textAlignVertical="top"
             placeholder={replyTo ? `Respondendo a ${replyTo.full_name || replyTo.username || 'usuário'}...` : 'Adicione um comentário...'}
             placeholderTextColor={COLORS.textSecondary}
             value={newComment}

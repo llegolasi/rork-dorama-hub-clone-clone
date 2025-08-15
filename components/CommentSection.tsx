@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { 
   ActivityIndicator, 
   KeyboardAvoidingView, 
@@ -7,8 +7,10 @@ import {
   Text, 
   TextInput, 
   TouchableOpacity, 
-  View 
+  View, 
+  ScrollView
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Send } from "lucide-react-native";
 
 import { COLORS } from "@/constants/colors";
@@ -47,9 +49,16 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ dramaId }: CommentSectionProps) {
+  const insets = useSafeAreaInsets();
   const [comments, setComments] = useState<Comment[]>(MOCK_COMMENTS);
   const [newComment, setNewComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
+  const keyboardOffset = useMemo(() => {
+    const extra = 0;
+    return (Platform.OS === 'ios' ? extra : 0) + insets.bottom;
+  }, [insets.bottom]);
   
   const handleSubmitComment = () => {
     if (!newComment.trim()) return;
@@ -74,11 +83,36 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={keyboardOffset}
       style={styles.container}
     >
       <Text style={styles.title}>Comments</Text>
       
-      <View style={styles.inputContainer}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {comments.length > 0 ? (
+          <View style={styles.commentsContainer}>
+            {comments.map((comment) => (
+              <View key={comment.id} style={styles.commentItem}>
+                <View style={styles.commentHeader}>
+                  <Text style={styles.username}>{comment.username}</Text>
+                  <Text style={styles.timestamp}>{comment.timestamp}</Text>
+                </View>
+                <Text style={styles.commentText}>{comment.text}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Be the first to comment!</Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={[styles.inputContainer, { paddingBottom: bottomPadding }]}>
         <TextInput
           style={styles.input}
           placeholder="Add a comment..."
@@ -88,6 +122,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
           multiline
           maxLength={500}
           testID="comment-input"
+          textAlignVertical="top"
         />
         
         <TouchableOpacity
@@ -107,30 +142,13 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
           )}
         </TouchableOpacity>
       </View>
-      
-      {comments.length > 0 ? (
-        <View style={styles.commentsContainer}>
-          {comments.map((comment) => (
-            <View key={comment.id} style={styles.commentItem}>
-              <View style={styles.commentHeader}>
-                <Text style={styles.username}>{comment.username}</Text>
-                <Text style={styles.timestamp}>{comment.timestamp}</Text>
-              </View>
-              <Text style={styles.commentText}>{comment.text}</Text>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Be the first to comment!</Text>
-        </View>
-      )}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     marginTop: 24,
   },
   title: {
@@ -140,11 +158,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 16,
   },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+  },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingTop: 12,
+    backgroundColor: COLORS.card,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
   input: {
     flex: 1,

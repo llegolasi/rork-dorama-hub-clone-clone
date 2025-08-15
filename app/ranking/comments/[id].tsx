@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { ArrowLeft, Send, Heart, MessageCircle } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RankingComment } from '@/types/user';
 import type { RankingWithDetails } from '@/types/user';
 import { trpc } from '@/lib/trpc';
@@ -98,6 +99,7 @@ function CommentItem({ comment, onReply, onLike }: CommentItemProps) {
 export default function RankingCommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Fetch ranking details
   const { data: rankingData, isLoading, refetch } = trpc.rankings.getRankingDetails.useQuery(
@@ -172,10 +174,14 @@ export default function RankingCommentsScreen() {
     }
   };
 
+  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
+  const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
+
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={keyboardOffset}
     >
       <Stack.Screen
         options={{
@@ -308,7 +314,7 @@ export default function RankingCommentsScreen() {
         </View>
       )}
       
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: bottomPadding }]}>
         {replyingTo && (
           <View style={styles.replyIndicator}>
             <Text style={styles.replyText}>Respondendo...</Text>
@@ -318,7 +324,7 @@ export default function RankingCommentsScreen() {
           </View>
         )}
         
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow]}>
           <TextInput
             style={styles.textInput}
             placeholder="Escreva um comentário..."
@@ -327,6 +333,7 @@ export default function RankingCommentsScreen() {
             onChangeText={setNewComment}
             multiline
             maxLength={500}
+            textAlignVertical="top"
           />
           <TouchableOpacity 
             style={[styles.sendButton, !newComment.trim() && styles.sendButtonDisabled]}

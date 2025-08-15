@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Heart, MessageCircle, Send } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +26,7 @@ const PostDetailScreen = () => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Fetch post details
   const { data: postData, isLoading, refetch } = trpc.community.getPostDetails.useQuery(
@@ -120,6 +122,9 @@ const PostDetailScreen = () => {
     return `${Math.floor(diffInHours / 24)}d atrás`;
   };
 
+  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
+  const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
+
   const renderComment = (comment: any) => (
     <View key={comment.id} style={styles.commentItem}>
       <View style={styles.commentHeader}>
@@ -147,7 +152,7 @@ const PostDetailScreen = () => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.select({ ios: 88, android: 0, web: 0 }) as number}
+      keyboardVerticalOffset={keyboardOffset}
     >
       <Stack.Screen
         options={{
@@ -167,7 +172,7 @@ const PostDetailScreen = () => {
           style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
         >
           {/* Post Content */}
           <View style={styles.postContainer}>
@@ -273,7 +278,7 @@ const PostDetailScreen = () => {
       )}
 
       {/* Comment Input */}
-      <View style={styles.commentInputContainer}>
+      <View style={[styles.commentInputContainer, { paddingBottom: bottomPadding }]}>
         <TextInput
           style={styles.commentInput}
           placeholder="Escreva um comentário..."
@@ -285,6 +290,7 @@ const PostDetailScreen = () => {
           testID="comment-input"
           returnKeyType="send"
           blurOnSubmit={false}
+          textAlignVertical="top"
         />
         <TouchableOpacity
           style={[styles.sendButton, !newComment.trim() && styles.sendButtonDisabled]}
