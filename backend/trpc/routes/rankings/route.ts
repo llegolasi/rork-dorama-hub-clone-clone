@@ -84,9 +84,38 @@ export const getRankingDetailsProcedure = publicProcedure
 
       if (commentsError) throw commentsError;
 
+      const parentIds = (comments ?? []).map((c: any) => c.id);
+      let repliesByParent: Record<string, any[]> = {};
+      if (parentIds.length > 0) {
+        const { data: replies, error: repliesError } = await ctx.supabase
+          .from('ranking_comments')
+          .select(`
+            *,
+            users!inner (
+              username,
+              display_name,
+              profile_image
+            )
+          `)
+          .in('parent_comment_id', parentIds)
+          .order('created_at', { ascending: true });
+        if (repliesError) throw repliesError;
+        repliesByParent = (replies || []).reduce((acc: Record<string, any[]>, r: any) => {
+          const key = r.parent_comment_id as string;
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(r);
+          return acc;
+        }, {});
+      }
+
+      const commentsWithReplies = (comments || []).map((c: any) => ({
+        ...c,
+        replies: repliesByParent[c.id] ?? []
+      }));
+
       return {
         ranking,
-        comments: comments || []
+        comments: commentsWithReplies
       };
     } catch (error) {
       console.error('Error fetching ranking details:', error);

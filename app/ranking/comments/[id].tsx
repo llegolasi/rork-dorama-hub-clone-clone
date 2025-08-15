@@ -23,7 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface CommentItemProps {
   comment: RankingComment;
-  onReply: (commentId: string) => void;
+  onReply: (commentId: string, userName?: string) => void;
   onLike: (commentId: string) => void;
 }
 
@@ -60,7 +60,7 @@ function CommentItem({ comment, onReply, onLike }: CommentItemProps) {
         
         <TouchableOpacity 
           style={styles.actionButton}
-          onPress={() => onReply(comment.id)}
+          onPress={() => onReply(comment.id, comment.user.displayName)}
         >
           <MessageCircle size={16} color={COLORS.textSecondary} />
           <Text style={styles.actionText}>Responder</Text>
@@ -132,7 +132,7 @@ export default function RankingCommentsScreen() {
   const ranking = rankingData?.ranking;
   const comments = rankingData?.comments || [];
   const [newComment, setNewComment] = useState('');
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; userName?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSendComment = async () => {
@@ -149,8 +149,10 @@ export default function RankingCommentsScreen() {
       await addCommentMutation.mutateAsync({
         rankingId: id,
         content: newComment.trim(),
-        parentCommentId: replyingTo || undefined
+        parentCommentId: replyingTo?.id || undefined
       });
+      setNewComment('');
+      setReplyingTo(null);
     } catch (error) {
       console.error('Error submitting comment:', error);
     } finally {
@@ -158,8 +160,8 @@ export default function RankingCommentsScreen() {
     }
   };
 
-  const handleReply = (commentId: string) => {
-    setReplyingTo(commentId);
+  const handleReply = (commentId: string, userName?: string) => {
+    setReplyingTo({ id: commentId, userName });
   };
 
   const handleLike = async (commentId: string) => {
@@ -299,7 +301,7 @@ export default function RankingCommentsScreen() {
                 
                 <TouchableOpacity 
                   style={styles.actionButton}
-                  onPress={() => handleReply(comment.id)}
+                  onPress={() => handleReply(comment.id, comment.users?.display_name)}
                 >
                   <MessageCircle size={16} color={COLORS.textSecondary} />
                   <Text style={styles.actionText}>Responder</Text>
@@ -317,7 +319,7 @@ export default function RankingCommentsScreen() {
       <View style={[styles.inputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
         {replyingTo && (
           <View style={styles.replyIndicator}>
-            <Text style={styles.replyText}>Respondendo...</Text>
+            <Text style={styles.replyText} numberOfLines={1}>Respondendo a {replyingTo.userName ?? 'usuário'}</Text>
             <TouchableOpacity onPress={() => setReplyingTo(null)}>
               <Text style={styles.cancelReply}>Cancelar</Text>
             </TouchableOpacity>

@@ -58,6 +58,7 @@ const PostDetailScreen = () => {
 
   const post = postData?.post;
   const comments = postData?.comments || [];
+  const [replyTo, setReplyTo] = useState<any | null>(null);
 
   const rankingItems = React.useMemo(() => {
     const items = Array.isArray(post?.user_rankings?.ranking_items) ? [...post!.user_rankings.ranking_items] : [];
@@ -94,8 +95,11 @@ const PostDetailScreen = () => {
     try {
       await addCommentMutation.mutateAsync({
         postId: id,
-        content: newComment.trim()
+        content: newComment.trim(),
+        parentCommentId: replyTo?.id,
       });
+      setReplyTo(null);
+      setNewComment('');
     } catch (error) {
       console.error('Error submitting comment:', error);
     } finally {
@@ -145,6 +149,41 @@ const PostDetailScreen = () => {
         <Text style={styles.commentTime}>{formatDate(comment.created_at)}</Text>
       </View>
       <Text style={styles.commentText}>{comment.content}</Text>
+
+      <View style={styles.commentActionsRow}>
+        <TouchableOpacity style={styles.replyButton} onPress={() => setReplyTo(comment)} testID={`reply-${comment.id}`}>
+          <MessageCircle size={16} color={COLORS.textSecondary} />
+          <Text style={styles.replyTextAction}>Responder</Text>
+        </TouchableOpacity>
+      </View>
+
+      {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+        <View style={styles.repliesContainer}>
+          {comment.replies.map((reply: any) => (
+            <View key={reply.id} style={styles.replyItem}>
+              <View style={styles.commentHeader}>
+                <TouchableOpacity onPress={() => handleUserPress(reply.user_id)}>
+                  <Image
+                    source={{ uri: reply.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
+                    style={styles.commentAvatar}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.commentContent} onPress={() => handleUserPress(reply.user_id)}>
+                  <Text style={styles.commentUserName}>{reply.users?.display_name}</Text>
+                </TouchableOpacity>
+                <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
+              </View>
+              <Text style={styles.commentText}>{reply.content}</Text>
+              <View style={styles.commentActionsRow}>
+                <TouchableOpacity style={styles.replyButton} onPress={() => setReplyTo(comment)} testID={`reply-to-${comment.id}`}>
+                  <MessageCircle size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.replyTextAction}>Responder</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 
@@ -280,36 +319,46 @@ const PostDetailScreen = () => {
 
       {/* Comment Input */}
       <View style={[styles.commentInputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
-        <TextInput
-          style={styles.commentInput}
-          placeholder="Escreva um comentário..."
-          placeholderTextColor={COLORS.textSecondary}
-          value={newComment}
-          onChangeText={setNewComment}
-          multiline
-          maxLength={300}
-          testID="comment-input"
-          returnKeyType="send"
-          blurOnSubmit={false}
-          textAlignVertical="top"
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, !newComment.trim() && styles.sendButtonDisabled]}
-          onPress={handleSubmitComment}
-          disabled={!newComment.trim() || isSubmitting}
-          testID="send-comment"
-          accessibilityRole="button"
-          accessibilityLabel="Enviar comentário"
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color={COLORS.accent} />
-          ) : (
-            <Send 
-              size={20} 
-              color={newComment.trim() ? COLORS.accent : COLORS.textSecondary} 
-            />
-          )}
-        </TouchableOpacity>
+        {replyTo && (
+          <View style={styles.replyBanner} testID="reply-banner">
+            <Text style={styles.replyingToText} numberOfLines={1}>Respondendo a {replyTo.users?.display_name || 'usuário'}</Text>
+            <TouchableOpacity onPress={() => setReplyTo(null)} style={styles.cancelReplyBtn} testID="cancel-reply">
+              <Text style={styles.cancelReplyText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <View style={styles.commentInputRow}>
+          <TextInput
+            style={styles.commentInput}
+            placeholder={replyTo ? `Respondendo a ${replyTo.users?.display_name || 'usuário'}...` : 'Escreva um comentário...'}
+            placeholderTextColor={COLORS.textSecondary}
+            value={newComment}
+            onChangeText={setNewComment}
+            multiline
+            maxLength={300}
+            testID="comment-input"
+            returnKeyType="send"
+            blurOnSubmit={false}
+            textAlignVertical="top"
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, !newComment.trim() && styles.sendButtonDisabled]}
+            onPress={handleSubmitComment}
+            disabled={!newComment.trim() || isSubmitting}
+            testID="send-comment"
+            accessibilityRole="button"
+            accessibilityLabel="Enviar comentário"
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color={COLORS.accent} />
+            ) : (
+              <Send 
+                size={20} 
+                color={newComment.trim() ? COLORS.accent : COLORS.textSecondary} 
+              />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -521,11 +570,36 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+  },
+  replyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  replyingToText: {
+    flex: 1,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginRight: 12,
+  },
+  cancelReplyBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+  },
+  cancelReplyText: {
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     padding: 16,
     gap: 12,
   },
@@ -538,6 +612,34 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 16,
     maxHeight: 100,
+  },
+  commentActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 12,
+  },
+  replyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  replyTextAction: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  repliesContainer: {
+    marginTop: 8,
+    paddingLeft: 44,
+    borderLeftWidth: 2,
+    borderLeftColor: COLORS.border,
+    gap: 8,
+  },
+  replyItem: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 12,
   },
   sendButton: {
     width: 40,
