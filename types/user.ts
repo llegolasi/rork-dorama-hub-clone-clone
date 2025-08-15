@@ -1,0 +1,172 @@
+export type ListType = "watching" | "watchlist" | "completed";
+
+export interface UserList {
+  dramaId: number;
+  addedAt: string;
+  progress?: {
+    currentEpisode: number;
+    totalEpisodes: number;
+  };
+}
+
+export interface UserRanking {
+  dramaId: number;
+  rank: number;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'legendary';
+  isPremium: boolean;
+  unlockedAt?: string;
+}
+
+export interface UserStats {
+  totalWatchTime: number; // in minutes
+  genreBreakdown: { [genre: string]: number };
+  favoriteActor?: {
+    id: number;
+    name: string;
+    worksWatched: number;
+  };
+  monthlyWatchTime: { [month: string]: number };
+}
+
+export interface PremiumFeatures {
+  isSubscribed: boolean;
+  subscriptionType?: 'monthly' | 'yearly';
+  subscriptionEndDate?: string;
+  profileTheme?: string;
+  profileBorder?: string;
+  customReactions: boolean;
+  advancedFilters: boolean;
+  multipleRankings: boolean;
+  detailedStats: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  bio?: string;
+  profileImage?: string;
+  isFollowing?: boolean;
+  followersCount: number;
+  followingCount: number;
+  lists: {
+    watching: UserList[];
+    watchlist: UserList[];
+    completed: UserList[];
+  };
+  rankings: UserRanking[];
+  achievements: Achievement[];
+  stats: UserStats;
+  premium: PremiumFeatures;
+  createdAt: string;
+}
+
+export interface RankingWithDetails {
+  id: string;
+  title: string;
+  userId: string;
+  user: {
+    username: string;
+    displayName: string;
+    profileImage?: string;
+  };
+  dramas: Array<{
+    drama: {
+      id: number;
+      name: string;
+      poster_path: string | null;
+      first_air_date: string;
+    };
+    rank: number;
+  }>;
+  likesCount: number;
+  commentsCount: number;
+  isLiked?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RankingComment {
+  id: string;
+  content: string;
+  userId: string;
+  user: {
+    username: string;
+    displayName: string;
+    profileImage?: string;
+  };
+  rankingId: string;
+  createdAt: string;
+  replies?: RankingComment[];
+}
+
+export interface CommunityPost {
+  id: string;
+  type: 'discussion' | 'ranking';
+  userId: string;
+  user: {
+    username: string;
+    displayName: string;
+    profileImage?: string;
+  };
+  content: string;
+  mentionedDrama?: {
+    id: number;
+    name: string;
+    poster_path: string | null;
+    first_air_date: string;
+  };
+  likesCount: number;
+  commentsCount: number;
+  isLiked?: boolean;
+  createdAt: string;
+}
+
+export interface CommunityFeedItem {
+  type: 'ranking' | 'recommendation';
+  id: string;
+  user: {
+    username: string;
+    displayName: string;
+    profileImage?: string;
+  };
+  content: RankingWithDetails;
+  engagement: {
+    likes: number;
+    comments: number;
+  };
+  createdAt: string;
+}
+
+export interface OnboardingData {
+  username: string;
+  email: string;
+  password?: string;
+  displayName?: string;
+  bio?: string;
+  profileImage?: string;
+  favoriteGenres: string[];
+  lovedDramas: number[];
+  authProvider?: 'email' | 'google' | 'apple';
+  gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
+  birthDate?: string;
+  age?: number;
+}
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  bio?: string;
+  profileImage?: string;
+  isOnboardingComplete: boolean;
+  createdAt: string;
+}
