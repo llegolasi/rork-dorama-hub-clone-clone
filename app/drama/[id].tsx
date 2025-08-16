@@ -10,13 +10,12 @@ import {
   TouchableOpacity, 
   View 
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, Star, Play, Check } from "lucide-react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
 
 import { COLORS } from "@/constants/colors";
 import { BACKDROP_SIZE, POSTER_SIZE, TMDB_IMAGE_BASE_URL } from "@/constants/config";
@@ -28,6 +27,7 @@ import ReviewModal from "@/components/ReviewModal";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/hooks/useUserStore";
+import CompletionShareModal from "@/components/CompletionShareModal";
 
 
 const { width } = Dimensions.get("window");
@@ -38,6 +38,7 @@ export default function DramaDetailScreen() {
   const { user } = useAuth();
   const { isInList, removeFromList, addToList, deleteUserReview, refreshUserProfile } = useUserStore();
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   console.log('DramaDetailScreen - received id:', id);
   const dramaId = parseInt(id || "0", 10);
@@ -518,7 +519,9 @@ export default function DramaDetailScreen() {
           rating: userReviewData.rating,
         } : null}
         onReviewSubmitted={async () => {
-          if (!isCompleted) {
+          const wasNotCompleted = !isCompleted;
+          
+          if (wasNotCompleted) {
             await addToList(dramaId, 'completed', drama.number_of_episodes, {
               name: drama.name,
               poster_path: drama.poster_path,
@@ -526,10 +529,24 @@ export default function DramaDetailScreen() {
               number_of_episodes: drama.number_of_episodes
             });
           }
+          
           await refreshUserProfile();
           await Promise.all([refetchUserReview(), refetchReviews(), refetchStats()]);
           setShowReviewModal(false);
+          
+          // Show completion modal only if this was the first time completing
+          if (wasNotCompleted && user?.username) {
+            console.log('Showing completion modal for first-time completion');
+            setShowCompletionModal(true);
+          }
         }}
+      />
+      
+      <CompletionShareModal
+        visible={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        dramaId={dramaId}
+        userName={user?.username || 'Usuário'}
       />
       </ScrollView>
     </SafeAreaView>
