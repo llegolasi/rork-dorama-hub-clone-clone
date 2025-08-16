@@ -117,8 +117,8 @@ export default function CompletionShareModal({
   };
 
   const handleDownload = async () => {
-    if (!completionData || !certificateRef.current) {
-      console.log('Missing completion data or certificate ref');
+    if (!completionData) {
+      console.log('Missing completion data');
       return;
     }
 
@@ -135,29 +135,39 @@ export default function CompletionShareModal({
         return;
       }
 
-      // Wait a bit to ensure the view is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait longer to ensure the view is fully rendered and stable
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Double check the ref still exists
+      // Check if ref exists before capture
       if (!certificateRef.current) {
-        console.log('Certificate ref no longer exists');
+        console.log('Certificate ref does not exist');
         Alert.alert('Erro', 'Não foi possível capturar a imagem. Tente novamente.');
+        setIsGeneratingImage(false);
         return;
       }
 
       console.log('Capturing certificate view...');
-      // Capture the certificate view as image
+      // Capture the certificate view as image with better options
       const uri = await captureRef(certificateRef.current, {
         format: 'png',
-        quality: 1,
-        width: 800,
-        height: 1200,
+        quality: 0.9,
+        result: 'tmpfile',
+        width: 1080,
+        height: 1920,
       });
 
-      console.log('Image captured, saving to gallery...');
+      console.log('Image captured successfully:', uri);
+      
       // Save to media library
       const asset = await MediaLibrary.createAssetAsync(uri);
-      await MediaLibrary.createAlbumAsync('Dorama Hub', asset, false);
+      console.log('Asset created:', asset);
+      
+      // Try to create album, but don't fail if it already exists
+      try {
+        await MediaLibrary.createAlbumAsync('Dorama Hub', asset, false);
+      } catch (albumError) {
+        console.log('Album creation failed (might already exist):', albumError);
+      }
 
       Alert.alert(
         'Sucesso!',
@@ -192,7 +202,13 @@ export default function CompletionShareModal({
         
         {/* Gradient Overlay */}
         <LinearGradient
-          colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)', 'rgba(0,0,0,0.95)']}
+          colors={[
+            'rgba(138, 43, 226, 0.4)',
+            'rgba(30, 144, 255, 0.6)', 
+            'rgba(255, 20, 147, 0.8)',
+            'rgba(0, 0, 0, 0.9)'
+          ]}
+          locations={[0, 0.3, 0.7, 1]}
           style={styles.gradientOverlay}
         />
 
@@ -213,14 +229,25 @@ export default function CompletionShareModal({
             
             {/* Stats */}
             <View style={styles.statsContainer}>
-              <Text style={styles.statsTitle}>Tempo Total de Maratona</Text>
-              <Text style={styles.statsValue}>{formatTime(hours, minutes)}</Text>
+              <LinearGradient
+                colors={['rgba(255, 215, 0, 0.9)', 'rgba(255, 140, 0, 0.9)']}
+                style={styles.statsGradient}
+              >
+                <Text style={styles.statsTitle}>⏱️ Tempo Total de Maratona</Text>
+                <Text style={styles.statsValue}>{formatTime(hours, minutes)}</Text>
+              </LinearGradient>
             </View>
           </View>
 
           {/* Branding */}
           <View style={styles.brandingContainer}>
-            <Text style={styles.appName}>Dorama Hub</Text>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.9)', 'rgba(240, 240, 240, 0.8)']}
+              style={styles.brandingGradient}
+            >
+              <Text style={styles.appName}>📱 Dorama Hub</Text>
+              <Text style={styles.appTagline}>Sua jornada K-Drama</Text>
+            </LinearGradient>
           </View>
         </View>
       </View>
@@ -373,9 +400,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   poster: {
-    width: 80,
-    height: 120,
-    borderRadius: 8,
+    width: 90,
+    height: 135,
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: '#FFD700',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   textContainer: {
     flex: 1,
@@ -383,48 +417,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   userName: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
   completedText: {
-    fontSize: 18,
-    color: '#FFFFFF',
+    fontSize: 20,
+    color: '#FFD700',
     textAlign: 'center',
     marginBottom: 8,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   dramaTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 32,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
   statsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  statsGradient: {
+    padding: 24,
     alignItems: 'center',
+    borderRadius: 16,
   },
   statsTitle: {
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: 18,
+    color: '#000',
     marginBottom: 8,
+    fontWeight: '600',
   },
   statsValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#000',
   },
   brandingContainer: {
     alignItems: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  brandingGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 12,
   },
   appName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  appTagline: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
   },
   actionButtons: {
     flexDirection: 'row',
