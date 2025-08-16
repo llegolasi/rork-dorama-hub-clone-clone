@@ -50,12 +50,19 @@ export function WatchingList({ dramas }: WatchingListProps) {
     console.log(`Updating progress for drama ${dramaId} to episode ${newEpisode}`);
     try {
       await updateProgress(dramaId, newEpisode);
+      console.log('Progress updated successfully, refreshing data...');
+      
       // Refresh user profile data to get updated stats
       await refreshUserProfile();
+      
       // Invalidate and refetch queries to refresh data immediately
       await queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
       await queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+      
+      // Force refetch to ensure fresh data
       await queryClient.refetchQueries({ queryKey: ["watching-dramas"] });
+      
+      console.log('Data refresh completed');
     } catch (error) {
       console.error('Error updating progress:', error);
       throw error;
@@ -144,12 +151,22 @@ export function WatchingList({ dramas }: WatchingListProps) {
   }
 
   const handleDataUpdated = async () => {
-    // Refresh user profile data
-    await refreshUserProfile();
-    // Invalidate and refetch queries to refresh data immediately
-    await queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
-    await queryClient.invalidateQueries({ queryKey: ["user-stats"] });
-    await queryClient.refetchQueries({ queryKey: ["watching-dramas"] });
+    console.log('handleDataUpdated called, refreshing all data...');
+    try {
+      // Refresh user profile data
+      await refreshUserProfile();
+      
+      // Invalidate and refetch queries to refresh data immediately
+      await queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
+      await queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+      
+      // Force refetch to ensure fresh data
+      await queryClient.refetchQueries({ queryKey: ["watching-dramas"] });
+      
+      console.log('All data refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
   };
 
   const renderItem = ({ item }: { item: { drama: Drama; userListItem: UserList } }) => (

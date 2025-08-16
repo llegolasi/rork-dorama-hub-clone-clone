@@ -87,6 +87,9 @@ export default function EpisodeManagementModal({
           onPress: async () => {
             setIsUpdating(true);
             try {
+              // First update progress to mark all episodes as watched
+              await onProgressUpdate(totalEpisodes);
+              // Then complete the drama
               await onComplete();
               if (onDataUpdated) {
                 onDataUpdated();
@@ -166,7 +169,7 @@ export default function EpisodeManagementModal({
               Episódio {currentEpisode} de {totalEpisodes} assistidos
             </Text>
             <Text style={styles.progressText}>
-              Tempo assistido: {Math.round((userListItem.progress?.totalWatchTimeMinutes || 0) / 60)} horas
+              Tempo assistido: {Math.round((userListItem.progress?.totalWatchTimeMinutes || 0) / 60)}h {Math.round((userListItem.progress?.totalWatchTimeMinutes || 0) % 60)}min
             </Text>
           </View>
 
@@ -182,13 +185,8 @@ export default function EpisodeManagementModal({
             </View>
           </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onClose}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
+          <View style={styles.quickActions}>
+            <Text style={styles.sectionTitle}>Marcar Episódios</Text>
             
             <TouchableOpacity
               style={[
@@ -239,6 +237,15 @@ export default function EpisodeManagementModal({
               <Text style={styles.completeAllText}>
                 {isUpdating ? 'Processando...' : 'Marcar como Concluído'}
               </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>Fechar</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -381,15 +388,13 @@ const styles = StyleSheet.create({
     color: COLORS.background,
   },
   footer: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    gap: 12,
   },
   cancelButton: {
-    flex: 1,
+    width: '100%',
     paddingVertical: 16,
     borderRadius: 12,
     backgroundColor: COLORS.card,
@@ -401,11 +406,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   updateButton: {
-    flex: 2,
+    width: '100%',
     paddingVertical: 16,
     borderRadius: 12,
     backgroundColor: COLORS.accent,
     alignItems: 'center',
+    marginBottom: 12,
   },
   updateButtonDisabled: {
     backgroundColor: COLORS.border,

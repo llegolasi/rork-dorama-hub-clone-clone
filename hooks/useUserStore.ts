@@ -241,6 +241,11 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         // Fallback: estimate 60 minutes per episode for K-dramas
         total_runtime_minutes = (total_episodes || 16) * 60;
       }
+      
+      // Ensure we have a valid runtime
+      if (!total_runtime_minutes || total_runtime_minutes <= 0) {
+        total_runtime_minutes = (total_episodes || 16) * 60;
+      }
 
       // First, check if drama exists in ANY list for this user
       const { data: existing } = await supabase
@@ -253,17 +258,21 @@ export const [UserContext, useUserStore] = createContextHook(() => {
 
       if (existing) {
         // Update existing record - change list type
+        const currentEpisode = listType === 'watchlist' ? 0 : (listType === 'watching' ? 0 : (listType === 'completed' ? (total_episodes || existing.total_episodes || 16) : existing.current_episode));
+        const episodesWatched = currentEpisode;
+        const watchedMinutes = listType === 'completed' ? total_runtime_minutes : (listType === 'watchlist' ? 0 : Math.round((currentEpisode / (total_episodes || existing.total_episodes || 1)) * total_runtime_minutes));
+        
         const updateData: any = {
           list_type: listType,
-          current_episode: listType === 'watchlist' ? 0 : (listType === 'watching' ? 0 : existing.current_episode),
+          current_episode: currentEpisode,
           total_episodes: total_episodes ?? existing.total_episodes ?? null,
           drama_name: drama_name ?? existing.drama_name ?? null,
           poster_path: poster_path ?? existing.poster_path ?? null,
           drama_year: drama_year ?? existing.drama_year ?? null,
           poster_image: poster_image ?? existing.poster_image ?? null,
           total_runtime_minutes: total_runtime_minutes,
-          watched_minutes: listType === 'watchlist' ? 0 : existing.watched_minutes,
-          episodes_watched: listType === 'watchlist' ? 0 : existing.episodes_watched,
+          watched_minutes: watchedMinutes,
+          episodes_watched: episodesWatched,
           updated_at: new Date().toISOString()
         };
         
@@ -278,19 +287,23 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         }
       } else {
         // Insert new record
+        const currentEpisode = listType === 'watchlist' ? 0 : (listType === 'watching' ? 0 : (listType === 'completed' ? (total_episodes || 16) : 0));
+        const episodesWatched = currentEpisode;
+        const watchedMinutes = listType === 'completed' ? total_runtime_minutes : 0;
+        
         const insertData: any = {
           user_id: user.id,
           drama_id: dramaId,
           list_type: listType,
-          current_episode: listType === 'watchlist' ? 0 : (listType === 'watching' ? 0 : null),
+          current_episode: currentEpisode,
           total_episodes: total_episodes ?? null,
           drama_name: drama_name ?? null,
           poster_path: poster_path ?? null,
           drama_year: drama_year ?? null,
           poster_image: poster_image ?? null,
           total_runtime_minutes: total_runtime_minutes,
-          watched_minutes: 0,
-          episodes_watched: 0,
+          watched_minutes: watchedMinutes,
+          episodes_watched: episodesWatched,
         };
         
         const { error } = await supabase
@@ -423,10 +436,14 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       }
       
       // Calculate watched minutes based on episodes watched
-      const averageEpisodeLength = (dramaData.total_runtime_minutes || 0) / (dramaData.total_episodes || 1);
+      const totalEpisodes = dramaData.total_episodes || 1;
+      const totalRuntime = dramaData.total_runtime_minutes || 0;
+      const averageEpisodeLength = totalRuntime / totalEpisodes;
       const watchedMinutes = Math.round(currentEpisode * averageEpisodeLength);
       
-      const isCompleted = currentEpisode >= (dramaData.total_episodes || 0);
+      console.log(`updateProgress: drama ${dramaId}, currentEpisode: ${currentEpisode}, totalEpisodes: ${totalEpisodes}, watchedMinutes: ${watchedMinutes}`);
+      
+      const isCompleted = currentEpisode >= totalEpisodes;
       
       const updateData: any = {
         current_episode: currentEpisode,
@@ -438,15 +455,23 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       if (isCompleted) {
         // Move to completed list
         updateData.list_type = 'completed';
-        updateData.current_episode = dramaData.total_episodes;
-        updateData.episodes_watched = dramaData.total_episodes;
-        updateData.watched_minutes = dramaData.total_runtime_minutes || 0;
+        updateData.current_episode = totalEpisodes;
+        updateData.episodes_watched = totalEpisodes;
+        updateData.watched_minutes = totalRuntime;
+        console.log(`updateProgress: Marking as completed with ${totalRuntime} minutes`);
       }
       
-      await supabase
+      const { error: updateError } = await supabase
         .from('user_drama_lists')
         .update(updateData)
         .eq('id', dramaData.id);
+        
+      if (updateError) {
+        console.error('Error updating drama progress:', updateError);
+        throw updateError;
+      }
+      
+      console.log(`updateProgress: Successfully updated drama ${dramaId} with data:`, updateData);
       
       // Update local state
       setUserProfile(prev => {
