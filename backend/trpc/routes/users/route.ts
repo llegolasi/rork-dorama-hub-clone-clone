@@ -359,16 +359,114 @@ export const getUserStatsProcedure = protectedProcedure
     try {
       const targetUserId = input.userId || ctx.user.id;
       
-      const { data, error } = await ctx.supabase.rpc('get_user_comprehensive_stats', {
+      // First try to get stats from the RPC function
+      const { data: rpcData, error: rpcError } = await ctx.supabase.rpc('get_user_comprehensive_stats', {
         p_user_id: targetUserId
       });
 
-      if (error) {
-        console.error('Error fetching user stats:', error);
-        throw new Error('Failed to fetch user statistics');
+      if (!rpcError && rpcData) {
+        return rpcData;
       }
 
-      return data || {
+      console.log('RPC function failed, falling back to manual calculation:', rpcError);
+      
+      // Fallback: manually calculate stats
+      const { data: userStats, error: statsError } = await ctx.supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .single();
+
+      // If no user stats exist, create them
+      if (statsError || !userStats) {
+        // Count dramas in each list
+        const { data: watchingDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('id')
+          .eq('user_id', targetUserId)
+          .eq('list_type', 'watching');
+
+        const { data: watchlistDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('id')
+          .eq('user_id', targetUserId)
+          .eq('list_type', 'watchlist');
+
+        const { data: completedDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('id')
+          .eq('user_id', targetUserId)
+          .eq('list_type', 'completed');
+
+        // Get total watch time from completions
+        const { data: completions } = await ctx.supabase
+          .from('drama_completions')
+          .select('total_runtime_minutes')
+          .eq('user_id', targetUserId);
+
+        const totalWatchTime = completions?.reduce((sum, completion) => 
+          sum + (completion.total_runtime_minutes || 0), 0) || 0;
+
+        const fallbackStats = {
+          user_id: targetUserId,
+          total_watch_time_minutes: totalWatchTime,
+          dramas_completed: completedDramas?.length || 0,
+          dramas_watching: watchingDramas?.length || 0,
+          dramas_in_watchlist: watchlistDramas?.length || 0,
+          average_drama_runtime: completions?.length ? totalWatchTime / completions.length : 0,
+          first_completion_date: null,
+          latest_completion_date: null,
+          monthly_watch_time: {},
+          favorite_genres: {},
+          yearly_watch_time: {},
+          favorite_actor_id: null,
+          favorite_actor_name: null,
+          favorite_actor_works_watched: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        // Try to insert/update user stats
+        await ctx.supabase
+          .from('user_stats')
+          .upsert({
+            user_id: targetUserId,
+            total_watch_time_minutes: totalWatchTime,
+            dramas_completed: completedDramas?.length || 0,
+            dramas_watching: watchingDramas?.length || 0,
+            dramas_in_watchlist: watchlistDramas?.length || 0,
+            updated_at: new Date().toISOString()
+          });
+
+        return fallbackStats;
+      }
+
+      // Return existing user stats with additional calculated fields
+      return {
+        user_id: userStats.user_id,
+        total_watch_time_minutes: userStats.total_watch_time_minutes || 0,
+        dramas_completed: userStats.dramas_completed || 0,
+        dramas_watching: userStats.dramas_watching || 0,
+        dramas_in_watchlist: userStats.dramas_in_watchlist || 0,
+        average_drama_runtime: userStats.dramas_completed > 0 ? 
+          (userStats.total_watch_time_minutes / userStats.dramas_completed) : 0,
+        first_completion_date: null,
+        latest_completion_date: null,
+        monthly_watch_time: userStats.monthly_watch_time || {},
+        favorite_genres: userStats.favorite_genres || {},
+        yearly_watch_time: userStats.yearly_watch_time || {},
+        favorite_actor_id: userStats.favorite_actor_id,
+        favorite_actor_name: userStats.favorite_actor_name,
+        favorite_actor_works_watched: userStats.favorite_actor_works_watched || 0,
+        created_at: userStats.created_at,
+        updated_at: userStats.updated_at
+      };
+    } catch (error) {
+      console.error('Error in getUserStatsProcedure:', error);
+      
+      // Final fallback - return empty stats
+      const targetUserId = input.userId || ctx.user.id;
+      return {
         user_id: targetUserId,
         total_watch_time_minutes: 0,
         dramas_completed: 0,
@@ -386,9 +484,6 @@ export const getUserStatsProcedure = protectedProcedure
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-    } catch (error) {
-      console.error('Error in getUserStatsProcedure:', error);
-      throw new Error('Failed to fetch user statistics');
     }
   });
 
@@ -396,13 +491,59 @@ export const getUserStatsProcedure = protectedProcedure
 export const updateUserStatsProcedure = protectedProcedure
   .mutation(async ({ ctx }) => {
     try {
-      const { error } = await ctx.supabase.rpc('update_user_statistics', {
+      // First try the RPC function
+      const { error: rpcError } = await ctx.supabase.rpc('update_user_statistics', {
         p_user_id: ctx.user.id
       });
 
-      if (error) {
-        console.error('Error updating user stats:', error);
-        throw new Error('Failed to update user statistics');
+      if (rpcError) {
+        console.log('RPC function failed, updating manually:', rpcError);
+        
+        // Fallback: manually update stats
+        // Count dramas in each list
+        const { data: watchingDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('id')
+          .eq('user_id', ctx.user.id)
+          .eq('list_type', 'watching');
+
+        const { data: watchlistDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('id')
+          .eq('user_id', ctx.user.id)
+          .eq('list_type', 'watchlist');
+
+        const { data: completedDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('id')
+          .eq('user_id', ctx.user.id)
+          .eq('list_type', 'completed');
+
+        // Get total watch time from completions
+        const { data: completions } = await ctx.supabase
+          .from('drama_completions')
+          .select('total_runtime_minutes')
+          .eq('user_id', ctx.user.id);
+
+        const totalWatchTime = completions?.reduce((sum, completion) => 
+          sum + (completion.total_runtime_minutes || 0), 0) || 0;
+
+        // Update user stats
+        const { error: updateError } = await ctx.supabase
+          .from('user_stats')
+          .upsert({
+            user_id: ctx.user.id,
+            total_watch_time_minutes: totalWatchTime,
+            dramas_completed: completedDramas?.length || 0,
+            dramas_watching: watchingDramas?.length || 0,
+            dramas_in_watchlist: watchlistDramas?.length || 0,
+            updated_at: new Date().toISOString()
+          });
+
+        if (updateError) {
+          console.error('Error manually updating user stats:', updateError);
+          throw new Error('Failed to update user statistics');
+        }
       }
 
       return { success: true, message: 'User statistics updated successfully' };
