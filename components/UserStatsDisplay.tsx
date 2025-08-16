@@ -10,11 +10,13 @@ interface UserStatsDisplayProps {
 }
 
 export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
-  const { data: stats, isLoading, refetch } = trpc.users.getStats.useQuery(
+  const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
     { userId },
     { 
       enabled: true,
-      refetchOnMount: true 
+      refetchOnMount: true,
+      retry: 2,
+      retryDelay: 1000
     }
   );
   
@@ -50,10 +52,22 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
     );
   }
 
-  if (!stats) {
+  if (error) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Erro ao carregar estatísticas</Text>
+        <Text style={styles.errorDetails}>{error.message}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+          <Text style={styles.retryButtonText}>Tentar Novamente</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Nenhuma estatística disponível</Text>
       </View>
     );
   }
@@ -245,5 +259,24 @@ const styles = StyleSheet.create({
     color: COLORS.error || '#ff4444',
     textAlign: 'center',
     padding: 20,
+  },
+  errorDetails: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  retryButton: {
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginTop: 12,
+  },
+  retryButtonText: {
+    color: COLORS.background,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

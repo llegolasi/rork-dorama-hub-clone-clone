@@ -364,11 +364,11 @@ export const getUserStatsProcedure = protectedProcedure
         p_user_id: targetUserId
       });
 
-      if (!rpcError && rpcData) {
+      if (!rpcError && rpcData && typeof rpcData === 'object') {
         return rpcData;
       }
 
-      console.log('RPC function failed, falling back to manual calculation:', rpcError);
+      console.log('RPC function failed or returned invalid data, falling back to manual calculation:', rpcError, rpcData);
       
       // Fallback: manually calculate stats
       const { data: userStats, error: statsError } = await ctx.supabase

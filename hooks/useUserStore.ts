@@ -107,10 +107,22 @@ export const [UserContext, useUserStore] = createContextHook(() => {
             };
             
             if (item.list_type === 'watching' && item.total_episodes) {
+              let watchedEpisodes: number[] = [];
+              try {
+                if (item.watched_episodes && typeof item.watched_episodes === 'string' && item.watched_episodes.trim() !== '') {
+                  watchedEpisodes = JSON.parse(item.watched_episodes);
+                } else if (Array.isArray(item.watched_episodes)) {
+                  watchedEpisodes = item.watched_episodes;
+                }
+              } catch (e) {
+                console.warn('Failed to parse watched_episodes in initial load:', item.watched_episodes, e);
+                watchedEpisodes = [];
+              }
+              
               userListItem.progress = {
                 currentEpisode: item.current_episode || 0,
                 totalEpisodes: item.total_episodes,
-                watchedEpisodes: item.watched_episodes ? JSON.parse(item.watched_episodes) : [],
+                watchedEpisodes,
                 totalWatchTimeMinutes: item.total_runtime_minutes || 0
               };
             }
@@ -172,13 +184,16 @@ export const [UserContext, useUserStore] = createContextHook(() => {
   useEffect(() => {
     const saveUserData = async () => {
       try {
-        await AsyncStorage.setItem("userProfile", JSON.stringify(userProfile));
+        const dataToSave = JSON.stringify(userProfile);
+        if (dataToSave && dataToSave !== '{}') {
+          await AsyncStorage.setItem("userProfile", dataToSave);
+        }
       } catch (error) {
         console.error("Error saving user data:", error);
       }
     };
 
-    if (!isLoading && user) {
+    if (!isLoading && user && userProfile.id) {
       saveUserData();
     }
   }, [userProfile, isLoading, user]);
@@ -406,7 +421,17 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       if (!dramaData) return;
       
       // Parse current watched episodes
-      const currentWatchedEpisodes: number[] = dramaData.watched_episodes ? JSON.parse(dramaData.watched_episodes) : [];
+      let currentWatchedEpisodes: number[] = [];
+      try {
+        if (dramaData.watched_episodes && typeof dramaData.watched_episodes === 'string' && dramaData.watched_episodes.trim() !== '') {
+          currentWatchedEpisodes = JSON.parse(dramaData.watched_episodes);
+        } else if (Array.isArray(dramaData.watched_episodes)) {
+          currentWatchedEpisodes = dramaData.watched_episodes;
+        }
+      } catch (e) {
+        console.warn('Failed to parse watched_episodes in updateProgress:', dramaData.watched_episodes, e);
+        currentWatchedEpisodes = [];
+      }
       
       // Add new episodes to watched list (from current+1 to currentEpisode)
       const newWatchedEpisodes = [...currentWatchedEpisodes];
@@ -690,10 +715,22 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           };
           
           if (item.list_type === 'watching' && item.total_episodes) {
+            let watchedEpisodes: number[] = [];
+            try {
+              if (item.watched_episodes && typeof item.watched_episodes === 'string' && item.watched_episodes.trim() !== '') {
+                watchedEpisodes = JSON.parse(item.watched_episodes);
+              } else if (Array.isArray(item.watched_episodes)) {
+                watchedEpisodes = item.watched_episodes;
+              }
+            } catch (e) {
+              console.warn('Failed to parse watched_episodes:', item.watched_episodes, e);
+              watchedEpisodes = [];
+            }
+            
             userListItem.progress = {
               currentEpisode: item.current_episode || 0,
               totalEpisodes: item.total_episodes,
-              watchedEpisodes: item.watched_episodes ? JSON.parse(item.watched_episodes) : [],
+              watchedEpisodes,
               totalWatchTimeMinutes: item.total_runtime_minutes || 0
             };
           }
