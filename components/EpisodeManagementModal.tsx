@@ -35,8 +35,8 @@ export default function EpisodeManagementModal({
   const [selectedEpisode, setSelectedEpisode] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
-  const totalEpisodes = userListItem.total_episodes || drama.episodes || 16;
-  const currentEpisode = userListItem.current_episode || 0;
+  const totalEpisodes = userListItem.progress?.totalEpisodes || drama.episodes || 16;
+  const currentEpisode = userListItem.progress?.currentEpisode || 0;
   // Calculate watched episodes based on current_episode (not used in render but kept for potential future use)
   // const watchedEpisodes = Array.from({ length: currentEpisode }, (_, i) => i + 1);
 
@@ -166,7 +166,7 @@ export default function EpisodeManagementModal({
               Episódio {currentEpisode} de {totalEpisodes} assistidos
             </Text>
             <Text style={styles.progressText}>
-              Tempo assistido: {Math.round((userListItem.watched_minutes || 0) / 60)} horas
+              Tempo assistido: {Math.round((userListItem.progress?.totalWatchTimeMinutes || 0) / 60)} horas
             </Text>
           </View>
 

@@ -36,7 +36,7 @@ export const completeDramaProcedure = protectedProcedure
           list_type: 'completed',
           current_episode: dramaData.total_episodes,
           episodes_watched: dramaData.total_episodes,
-          watched_minutes: totalRuntimeMinutes,
+          watched_minutes: dramaData.total_runtime_minutes || totalRuntimeMinutes,
           updated_at: new Date().toISOString()
         })
         .eq('id', dramaData.id);

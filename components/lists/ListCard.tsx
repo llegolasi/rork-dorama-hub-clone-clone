@@ -119,7 +119,7 @@ export function ListCard({
                   </Text>
                 </TouchableOpacity>
                 <Text style={styles.watchTimeText}>
-                  {Math.round(userListItem.progress.totalWatchTimeMinutes || 0)}min assistidos
+                  {Math.round((userListItem.progress.currentEpisode * (userListItem.progress.totalWatchTimeMinutes / userListItem.progress.totalEpisodes)) || 0)}min assistidos
                 </Text>
               </View>
             </View>

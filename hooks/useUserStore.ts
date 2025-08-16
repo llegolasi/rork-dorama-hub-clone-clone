@@ -123,7 +123,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
                 currentEpisode: item.current_episode || 0,
                 totalEpisodes: item.total_episodes,
                 watchedEpisodes,
-                totalWatchTimeMinutes: item.total_runtime_minutes || 0
+                totalWatchTimeMinutes: item.watched_minutes || 0
               };
             }
             
@@ -262,6 +262,8 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           drama_year: drama_year ?? existing.drama_year ?? null,
           poster_image: poster_image ?? existing.poster_image ?? null,
           total_runtime_minutes: total_runtime_minutes,
+          watched_minutes: listType === 'watchlist' ? 0 : existing.watched_minutes,
+          episodes_watched: listType === 'watchlist' ? 0 : existing.episodes_watched,
           updated_at: new Date().toISOString()
         };
         
@@ -287,6 +289,8 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           drama_year: drama_year ?? null,
           poster_image: poster_image ?? null,
           total_runtime_minutes: total_runtime_minutes,
+          watched_minutes: 0,
+          episodes_watched: 0,
         };
         
         const { error } = await supabase
@@ -420,14 +424,14 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       
       // Calculate watched minutes based on episodes watched
       const averageEpisodeLength = (dramaData.total_runtime_minutes || 0) / (dramaData.total_episodes || 1);
-      const watchedMinutes = currentEpisode * averageEpisodeLength;
+      const watchedMinutes = Math.round(currentEpisode * averageEpisodeLength);
       
       const isCompleted = currentEpisode >= (dramaData.total_episodes || 0);
       
       const updateData: any = {
         current_episode: currentEpisode,
         episodes_watched: currentEpisode,
-        watched_minutes: Math.round(watchedMinutes),
+        watched_minutes: watchedMinutes,
         updated_at: new Date().toISOString()
       };
       
@@ -436,7 +440,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         updateData.list_type = 'completed';
         updateData.current_episode = dramaData.total_episodes;
         updateData.episodes_watched = dramaData.total_episodes;
-        updateData.watched_minutes = dramaData.total_runtime_minutes;
+        updateData.watched_minutes = dramaData.total_runtime_minutes || 0;
       }
       
       await supabase
@@ -691,7 +695,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
               currentEpisode: item.current_episode || 0,
               totalEpisodes: item.total_episodes,
               watchedEpisodes,
-              totalWatchTimeMinutes: item.total_runtime_minutes || 0
+              totalWatchTimeMinutes: item.watched_minutes || 0
             };
           }
           
