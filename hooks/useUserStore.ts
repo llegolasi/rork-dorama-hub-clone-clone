@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ListType, UserList, UserProfile, UserRanking } from "@/types/user";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { getDramaDetails } from "@/services/api";
+import { getDramaDetails, calculateDramaTotalRuntime } from "@/services/api";
 import { TMDB_IMAGE_BASE_URL, POSTER_SIZE } from "@/constants/config";
 
 // Initial empty user profile
@@ -197,6 +197,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       let drama_year: number | null = meta?.first_air_date ? new Date(meta.first_air_date).getFullYear() : null;
       let total_episodes: number | null = (typeof totalEpisodes === 'number' ? totalEpisodes : null) ?? (meta?.number_of_episodes ?? null);
       let poster_image: string | null = poster_path ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${poster_path}` : null;
+      let total_runtime_minutes: number = 0;
 
       // Fetch details if required metadata missing
       if (!drama_name || !poster_path || !drama_year || !total_episodes) {
@@ -214,6 +215,18 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         }
       }
 
+      // Calculate total runtime if adding to completed list
+      if (listType === 'completed') {
+        try {
+          total_runtime_minutes = await calculateDramaTotalRuntime(dramaId);
+          console.log(`Calculated runtime for drama ${dramaId}: ${total_runtime_minutes} minutes`);
+        } catch (e) {
+          console.log('Failed to calculate runtime, using default estimate', e);
+          // Fallback: estimate 60 minutes per episode for K-dramas
+          total_runtime_minutes = (total_episodes || 16) * 60;
+        }
+      }
+
       // First, check if drama exists in ANY list for this user
       const { data: existing } = await supabase
         .from('user_drama_lists')
@@ -225,18 +238,25 @@ export const [UserContext, useUserStore] = createContextHook(() => {
 
       if (existing) {
         // Update existing record - change list type
+        const updateData: any = {
+          list_type: listType,
+          current_episode: listType === 'watching' ? 0 : existing.current_episode,
+          total_episodes: total_episodes ?? existing.total_episodes ?? null,
+          drama_name: drama_name ?? existing.drama_name ?? null,
+          poster_path: poster_path ?? existing.poster_path ?? null,
+          drama_year: drama_year ?? existing.drama_year ?? null,
+          poster_image: poster_image ?? existing.poster_image ?? null,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Only update total_runtime_minutes if we're moving to completed
+        if (listType === 'completed') {
+          updateData.total_runtime_minutes = total_runtime_minutes;
+        }
+        
         const { error } = await supabase
           .from('user_drama_lists')
-          .update({
-            list_type: listType,
-            current_episode: listType === 'watching' ? 0 : existing.current_episode,
-            total_episodes: total_episodes ?? existing.total_episodes ?? null,
-            drama_name: drama_name ?? existing.drama_name ?? null,
-            poster_path: poster_path ?? existing.poster_path ?? null,
-            drama_year: drama_year ?? existing.drama_year ?? null,
-            poster_image: poster_image ?? existing.poster_image ?? null,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', existing.id);
           
         if (error) {
@@ -245,19 +265,26 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         }
       } else {
         // Insert new record
+        const insertData: any = {
+          user_id: user.id,
+          drama_id: dramaId,
+          list_type: listType,
+          current_episode: listType === 'watching' ? 0 : null,
+          total_episodes: total_episodes ?? null,
+          drama_name: drama_name ?? null,
+          poster_path: poster_path ?? null,
+          drama_year: drama_year ?? null,
+          poster_image: poster_image ?? null,
+        };
+        
+        // Only include total_runtime_minutes if we're adding to completed
+        if (listType === 'completed') {
+          insertData.total_runtime_minutes = total_runtime_minutes;
+        }
+        
         const { error } = await supabase
           .from('user_drama_lists')
-          .insert({
-            user_id: user.id,
-            drama_id: dramaId,
-            list_type: listType,
-            current_episode: listType === 'watching' ? 0 : null,
-            total_episodes: total_episodes ?? null,
-            drama_name: drama_name ?? null,
-            poster_path: poster_path ?? null,
-            drama_year: drama_year ?? null,
-            poster_image: poster_image ?? null,
-          });
+          .insert(insertData);
           
         if (error) {
           console.error('Error inserting new record:', error);

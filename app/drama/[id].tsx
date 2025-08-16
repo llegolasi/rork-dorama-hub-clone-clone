@@ -150,9 +150,7 @@ export default function DramaDetailScreen() {
   
   console.log('DramaDetailScreen - isCompleted:', isCompleted, 'dramaId:', dramaId);
   
-  const handleMarkAsCompleted = () => {
-    setShowReviewModal(true);
-  };
+
   
   const handleRemoveFromCompleted = () => {
     Alert.alert(
@@ -321,23 +319,11 @@ export default function DramaDetailScreen() {
       <View style={styles.actionsContainer}>
         <View style={styles.actionButtons}>
           {!isCompleted ? (
-            <>
-              <TouchableOpacity 
-                style={styles.primaryButton} 
-                activeOpacity={0.8}
-                onPress={handleMarkAsCompleted}
-                testID="mark-completed-button"
-              >
-                <Check size={18} color={COLORS.text} />
-                <Text style={styles.primaryButtonText}>Assistido</Text>
-              </TouchableOpacity>
-              
-              <ListToggle 
-                dramaId={drama.id} 
-                totalEpisodes={drama.number_of_episodes}
-                size="large"
-              />
-            </>
+            <ListToggle 
+              dramaId={drama.id} 
+              totalEpisodes={drama.number_of_episodes}
+              size="large"
+            />
           ) : (
             <TouchableOpacity 
               style={styles.completedButtonFull}

@@ -60,6 +60,7 @@ CREATE TABLE public.user_drama_lists (
     list_type VARCHAR(20) NOT NULL CHECK (list_type IN ('watching', 'watchlist', 'completed')),
     current_episode INTEGER DEFAULT 0,
     total_episodes INTEGER,
+    total_runtime_minutes INTEGER DEFAULT 0,
     rating DECIMAL(3,1) CHECK (rating >= 0 AND rating <= 10),
     notes TEXT,
     added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
