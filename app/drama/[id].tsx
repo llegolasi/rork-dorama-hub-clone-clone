@@ -152,21 +152,7 @@ export default function DramaDetailScreen() {
   
 
   
-  const handleRemoveFromCompleted = () => {
-    Alert.alert(
-      'Remover da lista',
-      'Tem certeza que deseja remover este drama da lista de concluídos? Sua avaliação também será removida.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Remover', style: 'destructive', onPress: async () => {
-          await removeFromList(dramaId, 'completed');
-          await deleteUserReview(dramaId);
-          await refreshUserProfile();
-          await Promise.all([refetchUserReview(), refetchReviews(), refetchStats()]);
-        }}
-      ]
-    );
-  };
+
   
   const isLoading = isLoadingDrama || isLoadingCredits;
   
@@ -317,25 +303,11 @@ export default function DramaDetailScreen() {
       </View>
       
       <View style={styles.actionsContainer}>
-        <View style={styles.actionButtons}>
-          {!isCompleted ? (
-            <ListToggle 
-              dramaId={drama.id} 
-              totalEpisodes={drama.number_of_episodes}
-              size="large"
-            />
-          ) : (
-            <TouchableOpacity 
-              style={styles.completedButtonFull}
-              activeOpacity={0.8}
-              onPress={handleRemoveFromCompleted}
-              testID="completed-button"
-            >
-              <Check size={18} color={COLORS.accent} fill={COLORS.accent} />
-              <Text style={styles.completedButtonText}>Concluído</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <ListToggle 
+          dramaId={drama.id} 
+          totalEpisodes={drama.number_of_episodes}
+          size="large"
+        />
       </View>
       
       <View style={styles.section}>
@@ -505,26 +477,9 @@ export default function DramaDetailScreen() {
           rating: userReviewData.rating,
         } : null}
         onReviewSubmitted={async () => {
-          const wasNotCompleted = !isCompleted;
-          
-          if (wasNotCompleted) {
-            await addToList(dramaId, 'completed', drama.number_of_episodes, {
-              name: drama.name,
-              poster_path: drama.poster_path,
-              first_air_date: drama.first_air_date,
-              number_of_episodes: drama.number_of_episodes
-            });
-          }
-          
           await refreshUserProfile();
           await Promise.all([refetchUserReview(), refetchReviews(), refetchStats()]);
           setShowReviewModal(false);
-          
-          // Show completion modal only if this was the first time completing
-          if (wasNotCompleted && user?.username) {
-            console.log('Showing completion modal for first-time completion');
-            setShowCompletionModal(true);
-          }
         }}
       />
       
@@ -673,8 +628,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   actionButtons: {
-    flexDirection: "row",
-    gap: 12,
+    width: "100%",
   },
   primaryButton: {
     flex: 1,

@@ -44,8 +44,11 @@ export default function ProfileScreen() {
   // Auto-refresh user profile when screen is focused
   useFocusEffect(
     useCallback(() => {
+      console.log('Profile screen focused - refreshing user profile');
       refreshUserProfile();
-    }, [refreshUserProfile])
+      refetchPosts();
+      refetchCompletedDramas();
+    }, [refreshUserProfile, refetchPosts, refetchCompletedDramas])
   );
   
   // Filter posts by current user

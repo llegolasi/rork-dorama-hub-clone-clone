@@ -331,6 +331,19 @@ export const [UserContext, useUserStore] = createContextHook(() => {
     if (!user) return;
     
     try {
+      // If removing from completed list, also remove from drama_completions to update stats
+      if (listType === 'completed') {
+        const { error: completionError } = await supabase
+          .from('drama_completions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('drama_id', dramaId);
+          
+        if (completionError) {
+          console.error('Error removing completion record:', completionError);
+        }
+      }
+      
       const { error } = await supabase
         .from('user_drama_lists')
         .delete()

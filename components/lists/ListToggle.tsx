@@ -13,7 +13,7 @@ import { COLORS } from "@/constants/colors";
 import { ListType } from "@/types/user";
 import { useUserLists } from "@/hooks/useUserStore";
 import { useAuth } from "@/hooks/useAuth";
-import { Bookmark, BookmarkCheck, Plus, X } from "lucide-react-native";
+import { Bookmark, BookmarkCheck, Plus, X, Eye } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
 import { calculateDramaTotalRuntime, getDramaDetails } from "@/services/api";
 import CompletionShareModal from "@/components/CompletionShareModal";
@@ -95,11 +95,12 @@ export function ListToggle({
     addToList(dramaId, listType, listType === "watching" ? totalEpisodes : undefined);
     setShowModal(false);
     
-    // If user just completed the drama, show completion sharing modal
+    // If user just completed the drama, show completion sharing modal and open review modal
     if (wasNotCompleted && isNowCompleted && user) {
       // Small delay to ensure the UI updates first
       setTimeout(() => {
         handleCompletionShare();
+        // TODO: Open review modal here when available
       }, 500);
     }
   };
@@ -156,21 +157,34 @@ export function ListToggle({
         style={[
           styles.button,
           getButtonStyle(),
-          isInAnyList && styles.buttonActive,
+          size === "large" && styles.buttonFullWidth,
+          currentList === "watching" && styles.buttonWatching,
+          currentList === "watchlist" && styles.buttonWatchlist,
+          currentList === "completed" && styles.buttonCompleted,
         ]}
         onPress={handleToggle}
         testID={`list-toggle-${dramaId}`}
       >
-        {isInAnyList ? (
+        {currentList === "watching" ? (
+          <Eye 
+            size={getIconSize()} 
+            color={COLORS.text} 
+          />
+        ) : currentList === "watchlist" ? (
+          <Bookmark 
+            size={getIconSize()} 
+            color={COLORS.text} 
+          />
+        ) : currentList === "completed" ? (
           <BookmarkCheck 
             size={getIconSize()} 
             color={COLORS.text} 
-            fill={COLORS.accent}
+            fill={COLORS.text}
           />
         ) : (
           <Bookmark 
             size={getIconSize()} 
-            color={COLORS.text} 
+            color={COLORS.accent} 
           />
         )}
         
@@ -304,9 +318,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
   },
-  buttonActive: {
+  buttonFullWidth: {
+    width: "100%",
+  },
+  buttonWatching: {
     backgroundColor: COLORS.accent,
     borderColor: COLORS.accent,
+  },
+  buttonWatchlist: {
+    backgroundColor: "#4CD964",
+    borderColor: "#4CD964",
+  },
+  buttonCompleted: {
+    backgroundColor: "#5856D6",
+    borderColor: "#5856D6",
   },
   buttonText: {
     color: COLORS.text,

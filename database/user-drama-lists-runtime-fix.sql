@@ -1,117 +1,195 @@
--- Fix for user_drama_lists table: Add runtime tracking and update triggers
--- This file adds the total_runtime_minutes field and updates existing triggers
+-- Fix for user drama lists runtime tracking and statistics
+-- This script adds the total_runtime_minutes field to user_drama_lists table
+-- and updates triggers to properly handle statistics when dramas are removed
 
--- 1. Add total_runtime_minutes column to user_drama_lists table
+-- Add total_runtime_minutes column to user_drama_lists if it doesn't exist
 ALTER TABLE user_drama_lists 
 ADD COLUMN IF NOT EXISTS total_runtime_minutes INTEGER DEFAULT 0;
 
--- 2. Update existing completed dramas with their runtime
+-- Update existing completed dramas with estimated runtime (60 minutes per episode)
 UPDATE user_drama_lists 
-SET total_runtime_minutes = (
-  SELECT COALESCE(d.total_runtime_minutes, 0)
-  FROM dramas d 
-  WHERE d.id = user_drama_lists.drama_id
-)
-WHERE list_type = 'completed' AND total_runtime_minutes = 0;
+SET total_runtime_minutes = COALESCE(total_episodes * 60, 16 * 60)
+WHERE list_type = 'completed' 
+AND (total_runtime_minutes IS NULL OR total_runtime_minutes = 0);
 
--- 3. Drop existing triggers to recreate them with runtime support
-DROP TRIGGER IF EXISTS update_user_stats_on_list_change ON user_drama_lists;
-DROP TRIGGER IF EXISTS update_user_stats_on_list_insert ON user_drama_lists;
-DROP TRIGGER IF EXISTS update_user_stats_on_list_delete ON user_drama_lists;
-
--- 4. Drop existing function to recreate it
-DROP FUNCTION IF EXISTS update_user_stats_from_lists();
-
--- 5. Create updated function that handles runtime tracking
-CREATE OR REPLACE FUNCTION update_user_stats_from_lists()
+-- Create or replace function to update user statistics
+CREATE OR REPLACE FUNCTION update_user_stats_on_list_change()
 RETURNS TRIGGER AS $$
-DECLARE
-    target_user_id UUID;
-    drama_runtime INTEGER;
 BEGIN
-    -- Determine which user_id to update based on operation
-    IF TG_OP = 'DELETE' THEN
-        target_user_id := OLD.user_id;
-        drama_runtime := OLD.total_runtime_minutes;
-    ELSE
-        target_user_id := NEW.user_id;
-        -- Get drama runtime if not already set
-        IF NEW.total_runtime_minutes = 0 OR NEW.total_runtime_minutes IS NULL THEN
-            SELECT COALESCE(d.total_runtime_minutes, 0) INTO drama_runtime
-            FROM dramas d WHERE d.id = NEW.drama_id;
-            
-            -- Update the record with the runtime
-            IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
-                NEW.total_runtime_minutes := drama_runtime;
-            END IF;
-        ELSE
-            drama_runtime := NEW.total_runtime_minutes;
-        END IF;
+  -- Handle INSERT (new drama added to list)
+  IF TG_OP = 'INSERT' THEN
+    -- Update user stats based on list type
+    IF NEW.list_type = 'watching' THEN
+      UPDATE user_stats 
+      SET dramas_watching = dramas_watching + 1,
+          updated_at = NOW()
+      WHERE user_id = NEW.user_id;
+    ELSIF NEW.list_type = 'watchlist' THEN
+      UPDATE user_stats 
+      SET dramas_in_watchlist = dramas_in_watchlist + 1,
+          updated_at = NOW()
+      WHERE user_id = NEW.user_id;
+    ELSIF NEW.list_type = 'completed' THEN
+      UPDATE user_stats 
+      SET dramas_completed = dramas_completed + 1,
+          total_watch_time_minutes = total_watch_time_minutes + COALESCE(NEW.total_runtime_minutes, 0),
+          updated_at = NOW()
+      WHERE user_id = NEW.user_id;
     END IF;
-
-    -- Update user stats
-    INSERT INTO user_stats (user_id, dramas_completed, dramas_watching, dramas_in_watchlist, total_watch_time_minutes)
-    SELECT 
-        target_user_id,
-        COUNT(CASE WHEN list_type = 'completed' THEN 1 END),
-        COUNT(CASE WHEN list_type = 'watching' THEN 1 END),
-        COUNT(CASE WHEN list_type = 'watchlist' THEN 1 END),
-        COALESCE(SUM(CASE WHEN list_type = 'completed' THEN total_runtime_minutes ELSE 0 END), 0)
-    FROM user_drama_lists 
-    WHERE user_id = target_user_id
-    ON CONFLICT (user_id) 
-    DO UPDATE SET
-        dramas_completed = EXCLUDED.dramas_completed,
-        dramas_watching = EXCLUDED.dramas_watching,
-        dramas_in_watchlist = EXCLUDED.dramas_in_watchlist,
-        total_watch_time_minutes = EXCLUDED.total_watch_time_minutes,
-        updated_at = NOW();
-
-    IF TG_OP = 'DELETE' THEN
-        RETURN OLD;
-    ELSE
-        RETURN NEW;
+    
+    RETURN NEW;
+  END IF;
+  
+  -- Handle UPDATE (drama moved between lists)
+  IF TG_OP = 'UPDATE' THEN
+    -- If list type changed, update counters
+    IF OLD.list_type != NEW.list_type THEN
+      -- Decrease old list counter
+      IF OLD.list_type = 'watching' THEN
+        UPDATE user_stats 
+        SET dramas_watching = GREATEST(dramas_watching - 1, 0)
+        WHERE user_id = OLD.user_id;
+      ELSIF OLD.list_type = 'watchlist' THEN
+        UPDATE user_stats 
+        SET dramas_in_watchlist = GREATEST(dramas_in_watchlist - 1, 0)
+        WHERE user_id = OLD.user_id;
+      ELSIF OLD.list_type = 'completed' THEN
+        UPDATE user_stats 
+        SET dramas_completed = GREATEST(dramas_completed - 1, 0),
+            total_watch_time_minutes = GREATEST(total_watch_time_minutes - COALESCE(OLD.total_runtime_minutes, 0), 0)
+        WHERE user_id = OLD.user_id;
+      END IF;
+      
+      -- Increase new list counter
+      IF NEW.list_type = 'watching' THEN
+        UPDATE user_stats 
+        SET dramas_watching = dramas_watching + 1
+        WHERE user_id = NEW.user_id;
+      ELSIF NEW.list_type = 'watchlist' THEN
+        UPDATE user_stats 
+        SET dramas_in_watchlist = dramas_in_watchlist + 1
+        WHERE user_id = NEW.user_id;
+      ELSIF NEW.list_type = 'completed' THEN
+        UPDATE user_stats 
+        SET dramas_completed = dramas_completed + 1,
+            total_watch_time_minutes = total_watch_time_minutes + COALESCE(NEW.total_runtime_minutes, 0)
+        WHERE user_id = NEW.user_id;
+      END IF;
+      
+      -- Update timestamp
+      UPDATE user_stats 
+      SET updated_at = NOW()
+      WHERE user_id = NEW.user_id;
     END IF;
+    
+    RETURN NEW;
+  END IF;
+  
+  -- Handle DELETE (drama removed from list)
+  IF TG_OP = 'DELETE' THEN
+    -- Decrease counter based on list type
+    IF OLD.list_type = 'watching' THEN
+      UPDATE user_stats 
+      SET dramas_watching = GREATEST(dramas_watching - 1, 0),
+          updated_at = NOW()
+      WHERE user_id = OLD.user_id;
+    ELSIF OLD.list_type = 'watchlist' THEN
+      UPDATE user_stats 
+      SET dramas_in_watchlist = GREATEST(dramas_in_watchlist - 1, 0),
+          updated_at = NOW()
+      WHERE user_id = OLD.user_id;
+    ELSIF OLD.list_type = 'completed' THEN
+      UPDATE user_stats 
+      SET dramas_completed = GREATEST(dramas_completed - 1, 0),
+          total_watch_time_minutes = GREATEST(total_watch_time_minutes - COALESCE(OLD.total_runtime_minutes, 0), 0),
+          updated_at = NOW()
+      WHERE user_id = OLD.user_id;
+    END IF;
+    
+    RETURN OLD;
+  END IF;
+  
+  RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
--- 6. Create triggers for all operations
-CREATE TRIGGER update_user_stats_on_list_insert
-    BEFORE INSERT ON user_drama_lists
-    FOR EACH ROW
-    EXECUTE FUNCTION update_user_stats_from_lists();
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS user_drama_lists_stats_trigger ON user_drama_lists;
+DROP TRIGGER IF EXISTS update_user_stats_on_list_insert ON user_drama_lists;
+DROP TRIGGER IF EXISTS update_user_stats_on_list_update ON user_drama_lists;
+DROP TRIGGER IF EXISTS update_user_stats_on_list_delete ON user_drama_lists;
+DROP TRIGGER IF EXISTS update_user_stats_on_list_change ON user_drama_lists;
 
-CREATE TRIGGER update_user_stats_on_list_update
-    AFTER UPDATE ON user_drama_lists
-    FOR EACH ROW
-    EXECUTE FUNCTION update_user_stats_from_lists();
+-- Create new trigger
+CREATE TRIGGER user_drama_lists_stats_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON user_drama_lists
+  FOR EACH ROW
+  EXECUTE FUNCTION update_user_stats_on_list_change();
 
-CREATE TRIGGER update_user_stats_on_list_delete
-    AFTER DELETE ON user_drama_lists
-    FOR EACH ROW
-    EXECUTE FUNCTION update_user_stats_from_lists();
-
--- 7. Recalculate all user stats to ensure consistency
-INSERT INTO user_stats (user_id, dramas_completed, dramas_watching, dramas_in_watchlist, total_watch_time_minutes)
-SELECT 
-    udl.user_id,
-    COUNT(CASE WHEN udl.list_type = 'completed' THEN 1 END) as dramas_completed,
-    COUNT(CASE WHEN udl.list_type = 'watching' THEN 1 END) as dramas_watching,
-    COUNT(CASE WHEN udl.list_type = 'watchlist' THEN 1 END) as dramas_in_watchlist,
-    COALESCE(SUM(CASE WHEN udl.list_type = 'completed' THEN udl.total_runtime_minutes ELSE 0 END), 0) as total_watch_time_minutes
-FROM user_drama_lists udl
-GROUP BY udl.user_id
-ON CONFLICT (user_id) 
-DO UPDATE SET
-    dramas_completed = EXCLUDED.dramas_completed,
+-- Create function to recalculate user stats from scratch
+CREATE OR REPLACE FUNCTION recalculate_user_stats(p_user_id UUID)
+RETURNS VOID AS $$
+DECLARE
+  watching_count INTEGER;
+  watchlist_count INTEGER;
+  completed_count INTEGER;
+  total_runtime INTEGER;
+BEGIN
+  -- Count dramas in each list
+  SELECT COUNT(*) INTO watching_count
+  FROM user_drama_lists
+  WHERE user_id = p_user_id AND list_type = 'watching';
+  
+  SELECT COUNT(*) INTO watchlist_count
+  FROM user_drama_lists
+  WHERE user_id = p_user_id AND list_type = 'watchlist';
+  
+  SELECT COUNT(*), COALESCE(SUM(total_runtime_minutes), 0) 
+  INTO completed_count, total_runtime
+  FROM user_drama_lists
+  WHERE user_id = p_user_id AND list_type = 'completed';
+  
+  -- Update or insert user stats
+  INSERT INTO user_stats (
+    user_id,
+    dramas_watching,
+    dramas_in_watchlist,
+    dramas_completed,
+    total_watch_time_minutes,
+    created_at,
+    updated_at
+  ) VALUES (
+    p_user_id,
+    watching_count,
+    watchlist_count,
+    completed_count,
+    total_runtime,
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
     dramas_watching = EXCLUDED.dramas_watching,
     dramas_in_watchlist = EXCLUDED.dramas_in_watchlist,
+    dramas_completed = EXCLUDED.dramas_completed,
     total_watch_time_minutes = EXCLUDED.total_watch_time_minutes,
     updated_at = NOW();
+END;
+$$ LANGUAGE plpgsql;
 
--- 8. Create index for better performance on runtime queries
+-- Recalculate stats for all users to fix any inconsistencies
+DO $$
+DECLARE
+  user_record RECORD;
+BEGIN
+  FOR user_record IN SELECT DISTINCT user_id FROM user_drama_lists LOOP
+    PERFORM recalculate_user_stats(user_record.user_id);
+  END LOOP;
+END;
+$$;
+
+-- Create index on total_runtime_minutes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_drama_lists_runtime 
 ON user_drama_lists(user_id, list_type, total_runtime_minutes);
 
--- 9. Verify the changes
-SELECT 'Fix applied successfully. Runtime tracking enabled for user drama lists.' as status;
+-- Verify the changes
+SELECT 'Fix applied successfully. Runtime tracking and statistics properly updated.' as status;
