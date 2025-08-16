@@ -411,7 +411,6 @@ export const [UserContext, useUserStore] = createContextHook(() => {
     if (!user) return;
     
     try {
-      // Get current drama info
       const { data: dramaData } = await supabase
         .from('user_drama_lists')
         .select('*')
@@ -422,7 +421,6 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         
       if (!dramaData) return;
       
-      // Parse current watched episodes
       let currentWatchedEpisodes: number[] = [];
       try {
         if (dramaData.watched_episodes && typeof dramaData.watched_episodes === 'string' && dramaData.watched_episodes.trim() !== '') {
@@ -435,7 +433,6 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         currentWatchedEpisodes = [];
       }
       
-      // Add new episodes to watched list (from current+1 to currentEpisode)
       const newWatchedEpisodes = [...currentWatchedEpisodes];
       for (let ep = (dramaData.current_episode || 0) + 1; ep <= currentEpisode; ep++) {
         if (!newWatchedEpisodes.includes(ep)) {
@@ -443,30 +440,52 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         }
       }
       
-      // Calculate watched minutes based on episodes watched
-      const totalEpisodes = dramaData.total_episodes || 1;
-      const totalRuntime = dramaData.total_runtime_minutes || 0;
-      const averageEpisodeLength = totalRuntime / totalEpisodes;
+      let ensuredTotalEpisodes = dramaData.total_episodes || 0;
+      let ensuredTotalRuntime = dramaData.total_runtime_minutes || 0;
+      
+      if (!ensuredTotalEpisodes || ensuredTotalEpisodes <= 0) {
+        try {
+          const details = await getDramaDetails(dramaId);
+          ensuredTotalEpisodes = details.number_of_episodes || 16;
+          console.log(`updateProgress: filled total_episodes from TMDB = ${ensuredTotalEpisodes}`);
+        } catch (e) {
+          ensuredTotalEpisodes = 16;
+          console.log('updateProgress: failed to fetch total_episodes, using 16');
+        }
+      }
+      
+      if (!ensuredTotalRuntime || ensuredTotalRuntime <= 0) {
+        try {
+          ensuredTotalRuntime = await calculateDramaTotalRuntime(dramaId);
+          console.log(`updateProgress: calculated total_runtime_minutes = ${ensuredTotalRuntime}`);
+        } catch (e) {
+          ensuredTotalRuntime = ensuredTotalEpisodes * 60;
+          console.log('updateProgress: failed to calculate runtime, using default');
+        }
+      }
+      
+      const averageEpisodeLength = ensuredTotalRuntime / ensuredTotalEpisodes;
       const watchedMinutes = Math.round(currentEpisode * averageEpisodeLength);
       
-      console.log(`updateProgress: drama ${dramaId}, currentEpisode: ${currentEpisode}, totalEpisodes: ${totalEpisodes}, watchedMinutes: ${watchedMinutes}`);
+      console.log(`updateProgress: drama ${dramaId}, currentEpisode: ${currentEpisode}, totalEpisodes: ${ensuredTotalEpisodes}, watchedMinutes: ${watchedMinutes}`);
       
-      const isCompleted = currentEpisode >= totalEpisodes;
+      const isCompleted = currentEpisode >= ensuredTotalEpisodes;
       
       const updateData: any = {
-        current_episode: currentEpisode,
-        episodes_watched: currentEpisode,
-        watched_minutes: watchedMinutes,
+        current_episode: Math.min(currentEpisode, ensuredTotalEpisodes),
+        episodes_watched: Math.min(currentEpisode, ensuredTotalEpisodes),
+        watched_minutes: isCompleted ? ensuredTotalRuntime : watchedMinutes,
+        total_episodes: ensuredTotalEpisodes,
+        total_runtime_minutes: ensuredTotalRuntime,
         updated_at: new Date().toISOString()
       };
       
       if (isCompleted) {
-        // Move to completed list
         updateData.list_type = 'completed';
-        updateData.current_episode = totalEpisodes;
-        updateData.episodes_watched = totalEpisodes;
-        updateData.watched_minutes = totalRuntime;
-        console.log(`updateProgress: Marking as completed with ${totalRuntime} minutes`);
+        updateData.current_episode = ensuredTotalEpisodes;
+        updateData.episodes_watched = ensuredTotalEpisodes;
+        updateData.watched_minutes = ensuredTotalRuntime;
+        console.log(`updateProgress: Marking as completed with ${ensuredTotalRuntime} minutes`);
       }
       
       const { error: updateError } = await supabase
@@ -481,7 +500,6 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       
       console.log(`updateProgress: Successfully updated drama ${dramaId} with data:`, updateData);
       
-      // Update local state
       setUserProfile(prev => {
         const watchingList = [...prev.lists.watching];
         const dramaIndex = watchingList.findIndex(item => item.dramaId === dramaId);
@@ -491,7 +509,6 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         }
         
         if (isCompleted) {
-          // Move to completed
           const completedList = [...prev.lists.completed];
           completedList.push({
             dramaId,
@@ -509,14 +526,13 @@ export const [UserContext, useUserStore] = createContextHook(() => {
             }
           };
         } else {
-          // Update progress
           const updatedItem = {
             ...watchingList[dramaIndex],
             progress: {
               ...watchingList[dramaIndex].progress!,
-              currentEpisode,
+              currentEpisode: Math.min(currentEpisode, ensuredTotalEpisodes),
               watchedEpisodes: newWatchedEpisodes,
-              totalWatchTimeMinutes: Math.round(watchedMinutes)
+              totalWatchTimeMinutes: watchedMinutes
             }
           };
           
