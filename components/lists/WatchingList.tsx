@@ -9,9 +9,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { COLORS } from "@/constants/colors";
 import { UserList } from "@/types/user";
-import { Drama } from "@/types/drama";
-import { getDramaDetails } from "@/services/api";
+import { Drama, DramaDetails } from "@/types/drama";
+import { getDramaDetails, calculateDramaTotalRuntime } from "@/services/api";
 import { useUserLists } from "@/hooks/useUserStore";
+import { trpc } from "@/lib/trpc";
 import { ListCard } from "./ListCard";
 import { EmptyState } from "./EmptyState";
 import ReviewModal from "@/components/ReviewModal";
@@ -23,7 +24,7 @@ interface WatchingListProps {
 export function WatchingList({ dramas }: WatchingListProps) {
   const { updateProgress, removeFromList, addToList } = useUserLists();
   const [reviewModalVisible, setReviewModalVisible] = useState<boolean>(false);
-  const [selectedDrama, setSelectedDrama] = useState<Drama | null>(null);
+  const [selectedDrama, setSelectedDrama] = useState<DramaDetails | null>(null);
 
   const { data: dramaDetails, isLoading } = useQuery({
     queryKey: ["watching-dramas", dramas.map(d => d.dramaId)],
@@ -52,15 +53,53 @@ export function WatchingList({ dramas }: WatchingListProps) {
     removeFromList(dramaId, "watching");
   };
 
-  const handleComplete = (drama: Drama) => {
-    setSelectedDrama(drama);
-    setReviewModalVisible(true);
+  const handleComplete = async (drama: Drama) => {
+    try {
+      // Get full drama details to have number_of_episodes
+      const dramaDetails = await getDramaDetails(drama.id);
+      setSelectedDrama(dramaDetails);
+      setReviewModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching drama details for completion:', error);
+      // Fallback to basic drama info
+      setSelectedDrama(drama as DramaDetails);
+      setReviewModalVisible(true);
+    }
   };
 
-  const handleReviewSubmitted = () => {
+  const completeDramaMutation = trpc.completions.completeDrama.useMutation();
+
+  const handleReviewSubmitted = async () => {
     if (selectedDrama) {
-      removeFromList(selectedDrama.id, "watching");
-      addToList(selectedDrama.id, "completed");
+      console.log('Completing drama from watching list:', selectedDrama.id);
+      
+      try {
+        // Calculate total runtime
+        const totalRuntimeMinutes = await calculateDramaTotalRuntime(selectedDrama.id);
+        console.log(`Calculated runtime for drama ${selectedDrama.id}: ${totalRuntimeMinutes} minutes`);
+        
+        // First remove from watching list
+        await removeFromList(selectedDrama.id, "watching");
+        
+        // Then add to completed list with proper metadata
+        await addToList(selectedDrama.id, "completed", selectedDrama.number_of_episodes, {
+          name: selectedDrama.name,
+          poster_path: selectedDrama.poster_path,
+          first_air_date: selectedDrama.first_air_date,
+          number_of_episodes: selectedDrama.number_of_episodes
+        });
+        
+        // Call the completion procedure to update stats and create completion record
+        await completeDramaMutation.mutateAsync({
+          dramaId: selectedDrama.id,
+          dramaName: selectedDrama.name,
+          totalRuntimeMinutes,
+        });
+        
+        console.log('Drama completion process finished successfully');
+      } catch (error) {
+        console.error('Error completing drama:', error);
+      }
     }
     setReviewModalVisible(false);
     setSelectedDrama(null);
