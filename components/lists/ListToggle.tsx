@@ -296,6 +296,7 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -326,12 +327,12 @@ const styles = StyleSheet.create({
     borderColor: COLORS.accent,
   },
   buttonWatchlist: {
-    backgroundColor: "#4CD964",
-    borderColor: "#4CD964",
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
   },
   buttonCompleted: {
-    backgroundColor: "#5856D6",
-    borderColor: "#5856D6",
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
   },
   buttonText: {
     color: COLORS.text,
