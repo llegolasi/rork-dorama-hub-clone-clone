@@ -108,8 +108,10 @@ export const [UserContext, useUserStore] = createContextHook(() => {
             
             if (item.list_type === 'watching' && item.total_episodes) {
               userListItem.progress = {
-                currentEpisode: item.current_episode,
-                totalEpisodes: item.total_episodes
+                currentEpisode: item.current_episode || 0,
+                totalEpisodes: item.total_episodes,
+                watchedEpisodes: item.watched_episodes ? JSON.parse(item.watched_episodes) : [],
+                totalWatchTimeMinutes: item.total_runtime_minutes || 0
               };
             }
             
@@ -311,6 +313,8 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           newItem.progress = {
             currentEpisode: 0,
             totalEpisodes: total_episodes,
+            watchedEpisodes: [],
+            totalWatchTimeMinutes: 0
           };
         }
         
@@ -401,21 +405,59 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         
       if (!dramaData) return;
       
+      // Parse current watched episodes
+      const currentWatchedEpisodes: number[] = dramaData.watched_episodes ? JSON.parse(dramaData.watched_episodes) : [];
+      
+      // Add new episodes to watched list (from current+1 to currentEpisode)
+      const newWatchedEpisodes = [...currentWatchedEpisodes];
+      for (let ep = (dramaData.current_episode || 0) + 1; ep <= currentEpisode; ep++) {
+        if (!newWatchedEpisodes.includes(ep)) {
+          newWatchedEpisodes.push(ep);
+        }
+      }
+      
+      // Calculate additional watch time (estimate 60 minutes per episode)
+      const newEpisodesCount = currentEpisode - (dramaData.current_episode || 0);
+      const additionalWatchTime = newEpisodesCount * 60; // 60 minutes per episode
+      const totalWatchTime = (dramaData.total_runtime_minutes || 0) + additionalWatchTime;
+      
       const isCompleted = currentEpisode >= (dramaData.total_episodes || 0);
       
+      const updateData: any = {
+        current_episode: currentEpisode,
+        watched_episodes: JSON.stringify(newWatchedEpisodes.sort((a, b) => a - b)),
+        total_runtime_minutes: totalWatchTime,
+        updated_at: new Date().toISOString()
+      };
+      
       if (isCompleted) {
-        // Move to completed list
-        await supabase
-          .from('user_drama_lists')
-          .update({ list_type: 'completed', current_episode: currentEpisode })
-          .eq('id', dramaData.id);
-      } else {
-        // Just update progress
-        await supabase
-          .from('user_drama_lists')
-          .update({ current_episode: currentEpisode })
-          .eq('id', dramaData.id);
+        // Move to completed list and calculate total runtime
+        try {
+          const totalRuntimeMinutes = await calculateDramaTotalRuntime(dramaId);
+          updateData.list_type = 'completed';
+          updateData.total_runtime_minutes = totalRuntimeMinutes;
+          updateData.current_episode = dramaData.total_episodes; // Set to total episodes when completed
+          
+          // Create completion record for stats
+          await supabase
+            .from('drama_completions')
+            .insert({
+              user_id: user.id,
+              drama_id: dramaId,
+              drama_name: dramaData.drama_name,
+              total_runtime_minutes: totalRuntimeMinutes,
+              episodes_watched: dramaData.total_episodes
+            });
+        } catch (e) {
+          console.log('Failed to calculate total runtime, using estimate', e);
+          updateData.total_runtime_minutes = (dramaData.total_episodes || 16) * 60;
+        }
       }
+      
+      await supabase
+        .from('user_drama_lists')
+        .update(updateData)
+        .eq('id', dramaData.id);
       
       // Update local state
       setUserProfile(prev => {
@@ -450,7 +492,9 @@ export const [UserContext, useUserStore] = createContextHook(() => {
             ...watchingList[dramaIndex],
             progress: {
               ...watchingList[dramaIndex].progress!,
-              currentEpisode
+              currentEpisode,
+              watchedEpisodes: newWatchedEpisodes,
+              totalWatchTimeMinutes: totalWatchTime
             }
           };
           
@@ -647,8 +691,10 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           
           if (item.list_type === 'watching' && item.total_episodes) {
             userListItem.progress = {
-              currentEpisode: item.current_episode,
-              totalEpisodes: item.total_episodes
+              currentEpisode: item.current_episode || 0,
+              totalEpisodes: item.total_episodes,
+              watchedEpisodes: item.watched_episodes ? JSON.parse(item.watched_episodes) : [],
+              totalWatchTimeMinutes: item.total_runtime_minutes || 0
             };
           }
           

@@ -6,6 +6,8 @@ export interface UserList {
   progress?: {
     currentEpisode: number;
     totalEpisodes: number;
+    watchedEpisodes: number[];
+    totalWatchTimeMinutes: number;
   };
 }
 

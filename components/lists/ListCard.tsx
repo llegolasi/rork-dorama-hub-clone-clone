@@ -55,6 +55,12 @@ export function ListCard({
     }
   };
 
+  const handleEpisodePress = (episodeNumber: number) => {
+    if (onProgressUpdate) {
+      onProgressUpdate(episodeNumber);
+    }
+  };
+
   const progressPercentage = userListItem.progress
     ? (userListItem.progress.currentEpisode / userListItem.progress.totalEpisodes) * 100
     : 0;
@@ -104,15 +110,20 @@ export function ListCard({
                   ]}
                 />
               </View>
-              <TouchableOpacity
-                style={styles.progressButton}
-                onPress={handleProgressPress}
-                testID={`progress-button-${drama.id}`}
-              >
-                <Text style={styles.progressText}>
-                  Episódio {userListItem.progress.currentEpisode}
+              <View style={styles.episodeInfo}>
+                <TouchableOpacity
+                  style={styles.episodeButton}
+                  onPress={() => handleEpisodePress(userListItem.progress!.currentEpisode + 1)}
+                  testID={`episode-button-${drama.id}`}
+                >
+                  <Text style={styles.episodeText}>
+                    Episódio {userListItem.progress.currentEpisode + 1} de {userListItem.progress.totalEpisodes}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.watchTimeText}>
+                  {Math.round(userListItem.progress.totalWatchTimeMinutes || 0)}min assistidos
                 </Text>
-              </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -268,5 +279,22 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: "transparent",
     marginLeft: "auto",
+  },
+  episodeInfo: {
+    flexDirection: "column",
+    gap: 4,
+  },
+  episodeButton: {
+    alignSelf: "flex-start",
+  },
+  episodeText: {
+    fontSize: 12,
+    color: COLORS.accent,
+    fontWeight: "600",
+  },
+  watchTimeText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: "400",
   },
 });

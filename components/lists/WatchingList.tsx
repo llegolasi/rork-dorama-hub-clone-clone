@@ -46,6 +46,7 @@ export function WatchingList({ dramas }: WatchingListProps) {
   });
 
   const handleProgressUpdate = (dramaId: number, newEpisode: number) => {
+    console.log(`Updating progress for drama ${dramaId} to episode ${newEpisode}`);
     updateProgress(dramaId, newEpisode);
   };
 
@@ -57,6 +58,11 @@ export function WatchingList({ dramas }: WatchingListProps) {
     try {
       // Get full drama details to have number_of_episodes
       const dramaDetails = await getDramaDetails(drama.id);
+      
+      // Mark all episodes as watched before completing
+      const totalEpisodes = dramaDetails.number_of_episodes || 16;
+      await updateProgress(drama.id, totalEpisodes);
+      
       setSelectedDrama(dramaDetails);
       setReviewModalVisible(true);
     } catch (error) {
