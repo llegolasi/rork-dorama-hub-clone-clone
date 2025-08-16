@@ -463,27 +463,7 @@ export const getUserStatsProcedure = protectedProcedure
       };
     } catch (error) {
       console.error('Error in getUserStatsProcedure:', error);
-      
-      // Final fallback - return empty stats
-      const targetUserId = input.userId || ctx.user.id;
-      return {
-        user_id: targetUserId,
-        total_watch_time_minutes: 0,
-        dramas_completed: 0,
-        dramas_watching: 0,
-        dramas_in_watchlist: 0,
-        average_drama_runtime: 0,
-        first_completion_date: null,
-        latest_completion_date: null,
-        monthly_watch_time: {},
-        favorite_genres: {},
-        yearly_watch_time: {},
-        favorite_actor_id: null,
-        favorite_actor_name: null,
-        favorite_actor_works_watched: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      throw new Error('Failed to fetch user statistics');
     }
   });
 

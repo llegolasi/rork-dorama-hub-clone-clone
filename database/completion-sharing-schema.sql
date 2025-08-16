@@ -50,40 +50,8 @@ CREATE POLICY IF NOT EXISTS "Users can update own completions" ON public.drama_c
 CREATE POLICY IF NOT EXISTS "Users can delete own completions" ON public.drama_completions
     FOR DELETE USING (auth.uid() = user_id);
 
--- Function to update user stats when a drama is completed
-CREATE OR REPLACE FUNCTION update_user_stats_on_completion()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Update total watch time and dramas completed count
-    UPDATE public.user_stats 
-    SET 
-        total_watch_time_minutes = total_watch_time_minutes + NEW.total_runtime_minutes,
-        dramas_completed = dramas_completed + 1,
-        updated_at = NOW()
-    WHERE user_id = NEW.user_id;
-    
-    -- If user_stats doesn't exist, create it
-    IF NOT FOUND THEN
-        INSERT INTO public.user_stats (
-            user_id, 
-            total_watch_time_minutes, 
-            dramas_completed
-        ) VALUES (
-            NEW.user_id, 
-            NEW.total_runtime_minutes, 
-            1
-        );
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create trigger to automatically update stats on completion
-DROP TRIGGER IF EXISTS update_stats_on_drama_completion ON public.drama_completions;
-CREATE TRIGGER update_stats_on_drama_completion
-    AFTER INSERT ON public.drama_completions
-    FOR EACH ROW EXECUTE FUNCTION update_user_stats_on_completion();
+-- Note: User stats triggers are now handled by user-stats-triggers.sql
+-- This ensures consistency and avoids conflicts between different trigger systems
 
 -- Function to handle drama completion and sharing
 CREATE OR REPLACE FUNCTION complete_drama_with_sharing(

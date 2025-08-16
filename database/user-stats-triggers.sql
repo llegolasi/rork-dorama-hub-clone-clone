@@ -83,21 +83,31 @@ CREATE TRIGGER update_user_stats_on_list_change
     AFTER INSERT OR UPDATE OR DELETE ON public.user_drama_lists
     FOR EACH ROW EXECUTE FUNCTION handle_drama_list_change();
 
--- Function to handle completion changes (update existing function)
-CREATE OR REPLACE FUNCTION update_user_stats_on_completion()
+-- Function to handle completion changes (handles INSERT, UPDATE, DELETE)
+CREATE OR REPLACE FUNCTION handle_completion_stats_change()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Update user statistics after completion
-    PERFORM update_user_statistics(NEW.user_id);
-    RETURN NEW;
+    -- Handle INSERT and UPDATE
+    IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+        PERFORM update_user_statistics(NEW.user_id);
+        RETURN NEW;
+    END IF;
+    
+    -- Handle DELETE
+    IF TG_OP = 'DELETE' THEN
+        PERFORM update_user_statistics(OLD.user_id);
+        RETURN OLD;
+    END IF;
+    
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Update the completion trigger
+-- Update the completion trigger to handle all operations
 DROP TRIGGER IF EXISTS update_stats_on_drama_completion ON public.drama_completions;
 CREATE TRIGGER update_stats_on_drama_completion
     AFTER INSERT OR UPDATE OR DELETE ON public.drama_completions
-    FOR EACH ROW EXECUTE FUNCTION update_user_stats_on_completion();
+    FOR EACH ROW EXECUTE FUNCTION handle_completion_stats_change();
 
 -- Function to get comprehensive user statistics
 CREATE OR REPLACE FUNCTION get_user_comprehensive_stats(p_user_id UUID)
