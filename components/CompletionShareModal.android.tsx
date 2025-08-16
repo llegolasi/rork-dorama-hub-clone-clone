@@ -145,10 +145,10 @@ export default function CompletionShareModalAndroid({
         return;
       }
 
-      // Wait longer to ensure the view is fully rendered and stable
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for images to load and view to be fully rendered
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Check if ref exists before capture
+      // Check if ref exists and is mounted
       if (!certificateRef.current) {
         console.log('Certificate ref does not exist');
         Alert.alert('Erro', 'Não foi possível capturar a imagem. Tente novamente.');
@@ -157,14 +157,39 @@ export default function CompletionShareModalAndroid({
       }
 
       console.log('Capturing certificate view...');
-      // Capture the certificate view as image with better options
-      const uri = await captureRef(certificateRef.current, {
-        format: 'png',
-        quality: 0.9,
-        result: 'tmpfile',
-        width: 1080,
-        height: 1920,
-      });
+      
+      // Try multiple capture approaches for Android compatibility
+      let uri: string;
+      try {
+        // First attempt: Use ref directly with Android-optimized settings
+        uri = await captureRef(certificateRef, {
+          format: 'png',
+          quality: 0.8,
+          result: 'tmpfile',
+        });
+      } catch (firstError) {
+        console.log('First capture attempt failed:', firstError);
+        
+        // Second attempt: Wait more and try with different settings
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+          uri = await captureRef(certificateRef, {
+            format: 'jpg',
+            quality: 0.9,
+            result: 'tmpfile',
+            width: 1080,
+            height: 1920,
+          });
+        } catch (secondError) {
+          console.log('Second capture attempt failed:', secondError);
+          
+          // Third attempt: Simplified capture
+          await new Promise(resolve => setTimeout(resolve, 500));
+          uri = await captureRef(certificateRef, {
+            result: 'tmpfile',
+          });
+        }
+      }
 
       console.log('Image captured successfully:', uri);
       
@@ -204,10 +229,19 @@ export default function CompletionShareModalAndroid({
       : null;
 
     return (
-      <View ref={certificateRef} style={styles.certificate}>
+      <View 
+        ref={certificateRef} 
+        style={styles.certificate}
+        collapsable={false}
+        renderToHardwareTextureAndroid={true}
+      >
         {/* Background Image */}
         {backdropUrl && (
-          <Image source={{ uri: backdropUrl }} style={styles.backgroundImage} />
+          <Image 
+            source={{ uri: backdropUrl }} 
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
         )}
         
         {/* Gradient Overlay */}
@@ -227,7 +261,11 @@ export default function CompletionShareModalAndroid({
           {/* Poster */}
           {posterUrl && (
             <View style={styles.posterContainer}>
-              <Image source={{ uri: posterUrl }} style={styles.poster} />
+              <Image 
+                source={{ uri: posterUrl }} 
+                style={styles.poster}
+                resizeMode="cover"
+              />
             </View>
           )}
 
@@ -391,6 +429,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     position: 'relative',
+    backgroundColor: '#000',
   },
   backgroundImage: {
     position: 'absolute',
