@@ -3,6 +3,11 @@ export type ListType = "watching" | "watchlist" | "completed";
 export interface UserList {
   dramaId: number;
   addedAt: string;
+  current_episode?: number;
+  total_episodes?: number;
+  total_runtime_minutes?: number;
+  watched_minutes?: number;
+  // Legacy support for old progress structure
   progress?: {
     currentEpisode: number;
     totalEpisodes: number;

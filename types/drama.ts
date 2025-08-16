@@ -11,6 +11,8 @@ export interface Drama {
   popularity: number;
   genre_ids: number[];
   origin_country: string[];
+  episodes?: number;
+  runtime?: number;
 }
 
 export interface DramaDetails extends Drama {

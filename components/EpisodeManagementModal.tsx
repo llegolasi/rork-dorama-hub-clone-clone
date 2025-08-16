@@ -35,9 +35,10 @@ export default function EpisodeManagementModal({
   const [selectedEpisode, setSelectedEpisode] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
-  const totalEpisodes = userListItem.progress?.totalEpisodes || 16;
-  const currentEpisode = userListItem.progress?.currentEpisode || 0;
-  const watchedEpisodes = userListItem.progress?.watchedEpisodes || [];
+  const totalEpisodes = userListItem.total_episodes || drama.episodes || 16;
+  const currentEpisode = userListItem.current_episode || 0;
+  // Calculate watched episodes based on current_episode (not used in render but kept for potential future use)
+  // const watchedEpisodes = Array.from({ length: currentEpisode }, (_, i) => i + 1);
 
   // Reset selected episode when modal opens
   useEffect(() => {
@@ -106,7 +107,7 @@ export default function EpisodeManagementModal({
   const renderEpisodeGrid = () => {
     const episodes = [];
     for (let i = 1; i <= totalEpisodes; i++) {
-      const isWatched = watchedEpisodes.includes(i) || i <= currentEpisode;
+      const isWatched = i <= currentEpisode;
       const isSelected = i === selectedEpisode;
       const isAvailable = i > currentEpisode; // Can only select episodes after current
       
@@ -163,6 +164,9 @@ export default function EpisodeManagementModal({
             </Text>
             <Text style={styles.progressText}>
               Episódio {currentEpisode} de {totalEpisodes} assistidos
+            </Text>
+            <Text style={styles.progressText}>
+              Tempo assistido: {Math.round((userListItem.watched_minutes || 0) / 60)} horas
             </Text>
           </View>
 
