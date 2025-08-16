@@ -217,9 +217,7 @@ export default function EpisodeManagementModal({
                 {isUpdating ? 'Atualizando...' : `Marcar até Ep. ${selectedEpisode}`}
               </Text>
             </TouchableOpacity>
-          </View>
 
-          <View style={styles.quickActions}>
             <Text style={styles.sectionTitle}>Ações Rápidas</Text>
             
             <TouchableOpacity
