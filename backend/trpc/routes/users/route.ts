@@ -407,7 +407,7 @@ export const getUserStatsProcedure = protectedProcedure
         // Get watch time from episodes watched in watching dramas
         const { data: watchingDramasWithEpisodes } = await ctx.supabase
           .from('user_drama_lists')
-          .select('episodes_watched, total_runtime_minutes')
+          .select('watched_minutes, total_runtime_minutes')
           .eq('user_id', targetUserId)
           .eq('list_type', 'watching');
 
@@ -415,9 +415,8 @@ export const getUserStatsProcedure = protectedProcedure
           sum + (completion.total_runtime_minutes || 0), 0) || 0;
         
         const episodeWatchTime = watchingDramasWithEpisodes?.reduce((sum, drama) => {
-          // Estimate 60 minutes per episode watched
-          const episodesWatched = drama.episodes_watched || 0;
-          return sum + (episodesWatched * 60);
+          // Use watched_minutes field which is calculated automatically
+          return sum + (drama.watched_minutes || 0);
         }, 0) || 0;
         
         const totalWatchTime = completionWatchTime + episodeWatchTime;
@@ -523,7 +522,7 @@ export const updateUserStatsProcedure = protectedProcedure
         // Get watch time from episodes watched in watching dramas
         const { data: watchingDramasWithEpisodes } = await ctx.supabase
           .from('user_drama_lists')
-          .select('episodes_watched, total_runtime_minutes')
+          .select('watched_minutes, total_runtime_minutes')
           .eq('user_id', ctx.user.id)
           .eq('list_type', 'watching');
 
@@ -531,9 +530,8 @@ export const updateUserStatsProcedure = protectedProcedure
           sum + (completion.total_runtime_minutes || 0), 0) || 0;
         
         const episodeWatchTime = watchingDramasWithEpisodes?.reduce((sum, drama) => {
-          // Estimate 60 minutes per episode watched
-          const episodesWatched = drama.episodes_watched || 0;
-          return sum + (episodesWatched * 60);
+          // Use watched_minutes field which is calculated automatically
+          return sum + (drama.watched_minutes || 0);
         }, 0) || 0;
         
         const totalWatchTime = completionWatchTime + episodeWatchTime;
