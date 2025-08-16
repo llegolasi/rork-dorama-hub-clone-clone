@@ -117,7 +117,10 @@ export default function CompletionShareModal({
   };
 
   const handleDownload = async () => {
-    if (!completionData || !certificateRef.current) return;
+    if (!completionData || !certificateRef.current) {
+      console.log('Missing completion data or certificate ref');
+      return;
+    }
 
     setIsGeneratingImage(true);
     try {
@@ -128,9 +131,21 @@ export default function CompletionShareModal({
           'Permissão Necessária',
           'Precisamos de permissão para salvar a imagem na sua galeria.'
         );
+        setIsGeneratingImage(false);
         return;
       }
 
+      // Wait a bit to ensure the view is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Double check the ref still exists
+      if (!certificateRef.current) {
+        console.log('Certificate ref no longer exists');
+        Alert.alert('Erro', 'Não foi possível capturar a imagem. Tente novamente.');
+        return;
+      }
+
+      console.log('Capturing certificate view...');
       // Capture the certificate view as image
       const uri = await captureRef(certificateRef.current, {
         format: 'png',
@@ -139,6 +154,7 @@ export default function CompletionShareModal({
         height: 1200,
       });
 
+      console.log('Image captured, saving to gallery...');
       // Save to media library
       const asset = await MediaLibrary.createAssetAsync(uri);
       await MediaLibrary.createAlbumAsync('Dorama Hub', asset, false);
