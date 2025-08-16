@@ -398,28 +398,22 @@ export const getUserStatsProcedure = protectedProcedure
           .eq('user_id', targetUserId)
           .eq('list_type', 'completed');
 
-        // Get total watch time from completions AND episode progress
-        const { data: completions } = await ctx.supabase
-          .from('drama_completions')
-          .select('total_runtime_minutes')
+        // Get total watch time from user_drama_lists only
+        const { data: allDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('watched_minutes, total_runtime_minutes, list_type')
           .eq('user_id', targetUserId);
 
-        // Get watch time from episodes watched in watching dramas
-        const { data: watchingDramasWithEpisodes } = await ctx.supabase
-          .from('user_drama_lists')
-          .select('watched_minutes, total_runtime_minutes')
-          .eq('user_id', targetUserId)
-          .eq('list_type', 'watching');
-
-        const completionWatchTime = completions?.reduce((sum, completion) => 
-          sum + (completion.total_runtime_minutes || 0), 0) || 0;
-        
-        const episodeWatchTime = watchingDramasWithEpisodes?.reduce((sum, drama) => {
-          // Use watched_minutes field which is calculated automatically
-          return sum + (drama.watched_minutes || 0);
+        const totalWatchTime = allDramas?.reduce((sum, drama) => {
+          // For completed dramas, use total_runtime_minutes
+          // For watching dramas, use watched_minutes (partial progress)
+          if (drama.list_type === 'completed') {
+            return sum + (drama.total_runtime_minutes || 0);
+          } else if (drama.list_type === 'watching') {
+            return sum + (drama.watched_minutes || 0);
+          }
+          return sum;
         }, 0) || 0;
-        
-        const totalWatchTime = completionWatchTime + episodeWatchTime;
 
         const fallbackStats = {
           user_id: targetUserId,
@@ -427,7 +421,7 @@ export const getUserStatsProcedure = protectedProcedure
           dramas_completed: completedDramas?.length || 0,
           dramas_watching: watchingDramas?.length || 0,
           dramas_in_watchlist: watchlistDramas?.length || 0,
-          average_drama_runtime: completions?.length ? totalWatchTime / completions.length : 0,
+          average_drama_runtime: completedDramas?.length ? totalWatchTime / completedDramas.length : 0,
           first_completion_date: null,
           latest_completion_date: null,
           monthly_watch_time: {},
@@ -513,28 +507,22 @@ export const updateUserStatsProcedure = protectedProcedure
           .eq('user_id', ctx.user.id)
           .eq('list_type', 'completed');
 
-        // Get total watch time from completions AND episode progress
-        const { data: completions } = await ctx.supabase
-          .from('drama_completions')
-          .select('total_runtime_minutes')
+        // Get total watch time from user_drama_lists only
+        const { data: allDramas } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('watched_minutes, total_runtime_minutes, list_type')
           .eq('user_id', ctx.user.id);
 
-        // Get watch time from episodes watched in watching dramas
-        const { data: watchingDramasWithEpisodes } = await ctx.supabase
-          .from('user_drama_lists')
-          .select('watched_minutes, total_runtime_minutes')
-          .eq('user_id', ctx.user.id)
-          .eq('list_type', 'watching');
-
-        const completionWatchTime = completions?.reduce((sum, completion) => 
-          sum + (completion.total_runtime_minutes || 0), 0) || 0;
-        
-        const episodeWatchTime = watchingDramasWithEpisodes?.reduce((sum, drama) => {
-          // Use watched_minutes field which is calculated automatically
-          return sum + (drama.watched_minutes || 0);
+        const totalWatchTime = allDramas?.reduce((sum, drama) => {
+          // For completed dramas, use total_runtime_minutes
+          // For watching dramas, use watched_minutes (partial progress)
+          if (drama.list_type === 'completed') {
+            return sum + (drama.total_runtime_minutes || 0);
+          } else if (drama.list_type === 'watching') {
+            return sum + (drama.watched_minutes || 0);
+          }
+          return sum;
         }, 0) || 0;
-        
-        const totalWatchTime = completionWatchTime + episodeWatchTime;
 
         // Update user stats
         const { error: updateError } = await ctx.supabase

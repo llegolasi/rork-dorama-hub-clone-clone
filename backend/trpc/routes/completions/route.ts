@@ -16,21 +16,38 @@ export const completeDramaProcedure = protectedProcedure
     try {
       console.log('Completing drama for user:', user.id, 'Drama:', dramaId);
 
-      // Call the database function to handle completion and stats update
-      const { data, error } = await supabase.rpc('complete_drama_with_sharing', {
-        p_user_id: user.id,
-        p_drama_id: dramaId,
-        p_drama_name: dramaName,
-        p_total_runtime_minutes: totalRuntimeMinutes,
-      });
+      // Get the drama from user_drama_lists to update it
+      const { data: dramaData, error: fetchError } = await supabase
+        .from('user_drama_lists')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('drama_id', dramaId)
+        .single();
 
-      if (error) {
-        console.error('Error completing drama:', error);
+      if (fetchError || !dramaData) {
+        console.error('Error fetching drama data:', fetchError);
+        throw new Error('Drama not found in user lists');
+      }
+
+      // Update the drama to completed status with all episodes watched
+      const { error: updateError } = await supabase
+        .from('user_drama_lists')
+        .update({
+          list_type: 'completed',
+          current_episode: dramaData.total_episodes,
+          episodes_watched: dramaData.total_episodes,
+          watched_minutes: totalRuntimeMinutes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', dramaData.id);
+
+      if (updateError) {
+        console.error('Error updating drama to completed:', updateError);
         throw new Error('Failed to complete drama');
       }
 
-      console.log('Drama completed successfully:', data);
-      return data;
+      console.log('Drama completed successfully in user_drama_lists');
+      return { success: true, dramaId, totalRuntimeMinutes };
     } catch (error) {
       console.error('Error in completeDramaProcedure:', error);
       throw new Error('Failed to complete drama');
@@ -104,10 +121,11 @@ export const checkDramaCompletionProcedure = protectedProcedure
 
     try {
       const { data, error } = await supabase
-        .from('drama_completions')
+        .from('user_drama_lists')
         .select('*')
         .eq('user_id', user.id)
         .eq('drama_id', dramaId)
+        .eq('list_type', 'completed')
         .single();
 
       if (error && error.code !== 'PGRST116') {

@@ -12,7 +12,7 @@ import { UserList } from "@/types/user";
 import { Drama, DramaDetails } from "@/types/drama";
 import { getDramaDetails, calculateDramaTotalRuntime } from "@/services/api";
 import { useUserLists } from "@/hooks/useUserStore";
-import { trpc } from "@/lib/trpc";
+
 import { ListCard } from "./ListCard";
 import { EmptyState } from "./EmptyState";
 import ReviewModal from "@/components/ReviewModal";
@@ -85,8 +85,6 @@ export function WatchingList({ dramas }: WatchingListProps) {
     }
   };
 
-  const completeDramaMutation = trpc.completions.completeDrama.useMutation();
-
   const handleReviewSubmitted = async () => {
     if (selectedDrama) {
       console.log('Completing drama from watching list:', selectedDrama.id);
@@ -105,13 +103,6 @@ export function WatchingList({ dramas }: WatchingListProps) {
           poster_path: selectedDrama.poster_path,
           first_air_date: selectedDrama.first_air_date,
           number_of_episodes: selectedDrama.number_of_episodes
-        });
-        
-        // Call the completion procedure to update stats and create completion record
-        await completeDramaMutation.mutateAsync({
-          dramaId: selectedDrama.id,
-          dramaName: selectedDrama.name,
-          totalRuntimeMinutes,
         });
         
         console.log('Drama completion process finished successfully');

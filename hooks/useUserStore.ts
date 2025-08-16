@@ -340,19 +340,6 @@ export const [UserContext, useUserStore] = createContextHook(() => {
     if (!user) return;
     
     try {
-      // If removing from completed list, also remove from drama_completions to update stats
-      if (listType === 'completed') {
-        const { error: completionError } = await supabase
-          .from('drama_completions')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('drama_id', dramaId);
-          
-        if (completionError) {
-          console.error('Error removing completion record:', completionError);
-        }
-      }
-      
       const { error } = await supabase
         .from('user_drama_lists')
         .delete()
@@ -431,42 +418,25 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         }
       }
       
-      // Calculate additional watch time (estimate 60 minutes per episode)
-      const newEpisodesCount = currentEpisode - (dramaData.current_episode || 0);
-      const additionalWatchTime = newEpisodesCount * 60; // 60 minutes per episode
-      const totalWatchTime = (dramaData.total_runtime_minutes || 0) + additionalWatchTime;
+      // Calculate watched minutes based on episodes watched
+      const averageEpisodeLength = (dramaData.total_runtime_minutes || 0) / (dramaData.total_episodes || 1);
+      const watchedMinutes = currentEpisode * averageEpisodeLength;
       
       const isCompleted = currentEpisode >= (dramaData.total_episodes || 0);
       
       const updateData: any = {
         current_episode: currentEpisode,
-        watched_episodes: JSON.stringify(newWatchedEpisodes.sort((a, b) => a - b)),
-        total_runtime_minutes: totalWatchTime,
+        episodes_watched: currentEpisode,
+        watched_minutes: Math.round(watchedMinutes),
         updated_at: new Date().toISOString()
       };
       
       if (isCompleted) {
-        // Move to completed list and calculate total runtime
-        try {
-          const totalRuntimeMinutes = await calculateDramaTotalRuntime(dramaId);
-          updateData.list_type = 'completed';
-          updateData.total_runtime_minutes = totalRuntimeMinutes;
-          updateData.current_episode = dramaData.total_episodes; // Set to total episodes when completed
-          
-          // Create completion record for stats
-          await supabase
-            .from('drama_completions')
-            .insert({
-              user_id: user.id,
-              drama_id: dramaId,
-              drama_name: dramaData.drama_name,
-              total_runtime_minutes: totalRuntimeMinutes,
-              episodes_watched: dramaData.total_episodes
-            });
-        } catch (e) {
-          console.log('Failed to calculate total runtime, using estimate', e);
-          updateData.total_runtime_minutes = (dramaData.total_episodes || 16) * 60;
-        }
+        // Move to completed list
+        updateData.list_type = 'completed';
+        updateData.current_episode = dramaData.total_episodes;
+        updateData.episodes_watched = dramaData.total_episodes;
+        updateData.watched_minutes = dramaData.total_runtime_minutes;
       }
       
       await supabase
@@ -509,7 +479,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
               ...watchingList[dramaIndex].progress!,
               currentEpisode,
               watchedEpisodes: newWatchedEpisodes,
-              totalWatchTimeMinutes: totalWatchTime
+              totalWatchTimeMinutes: Math.round(watchedMinutes)
             }
           };
           
