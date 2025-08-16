@@ -24,6 +24,7 @@ export interface DramaDetails extends Drama {
   created_by: Creator[];
   networks: Network[];
   seasons: Season[];
+  episode_run_time?: number[];
 }
 
 export interface Genre {

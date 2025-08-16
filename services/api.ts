@@ -1,4 +1,4 @@
-import { KOREAN_ORIGIN_ID, TMDB_API_KEY, TMDB_BASE_URL } from "@/constants/config";
+import { TMDB_API_KEY, TMDB_BASE_URL } from "@/constants/config";
 import { ActorCredits, ActorDetails } from "@/types/actor";
 import { Drama, DramaCredits, DramaDetails, DramaResponse, DramaImages, DramaVideos, SeasonDetails } from "@/types/drama";
 
@@ -704,58 +704,92 @@ export const calculateDramaTotalRuntime = async (seriesId: number): Promise<numb
   try {
     console.log(`Calculating total runtime for series ID: ${seriesId}`);
     
-    // First get the series details to know how many seasons
+    // First get the series details to know how many seasons and episodes
     const seriesDetails = await getDramaDetails(seriesId);
     const numberOfSeasons = seriesDetails.number_of_seasons || 1;
+    const totalEpisodes = seriesDetails.number_of_episodes || 16;
     
-    console.log(`Series has ${numberOfSeasons} seasons`);
+    console.log(`Series has ${numberOfSeasons} seasons and ${totalEpisodes} episodes`);
+    
+    // For most K-dramas, we can use a simple calculation
+    // If episode_run_time is available, use it
+    if (seriesDetails.episode_run_time && Array.isArray(seriesDetails.episode_run_time) && seriesDetails.episode_run_time.length > 0) {
+      const avgEpisodeRuntime = seriesDetails.episode_run_time[0]; // Use first runtime value
+      const totalRuntime = avgEpisodeRuntime * totalEpisodes;
+      console.log(`Using episode_run_time: ${avgEpisodeRuntime} minutes per episode, total: ${totalRuntime} minutes`);
+      return totalRuntime;
+    }
     
     let totalRuntimeMinutes = 0;
+    let successfulSeasons = 0;
     
-    // Iterate through each season
-    for (let seasonNumber = 1; seasonNumber <= numberOfSeasons; seasonNumber++) {
+    // Try to get detailed season information (but don't fail if it doesn't work)
+    for (let seasonNumber = 1; seasonNumber <= Math.min(numberOfSeasons, 3); seasonNumber++) {
       try {
         const seasonDetails = await getSeasonDetails(seriesId, seasonNumber);
         
         // Sum up runtime for all episodes in this season
         if (seasonDetails.episodes && Array.isArray(seasonDetails.episodes)) {
           const seasonRuntime = seasonDetails.episodes.reduce((sum, episode) => {
-            return sum + (episode.runtime || 0);
+            return sum + (episode.runtime || 60); // Default to 60 minutes if no runtime
           }, 0);
           
           totalRuntimeMinutes += seasonRuntime;
+          successfulSeasons++;
           console.log(`Season ${seasonNumber}: ${seasonRuntime} minutes (${seasonDetails.episodes.length} episodes)`);
         }
       } catch (seasonError) {
         console.warn(`Error fetching season ${seasonNumber} for series ${seriesId}:`, seasonError);
-        // If we can't get season details, estimate based on episode count
-        // Use a default runtime of 60 minutes per episode for K-dramas
-        const avgRuntime = 60; // Default to 60 minutes for K-dramas
-        const estimatedEpisodes = Math.ceil((seriesDetails.number_of_episodes || 16) / numberOfSeasons);
-        const estimatedRuntime = avgRuntime * estimatedEpisodes;
-        totalRuntimeMinutes += estimatedRuntime;
-        console.log(`Season ${seasonNumber}: ${estimatedRuntime} minutes (estimated)`);
+        // Continue to next season or use fallback
+        break;
       }
     }
     
-    console.log(`Total runtime for series ${seriesId}: ${totalRuntimeMinutes} minutes`);
-    return totalRuntimeMinutes;
-  } catch (error) {
-    console.error(`Error calculating total runtime for series ${seriesId}:`, error);
+    // If we got some season data, extrapolate for remaining seasons
+    if (successfulSeasons > 0 && successfulSeasons < numberOfSeasons) {
+      const avgSeasonRuntime = totalRuntimeMinutes / successfulSeasons;
+      const remainingSeasons = numberOfSeasons - successfulSeasons;
+      totalRuntimeMinutes += avgSeasonRuntime * remainingSeasons;
+      console.log(`Extrapolated ${remainingSeasons} remaining seasons based on average`);
+    }
     
-    // Fallback: estimate based on series details
+    // If we have a reasonable total, return it
+    if (totalRuntimeMinutes > 0) {
+      console.log(`Total runtime for series ${seriesId}: ${totalRuntimeMinutes} minutes`);
+      return totalRuntimeMinutes;
+    }
+    
+    // Fallback to estimation
+    throw new Error('No detailed runtime data available, using estimation');
+    
+  } catch (error) {
+    console.error(`Error calculating detailed runtime for series ${seriesId}:`, error);
+    
+    // Fallback: estimate based on series details or defaults
     try {
       const seriesDetails = await getDramaDetails(seriesId);
-      const avgRuntime = 60; // Default runtime for K-dramas
       const totalEpisodes = seriesDetails.number_of_episodes || 16;
+      
+      // Use episode_run_time if available
+      if (seriesDetails.episode_run_time && Array.isArray(seriesDetails.episode_run_time) && seriesDetails.episode_run_time.length > 0) {
+        const avgRuntime = seriesDetails.episode_run_time[0];
+        const estimatedRuntime = avgRuntime * totalEpisodes;
+        console.log(`Using fallback with episode_run_time: ${estimatedRuntime} minutes`);
+        return estimatedRuntime;
+      }
+      
+      // Default estimation for K-dramas
+      const avgRuntime = 60; // Default runtime for K-dramas
       const estimatedRuntime = avgRuntime * totalEpisodes;
-      console.log(`Using fallback estimation: ${estimatedRuntime} minutes`);
+      console.log(`Using default estimation: ${estimatedRuntime} minutes (${totalEpisodes} episodes × ${avgRuntime} minutes)`);
       return estimatedRuntime;
     } catch (fallbackError) {
       console.error('Fallback estimation also failed:', fallbackError);
     }
     
-    // Last resort: return a default estimate
-    return 16 * 60; // 16 episodes * 60 minutes
+    // Last resort: return a default estimate for typical K-drama
+    const defaultRuntime = 16 * 60; // 16 episodes * 60 minutes
+    console.log(`Using last resort default: ${defaultRuntime} minutes`);
+    return defaultRuntime;
   }
 };
