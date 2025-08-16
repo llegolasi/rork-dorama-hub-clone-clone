@@ -135,10 +135,10 @@ export default function CompletionShareModal({
         return;
       }
 
-      // Wait longer to ensure the view is fully rendered and stable
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for images to load and view to be fully rendered
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Check if ref exists before capture
+      // Check if ref exists and is mounted
       if (!certificateRef.current) {
         console.log('Certificate ref does not exist');
         Alert.alert('Erro', 'Não foi possível capturar a imagem. Tente novamente.');
@@ -147,14 +147,25 @@ export default function CompletionShareModal({
       }
 
       console.log('Capturing certificate view...');
-      // Capture the certificate view as image with better options
-      const uri = await captureRef(certificateRef.current, {
-        format: 'png',
-        quality: 0.9,
-        result: 'tmpfile',
-        width: 1080,
-        height: 1920,
-      });
+      
+      // Use a more reliable capture method
+      let uri: string;
+      try {
+        uri = await captureRef(certificateRef, {
+          format: 'png',
+          quality: 1.0,
+          result: 'tmpfile',
+        });
+      } catch (captureError) {
+        console.error('Capture error:', captureError);
+        // Retry with different options
+        await new Promise(resolve => setTimeout(resolve, 500));
+        uri = await captureRef(certificateRef, {
+          format: 'jpg',
+          quality: 0.9,
+          result: 'tmpfile',
+        });
+      }
 
       console.log('Image captured successfully:', uri);
       
@@ -194,10 +205,18 @@ export default function CompletionShareModal({
       : null;
 
     return (
-      <View ref={certificateRef} style={styles.certificate}>
+      <View 
+        ref={certificateRef} 
+        style={styles.certificate}
+        collapsable={false}
+      >
         {/* Background Image */}
         {backdropUrl && (
-          <Image source={{ uri: backdropUrl }} style={styles.backgroundImage} />
+          <Image 
+            source={{ uri: backdropUrl }} 
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
         )}
         
         {/* Gradient Overlay */}
@@ -217,7 +236,11 @@ export default function CompletionShareModal({
           {/* Poster */}
           {posterUrl && (
             <View style={styles.posterContainer}>
-              <Image source={{ uri: posterUrl }} style={styles.poster} />
+              <Image 
+                source={{ uri: posterUrl }} 
+                style={styles.poster}
+                resizeMode="cover"
+              />
             </View>
           )}
 
@@ -373,6 +396,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     position: 'relative',
+    backgroundColor: '#000',
   },
   backgroundImage: {
     position: 'absolute',
