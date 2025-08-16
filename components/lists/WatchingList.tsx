@@ -6,7 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { COLORS } from "@/constants/colors";
 import { UserList } from "@/types/user";
 import { Drama, DramaDetails } from "@/types/drama";
@@ -22,9 +22,10 @@ interface WatchingListProps {
 }
 
 export function WatchingList({ dramas }: WatchingListProps) {
-  const { updateProgress, removeFromList, addToList } = useUserLists();
+  const { updateProgress, removeFromList, addToList, refreshUserProfile } = useUserLists();
   const [reviewModalVisible, setReviewModalVisible] = useState<boolean>(false);
   const [selectedDrama, setSelectedDrama] = useState<DramaDetails | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: dramaDetails, isLoading } = useQuery({
     queryKey: ["watching-dramas", dramas.map(d => d.dramaId)],
@@ -45,9 +46,19 @@ export function WatchingList({ dramas }: WatchingListProps) {
     enabled: dramas.length > 0,
   });
 
-  const handleProgressUpdate = (dramaId: number, newEpisode: number) => {
+  const handleProgressUpdate = async (dramaId: number, newEpisode: number) => {
     console.log(`Updating progress for drama ${dramaId} to episode ${newEpisode}`);
-    updateProgress(dramaId, newEpisode);
+    try {
+      await updateProgress(dramaId, newEpisode);
+      // Refresh user profile data to get updated stats
+      await refreshUserProfile();
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
+      queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      throw error;
+    }
   };
 
   const handleRemove = (dramaId: number) => {
@@ -103,8 +114,15 @@ export function WatchingList({ dramas }: WatchingListProps) {
         });
         
         console.log('Drama completion process finished successfully');
+        
+        // Refresh user profile data to get updated stats
+        await refreshUserProfile();
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
+        queryClient.invalidateQueries({ queryKey: ["user-stats"] });
       } catch (error) {
         console.error('Error completing drama:', error);
+        throw error;
       }
     }
     setReviewModalVisible(false);
@@ -133,6 +151,14 @@ export function WatchingList({ dramas }: WatchingListProps) {
     );
   }
 
+  const handleDataUpdated = () => {
+    // Refresh user profile data
+    refreshUserProfile();
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
+    queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+  };
+
   const renderItem = ({ item }: { item: { drama: Drama; userListItem: UserList } }) => (
     <ListCard
       drama={item.drama}
@@ -141,6 +167,7 @@ export function WatchingList({ dramas }: WatchingListProps) {
       onProgressUpdate={(newEpisode) => handleProgressUpdate(item.drama.id, newEpisode)}
       onRemove={() => handleRemove(item.drama.id)}
       onComplete={() => handleComplete(item.drama)}
+      onDataUpdated={handleDataUpdated}
     />
   );
 

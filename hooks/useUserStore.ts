@@ -794,7 +794,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
 
 // Custom hooks for specific functionality
 export function useUserLists() {
-  const { userProfile, addToList, removeFromList, updateProgress, isInList, getCurrentList, deleteUserReview } = useUserStore();
+  const { userProfile, addToList, removeFromList, updateProgress, isInList, getCurrentList, deleteUserReview, refreshUserProfile } = useUserStore();
   return {
     lists: userProfile.lists,
     addToList,
@@ -803,6 +803,7 @@ export function useUserLists() {
     isInList,
     getCurrentList,
     deleteUserReview,
+    refreshUserProfile,
   };
 }
 

@@ -20,10 +20,11 @@ interface ListCardProps {
   drama: Drama;
   userListItem: UserList;
   showProgress?: boolean;
-  onProgressUpdate?: (newEpisode: number) => void;
+  onProgressUpdate?: (newEpisode: number) => Promise<void>;
   onRemove?: () => void;
   onMoveToWatching?: () => void;
-  onComplete?: () => void;
+  onComplete?: () => Promise<void>;
+  onDataUpdated?: () => void;
 }
 
 export function ListCard({
@@ -34,6 +35,7 @@ export function ListCard({
   onRemove,
   onMoveToWatching,
   onComplete,
+  onDataUpdated,
 }: ListCardProps) {
   const [showEpisodeModal, setShowEpisodeModal] = useState<boolean>(false);
   
@@ -168,6 +170,7 @@ export function ListCard({
           userListItem={userListItem}
           onProgressUpdate={onProgressUpdate}
           onComplete={onComplete}
+          onDataUpdated={onDataUpdated}
         />
       )}
     </TouchableOpacity>

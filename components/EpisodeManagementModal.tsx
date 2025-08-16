@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { X, Check, Play } from 'lucide-react-native';
+import { X, Check, Play, CheckCircle } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { Drama } from '@/types/drama';
 import { UserList } from '@/types/user';
@@ -20,6 +20,7 @@ interface EpisodeManagementModalProps {
   userListItem: UserList;
   onProgressUpdate: (newEpisode: number) => void;
   onComplete: () => void;
+  onDataUpdated?: () => void;
 }
 
 export default function EpisodeManagementModal({
@@ -29,22 +30,46 @@ export default function EpisodeManagementModal({
   userListItem,
   onProgressUpdate,
   onComplete,
+  onDataUpdated,
 }: EpisodeManagementModalProps) {
-  const [selectedEpisode, setSelectedEpisode] = useState<number>(
-    userListItem.progress?.currentEpisode || 0
-  );
+  const [selectedEpisode, setSelectedEpisode] = useState<number>(0);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const totalEpisodes = userListItem.progress?.totalEpisodes || 16;
   const currentEpisode = userListItem.progress?.currentEpisode || 0;
+  const watchedEpisodes = userListItem.progress?.watchedEpisodes || [];
 
-  const handleEpisodeUpdate = () => {
+  // Reset selected episode when modal opens
+  useEffect(() => {
+    if (visible) {
+      setSelectedEpisode(currentEpisode + 1); // Default to next episode
+    }
+  }, [visible, currentEpisode]);
+
+  const handleEpisodeUpdate = async () => {
     if (selectedEpisode > currentEpisode && selectedEpisode <= totalEpisodes) {
-      onProgressUpdate(selectedEpisode);
-      onClose();
+      setIsUpdating(true);
+      try {
+        await onProgressUpdate(selectedEpisode);
+        if (onDataUpdated) {
+          onDataUpdated();
+        }
+        onClose();
+      } catch (error) {
+        console.error('Error updating episode:', error);
+        Alert.alert('Erro', 'Não foi possível atualizar o episódio. Tente novamente.');
+      } finally {
+        setIsUpdating(false);
+      }
     } else if (selectedEpisode <= currentEpisode) {
       Alert.alert(
         'Episódio Inválido',
         'Você só pode marcar episódios posteriores ao atual como assistidos.'
+      );
+    } else {
+      Alert.alert(
+        'Episódio Inválido',
+        'Selecione um episódio válido para atualizar.'
       );
     }
   };
@@ -52,15 +77,26 @@ export default function EpisodeManagementModal({
   const handleCompleteAll = () => {
     Alert.alert(
       'Concluir Drama',
-      'Tem certeza que deseja marcar este drama como concluído? Isso irá marcar todos os episódios como assistidos.',
+      `Tem certeza que deseja marcar "${drama.name}" como concluído? Isso irá marcar todos os ${totalEpisodes} episódios como assistidos e mover o drama para sua lista de concluídos.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Concluir',
           style: 'default',
-          onPress: () => {
-            onComplete();
-            onClose();
+          onPress: async () => {
+            setIsUpdating(true);
+            try {
+              await onComplete();
+              if (onDataUpdated) {
+                onDataUpdated();
+              }
+              onClose();
+            } catch (error) {
+              console.error('Error completing drama:', error);
+              Alert.alert('Erro', 'Não foi possível concluir o drama. Tente novamente.');
+            } finally {
+              setIsUpdating(false);
+            }
           },
         },
       ]
@@ -70,8 +106,9 @@ export default function EpisodeManagementModal({
   const renderEpisodeGrid = () => {
     const episodes = [];
     for (let i = 1; i <= totalEpisodes; i++) {
-      const isWatched = i <= currentEpisode;
+      const isWatched = watchedEpisodes.includes(i) || i <= currentEpisode;
       const isSelected = i === selectedEpisode;
+      const isAvailable = i > currentEpisode; // Can only select episodes after current
       
       episodes.push(
         <TouchableOpacity
@@ -80,19 +117,24 @@ export default function EpisodeManagementModal({
             styles.episodeButton,
             isWatched && styles.episodeWatched,
             isSelected && styles.episodeSelected,
+            !isAvailable && styles.episodeDisabled,
           ]}
-          onPress={() => setSelectedEpisode(i)}
-          disabled={i <= currentEpisode}
+          onPress={() => isAvailable ? setSelectedEpisode(i) : null}
+          disabled={!isAvailable || isUpdating}
         >
-          <Text
-            style={[
-              styles.episodeButtonText,
-              isWatched && styles.episodeWatchedText,
-              isSelected && styles.episodeSelectedText,
-            ]}
-          >
-            {i}
-          </Text>
+          {isWatched ? (
+            <CheckCircle size={16} color={COLORS.background} />
+          ) : (
+            <Text
+              style={[
+                styles.episodeButtonText,
+                isSelected && styles.episodeSelectedText,
+                !isAvailable && styles.episodeDisabledText,
+              ]}
+            >
+              {i}
+            </Text>
+          )}
         </TouchableOpacity>
       );
     }
@@ -125,10 +167,17 @@ export default function EpisodeManagementModal({
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Selecionar Episódio</Text>
+            <Text style={styles.sectionTitle}>Marcar Episódios como Assistidos</Text>
             <Text style={styles.sectionSubtitle}>
-              Toque no episódio que você acabou de assistir
+              Selecione até qual episódio você assistiu. Episódios com ✓ já foram marcados como assistidos.
             </Text>
+            {selectedEpisode > currentEpisode && (
+              <View style={styles.selectionInfo}>
+                <Text style={styles.selectionText}>
+                  📺 Marcando episódios {currentEpisode + 1} até {selectedEpisode} como assistidos
+                </Text>
+              </View>
+            )}
             
             <View style={styles.episodeGrid}>
               {renderEpisodeGrid()}
@@ -139,23 +188,33 @@ export default function EpisodeManagementModal({
             <Text style={styles.sectionTitle}>Ações Rápidas</Text>
             
             <TouchableOpacity
-              style={styles.quickActionButton}
+              style={[
+                styles.quickActionButton,
+                (currentEpisode >= totalEpisodes || isUpdating) && styles.quickActionButtonDisabled
+              ]}
               onPress={() => setSelectedEpisode(currentEpisode + 1)}
-              disabled={currentEpisode >= totalEpisodes}
+              disabled={currentEpisode >= totalEpisodes || isUpdating}
             >
-              <Play size={20} color={COLORS.accent} />
-              <Text style={styles.quickActionText}>
+              <Play size={20} color={currentEpisode >= totalEpisodes ? COLORS.textSecondary : COLORS.accent} />
+              <Text style={[
+                styles.quickActionText,
+                (currentEpisode >= totalEpisodes || isUpdating) && styles.quickActionTextDisabled
+              ]}>
                 Próximo Episódio ({currentEpisode + 1})
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.completeAllButton}
+              style={[
+                styles.completeAllButton,
+                isUpdating && styles.completeAllButtonDisabled
+              ]}
               onPress={handleCompleteAll}
+              disabled={isUpdating}
             >
               <Check size={20} color={COLORS.background} />
               <Text style={styles.completeAllText}>
-                Marcar como Concluído
+                {isUpdating ? 'Processando...' : 'Marcar como Concluído'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -172,16 +231,16 @@ export default function EpisodeManagementModal({
           <TouchableOpacity
             style={[
               styles.updateButton,
-              selectedEpisode <= currentEpisode && styles.updateButtonDisabled,
+              (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonDisabled,
             ]}
             onPress={handleEpisodeUpdate}
-            disabled={selectedEpisode <= currentEpisode}
+            disabled={selectedEpisode <= currentEpisode || isUpdating}
           >
             <Text style={[
               styles.updateButtonText,
-              selectedEpisode <= currentEpisode && styles.updateButtonTextDisabled,
+              (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonTextDisabled,
             ]}>
-              Atualizar para Ep. {selectedEpisode}
+              {isUpdating ? 'Atualizando...' : `Marcar até Ep. ${selectedEpisode}`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -262,8 +321,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   episodeWatched: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
   },
   episodeSelected: {
     borderColor: COLORS.accent,
@@ -276,6 +335,14 @@ const styles = StyleSheet.create({
   },
   episodeWatchedText: {
     color: COLORS.background,
+  },
+  episodeDisabled: {
+    backgroundColor: COLORS.border,
+    borderColor: COLORS.border,
+    opacity: 0.5,
+  },
+  episodeDisabledText: {
+    color: COLORS.textSecondary,
   },
   episodeSelectedText: {
     color: COLORS.accent,
@@ -350,5 +417,26 @@ const styles = StyleSheet.create({
   },
   updateButtonTextDisabled: {
     color: COLORS.textSecondary,
+  },
+  selectionInfo: {
+    backgroundColor: COLORS.accent + '20',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  selectionText: {
+    fontSize: 14,
+    color: COLORS.accent,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  quickActionButtonDisabled: {
+    opacity: 0.5,
+  },
+  quickActionTextDisabled: {
+    color: COLORS.textSecondary,
+  },
+  completeAllButtonDisabled: {
+    opacity: 0.7,
   },
 });
