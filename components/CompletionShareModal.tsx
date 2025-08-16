@@ -210,66 +210,117 @@ export default function CompletionShareModal({
         style={styles.certificate}
         collapsable={false}
       >
-        {/* Background Image */}
-        {backdropUrl && (
-          <Image 
-            source={{ uri: backdropUrl }} 
-            style={styles.backgroundImage}
-            resizeMode="cover"
-          />
-        )}
-        
-        {/* Gradient Overlay */}
+        {/* Modern Gradient Background */}
         <LinearGradient
           colors={[
-            'rgba(138, 43, 226, 0.4)',
-            'rgba(30, 144, 255, 0.6)', 
-            'rgba(255, 20, 147, 0.8)',
-            'rgba(0, 0, 0, 0.9)'
+            '#FF5FA2', // App accent color
+            '#8B5CF6', // Purple
+            '#3B82F6', // Blue
+            '#06B6D4', // Cyan
+            '#10B981', // Emerald
           ]}
-          locations={[0, 0.3, 0.7, 1]}
-          style={styles.gradientOverlay}
+          locations={[0, 0.25, 0.5, 0.75, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.modernGradient}
         />
+        
+        {/* Backdrop Overlay (subtle) */}
+        {backdropUrl && (
+          <View style={styles.backdropContainer}>
+            <Image 
+              source={{ uri: backdropUrl }} 
+              style={styles.backdropImage}
+              resizeMode="cover"
+            />
+            <View style={styles.backdropOverlay} />
+          </View>
+        )}
+
+        {/* Decorative Elements */}
+        <View style={styles.decorativeElements}>
+          <View style={[styles.floatingCircle, styles.circle1]} />
+          <View style={[styles.floatingCircle, styles.circle2]} />
+          <View style={[styles.floatingCircle, styles.circle3]} />
+          <View style={[styles.floatingSquare, styles.square1]} />
+          <View style={[styles.floatingSquare, styles.square2]} />
+        </View>
 
         {/* Content */}
         <View style={styles.certificateContent}>
-          {/* Poster */}
-          {posterUrl && (
-            <View style={styles.posterContainer}>
-              <Image 
-                source={{ uri: posterUrl }} 
-                style={styles.poster}
-                resizeMode="cover"
-              />
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <View style={styles.celebrationContainer}>
+              <Text style={styles.celebrationEmoji}>🎉</Text>
+              <Text style={styles.celebrationText}>PARABÉNS!</Text>
             </View>
-          )}
-
-          {/* Main Text */}
-          <View style={styles.textContainer}>
-            <Text style={styles.userName}>{userName}</Text>
-            <Text style={styles.completedText}>concluiu</Text>
-            <Text style={styles.dramaTitle}>{drama.name}</Text>
             
-            {/* Stats */}
-            <View style={styles.statsContainer}>
+            {/* Poster with modern frame */}
+            {posterUrl && (
+              <View style={styles.modernPosterContainer}>
+                <View style={styles.posterFrame}>
+                  <Image 
+                    source={{ uri: posterUrl }} 
+                    style={styles.modernPoster}
+                    resizeMode="cover"
+                  />
+                </View>
+                <View style={styles.posterGlow} />
+              </View>
+            )}
+          </View>
+
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            <View style={styles.achievementBadge}>
               <LinearGradient
-                colors={['rgba(255, 215, 0, 0.9)', 'rgba(255, 140, 0, 0.9)']}
-                style={styles.statsGradient}
+                colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.85)']}
+                style={styles.badgeGradient}
               >
-                <Text style={styles.statsTitle}>⏱️ Tempo Total de Maratona</Text>
-                <Text style={styles.statsValue}>{formatTime(hours, minutes)}</Text>
+                <Text style={styles.badgeIcon}>👑</Text>
+                <Text style={styles.badgeText}>DORAMA CONCLUÍDO</Text>
+              </LinearGradient>
+            </View>
+
+            <Text style={styles.modernUserName}>{userName}</Text>
+            <Text style={styles.modernCompletedText}>finalizou com sucesso</Text>
+            <Text style={styles.modernDramaTitle}>{drama.name}</Text>
+            
+            {/* Modern Stats Card */}
+            <View style={styles.modernStatsContainer}>
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.05)']}
+                style={styles.modernStatsGradient}
+              >
+                <View style={styles.statsHeader}>
+                  <Text style={styles.statsIcon}>⏱️</Text>
+                  <Text style={styles.modernStatsTitle}>Tempo de Maratona</Text>
+                </View>
+                <Text style={styles.modernStatsValue}>{formatTime(hours, minutes)}</Text>
+                <View style={styles.statsDecoration}>
+                  <View style={styles.statsDot} />
+                  <View style={styles.statsDot} />
+                  <View style={styles.statsDot} />
+                </View>
               </LinearGradient>
             </View>
           </View>
 
-          {/* Branding */}
-          <View style={styles.brandingContainer}>
+          {/* Modern Branding */}
+          <View style={styles.modernBrandingContainer}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.9)', 'rgba(240, 240, 240, 0.8)']}
-              style={styles.brandingGradient}
+              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)']}
+              style={styles.modernBrandingGradient}
             >
-              <Text style={styles.appName}>📱 Dorama Hub</Text>
-              <Text style={styles.appTagline}>Sua jornada K-Drama</Text>
+              <View style={styles.brandingContent}>
+                <View style={styles.appIconContainer}>
+                  <Text style={styles.appIcon}>📱</Text>
+                </View>
+                <View style={styles.brandingText}>
+                  <Text style={styles.modernAppName}>Dorama Hub</Text>
+                  <Text style={styles.modernAppTagline}>Sua jornada K-Drama</Text>
+                </View>
+              </View>
             </LinearGradient>
           </View>
         </View>
@@ -397,51 +448,171 @@ const styles = StyleSheet.create({
     height: '100%',
     position: 'relative',
     backgroundColor: '#000',
+    overflow: 'hidden',
   },
-  backgroundImage: {
+  modernGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  backdropContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  backdropImage: {
     width: '100%',
     height: '100%',
+    opacity: 0.15,
   },
-  gradientOverlay: {
+  backdropOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  decorativeElements: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  floatingCircle: {
+    position: 'absolute',
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  circle1: {
+    width: 80,
+    height: 80,
+    top: 60,
+    left: 30,
+  },
+  circle2: {
+    width: 120,
+    height: 120,
+    top: 200,
+    right: 20,
+  },
+  circle3: {
+    width: 60,
+    height: 60,
+    bottom: 150,
+    left: 50,
+  },
+  floatingSquare: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    transform: [{ rotate: '45deg' }],
+  },
+  square1: {
+    width: 40,
+    height: 40,
+    top: 120,
+    right: 80,
+  },
+  square2: {
+    width: 30,
+    height: 30,
+    bottom: 200,
+    right: 40,
   },
   certificateContent: {
     flex: 1,
-    padding: 24,
+    padding: 32,
     justifyContent: 'space-between',
   },
-  posterContainer: {
-    alignSelf: 'flex-end',
+  headerSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 20,
   },
-  poster: {
-    width: 90,
-    height: 135,
-    borderRadius: 12,
+  celebrationContainer: {
+    alignItems: 'center',
+  },
+  celebrationEmoji: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  celebrationText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  modernPosterContainer: {
+    position: 'relative',
+  },
+  posterFrame: {
+    borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 3,
-    borderColor: '#FFD700',
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  },
+  modernPoster: {
+    width: 100,
+    height: 150,
+  },
+  posterGlow: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    zIndex: -1,
+  },
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  achievementBadge: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  textContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  badgeGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
-  userName: {
-    fontSize: 26,
+  badgeIcon: {
+    fontSize: 16,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#333',
+    letterSpacing: 1,
+  },
+  modernUserName: {
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
@@ -450,18 +621,18 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
   },
-  completedText: {
-    fontSize: 20,
-    color: '#FFD700',
+  modernCompletedText: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 8,
-    fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    marginBottom: 12,
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    textShadowRadius: 2,
   },
-  dramaTitle: {
-    fontSize: 30,
+  modernDramaTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
@@ -469,53 +640,104 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
+    lineHeight: 34,
   },
-  statsContainer: {
-    borderRadius: 16,
+  modernStatsContainer: {
+    borderRadius: 20,
     overflow: 'hidden',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  statsGradient: {
+  modernStatsGradient: {
     padding: 24,
     alignItems: 'center',
-    borderRadius: 16,
   },
-  statsTitle: {
-    fontSize: 18,
-    color: '#000',
-    marginBottom: 8,
+  statsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  statsIcon: {
+    fontSize: 20,
+  },
+  modernStatsTitle: {
+    fontSize: 16,
+    color: '#FFFFFF',
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
-  statsValue: {
+  modernStatsValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    marginBottom: 12,
   },
-  brandingContainer: {
-    alignItems: 'center',
-    borderRadius: 12,
+  statsDecoration: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  statsDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  modernBrandingContainer: {
+    borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
-  brandingGradient: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  modernBrandingGradient: {
+    padding: 16,
+  },
+  brandingContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    justifyContent: 'center',
+    gap: 12,
   },
-  appName: {
+  appIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appIcon: {
+    fontSize: 18,
+  },
+  brandingText: {
+    alignItems: 'center',
+  },
+  modernAppName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
-  appTagline: {
+  modernAppTagline: {
     fontSize: 12,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   actionButtons: {
     flexDirection: 'row',
