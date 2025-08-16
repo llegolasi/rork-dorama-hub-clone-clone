@@ -12,6 +12,7 @@ import AchievementsGrid from "@/components/AchievementsGrid";
 import PremiumSubscription from "@/components/PremiumSubscription";
 import UserStatsComponent from "@/components/UserStatsComponent";
 import ProfileCustomization from "@/components/ProfileCustomization";
+import UserStatsDisplay from "@/components/UserStatsDisplay";
 import { ACHIEVEMENTS } from "@/constants/achievements";
 
 import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures } from "@/types/user";
@@ -468,6 +469,9 @@ export default function ProfileScreen() {
           <Text style={styles.statLabel}>Concluídos</Text>
         </View>
       </View>
+
+      {/* Componente de estatísticas detalhadas */}
+      <UserStatsDisplay userId={userProfile?.id} />
 
         <View style={styles.tabContainer}>
           {renderTabButton(

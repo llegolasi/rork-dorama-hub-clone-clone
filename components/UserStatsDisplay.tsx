@@ -1,0 +1,249 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { BarChart3, Clock, Trophy, Eye, BookOpen, TrendingUp } from 'lucide-react-native';
+
+import { COLORS } from '@/constants/colors';
+import { trpc } from '@/lib/trpc';
+
+interface UserStatsDisplayProps {
+  userId?: string;
+}
+
+export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
+  const { data: stats, isLoading, refetch } = trpc.users.getStats.useQuery(
+    { userId },
+    { 
+      enabled: true,
+      refetchOnMount: true 
+    }
+  );
+  
+  const updateStatsMutation = trpc.users.updateStats.useMutation({
+    onSuccess: () => {
+      refetch();
+      Alert.alert('Sucesso', 'Estatísticas atualizadas com sucesso!');
+    },
+    onError: (error) => {
+      Alert.alert('Erro', `Falha ao atualizar estatísticas: ${error.message}`);
+    }
+  });
+
+  const handleUpdateStats = () => {
+    updateStatsMutation.mutate();
+  };
+
+  const formatWatchTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours < 24) return `${hours}h ${remainingMinutes}m`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return `${days}d ${remainingHours}h`;
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Carregando estatísticas...</Text>
+      </View>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Erro ao carregar estatísticas</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <BarChart3 size={24} color={COLORS.accent} />
+          <Text style={styles.title}>Estatísticas</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.updateButton}
+          onPress={handleUpdateStats}
+          disabled={updateStatsMutation.isPending}
+        >
+          <TrendingUp size={16} color={COLORS.accent} />
+          <Text style={styles.updateButtonText}>
+            {updateStatsMutation.isPending ? 'Atualizando...' : 'Atualizar'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.statsGrid}>
+        <View style={styles.statCard}>
+          <Clock size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>
+            {formatWatchTime(stats.total_watch_time_minutes || 0)}
+          </Text>
+          <Text style={styles.statLabel}>Tempo Total</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Trophy size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{stats.dramas_completed || 0}</Text>
+          <Text style={styles.statLabel}>Concluídos</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Eye size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{stats.dramas_watching || 0}</Text>
+          <Text style={styles.statLabel}>Assistindo</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <BookOpen size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{stats.dramas_in_watchlist || 0}</Text>
+          <Text style={styles.statLabel}>Quero Ver</Text>
+        </View>
+      </View>
+
+      {stats.average_drama_runtime > 0 && (
+        <View style={styles.additionalStats}>
+          <Text style={styles.additionalStatsTitle}>Estatísticas Adicionais</Text>
+          <Text style={styles.additionalStatsText}>
+            Duração média por drama: {formatWatchTime(Math.round(stats.average_drama_runtime))}
+          </Text>
+          {stats.first_completion_date && (
+            <Text style={styles.additionalStatsText}>
+              Primeira conclusão: {new Date(stats.first_completion_date).toLocaleDateString('pt-BR')}
+            </Text>
+          )}
+          {stats.latest_completion_date && (
+            <Text style={styles.additionalStatsText}>
+              Última conclusão: {new Date(stats.latest_completion_date).toLocaleDateString('pt-BR')}
+            </Text>
+          )}
+        </View>
+      )}
+
+      <View style={styles.debugInfo}>
+        <Text style={styles.debugTitle}>Debug Info:</Text>
+        <Text style={styles.debugText}>User ID: {stats.user_id}</Text>
+        <Text style={styles.debugText}>
+          Última atualização: {stats.updated_at ? new Date(stats.updated_at).toLocaleString('pt-BR') : 'N/A'}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 16,
+    margin: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  updateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  updateButtonText: {
+    fontSize: 12,
+    color: COLORS.accent,
+    fontWeight: '500',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: COLORS.background,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  additionalStats: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+  },
+  additionalStatsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  additionalStatsText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  debugInfo: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  debugText: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    fontFamily: 'monospace',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: COLORS.error || '#ff4444',
+    textAlign: 'center',
+    padding: 20,
+  },
+});

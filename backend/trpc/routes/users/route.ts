@@ -350,6 +350,68 @@ export const getFollowingWithDetailsProcedure = protectedProcedure
     }
   });
 
+// Get user statistics
+export const getUserStatsProcedure = protectedProcedure
+  .input(z.object({
+    userId: z.string().uuid().optional()
+  }))
+  .query(async ({ input, ctx }) => {
+    try {
+      const targetUserId = input.userId || ctx.user.id;
+      
+      const { data, error } = await ctx.supabase.rpc('get_user_comprehensive_stats', {
+        p_user_id: targetUserId
+      });
+
+      if (error) {
+        console.error('Error fetching user stats:', error);
+        throw new Error('Failed to fetch user statistics');
+      }
+
+      return data || {
+        user_id: targetUserId,
+        total_watch_time_minutes: 0,
+        dramas_completed: 0,
+        dramas_watching: 0,
+        dramas_in_watchlist: 0,
+        average_drama_runtime: 0,
+        first_completion_date: null,
+        latest_completion_date: null,
+        monthly_watch_time: {},
+        favorite_genres: {},
+        yearly_watch_time: {},
+        favorite_actor_id: null,
+        favorite_actor_name: null,
+        favorite_actor_works_watched: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error in getUserStatsProcedure:', error);
+      throw new Error('Failed to fetch user statistics');
+    }
+  });
+
+// Update user statistics manually (for debugging)
+export const updateUserStatsProcedure = protectedProcedure
+  .mutation(async ({ ctx }) => {
+    try {
+      const { error } = await ctx.supabase.rpc('update_user_statistics', {
+        p_user_id: ctx.user.id
+      });
+
+      if (error) {
+        console.error('Error updating user stats:', error);
+        throw new Error('Failed to update user statistics');
+      }
+
+      return { success: true, message: 'User statistics updated successfully' };
+    } catch (error) {
+      console.error('Error in updateUserStatsProcedure:', error);
+      throw new Error('Failed to update user statistics');
+    }
+  });
+
 // Get user's completed dramas with details
 export const getUserCompletedDramasProcedure = publicProcedure
   .input(z.object({

@@ -41,7 +41,9 @@ import {
   getUserFollowingProcedure,
   getUserCompletedDramasProcedure,
   getFollowersWithDetailsProcedure,
-  getFollowingWithDetailsProcedure
+  getFollowingWithDetailsProcedure,
+  getUserStatsProcedure,
+  updateUserStatsProcedure
 } from "./routes/users/route";
 
 // Discover routes
@@ -106,6 +108,8 @@ export const appRouter = createTRPCRouter({
     getUserCompletedDramas: getUserCompletedDramasProcedure,
     getFollowersWithDetails: getFollowersWithDetailsProcedure,
     getFollowingWithDetails: getFollowingWithDetailsProcedure,
+    getStats: getUserStatsProcedure,
+    updateStats: updateUserStatsProcedure,
   }),
   
   discover: createTRPCRouter({
