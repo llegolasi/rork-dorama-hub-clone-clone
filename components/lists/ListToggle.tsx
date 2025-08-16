@@ -7,11 +7,17 @@ import {
   Modal,
   Pressable,
   Alert,
+  Platform,
 } from "react-native";
 import { COLORS } from "@/constants/colors";
 import { ListType } from "@/types/user";
 import { useUserLists } from "@/hooks/useUserStore";
+import { useAuth } from "@/hooks/useAuth";
 import { Bookmark, BookmarkCheck, Plus, X } from "lucide-react-native";
+import { trpc } from "@/lib/trpc";
+import { calculateDramaTotalRuntime, getDramaDetails } from "@/services/api";
+import CompletionShareModal from "@/components/CompletionShareModal";
+import CompletionShareModalAndroid from "@/components/CompletionShareModal.android";
 
 interface ListToggleProps {
   dramaId: number;
@@ -25,7 +31,11 @@ export function ListToggle({
   size = "medium" 
 }: ListToggleProps) {
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
   const { addToList, removeFromList, getCurrentList, deleteUserReview } = useUserLists();
+  const { user } = useAuth();
+  
+  const completeDramaMutation = trpc.completions.completeDrama.useMutation();
 
   const currentList = getCurrentList(dramaId);
   const isInAnyList = currentList !== null;
@@ -52,9 +62,46 @@ export function ListToggle({
     }
   };
 
-  const handleAddToList = (listType: ListType) => {
+  const handleCompletionShare = async () => {
+    if (!user) return;
+    
+    try {
+      console.log('Handling completion share for drama:', dramaId);
+      
+      // Get drama details and calculate runtime
+      const [dramaDetails, totalRuntimeMinutes] = await Promise.all([
+        getDramaDetails(dramaId),
+        calculateDramaTotalRuntime(dramaId),
+      ]);
+      
+      // Save completion to database
+      await completeDramaMutation.mutateAsync({
+        dramaId,
+        dramaName: dramaDetails.name,
+        totalRuntimeMinutes,
+      });
+      
+      // Show completion modal
+      setShowCompletionModal(true);
+    } catch (error) {
+      console.error('Error handling completion share:', error);
+    }
+  };
+
+  const handleAddToList = async (listType: ListType) => {
+    const wasNotCompleted = getCurrentList(dramaId) !== 'completed';
+    const isNowCompleted = listType === 'completed';
+    
     addToList(dramaId, listType, listType === "watching" ? totalEpisodes : undefined);
     setShowModal(false);
+    
+    // If user just completed the drama, show completion sharing modal
+    if (wasNotCompleted && isNowCompleted && user) {
+      // Small delay to ensure the UI updates first
+      setTimeout(() => {
+        handleCompletionShare();
+      }, 500);
+    }
   };
 
   const getButtonStyle = () => {
@@ -187,10 +234,46 @@ export function ListToggle({
                 </View>
                 <Plus size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.listOption}
+                onPress={() => handleAddToList("completed")}
+                testID="add-to-completed"
+              >
+                <BookmarkCheck size={20} color={COLORS.accent} fill={COLORS.accent} />
+                <View style={styles.listOptionText}>
+                  <Text style={styles.listOptionTitle}>Concluído</Text>
+                  <Text style={styles.listOptionSubtitle}>
+                    Marcar como assistido completamente
+                  </Text>
+                </View>
+                <Plus size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
             </View>
           </View>
         </Pressable>
       </Modal>
+      
+      {/* Completion Share Modal */}
+      {user && (
+        <>  
+          {Platform.OS === 'android' ? (
+            <CompletionShareModalAndroid
+              visible={showCompletionModal}
+              onClose={() => setShowCompletionModal(false)}
+              dramaId={dramaId}
+              userName={user.displayName || user.username}
+            />
+          ) : (
+            <CompletionShareModal
+              visible={showCompletionModal}
+              onClose={() => setShowCompletionModal(false)}
+              dramaId={dramaId}
+              userName={user.displayName || user.username}
+            />
+          )}
+        </>
+      )}
     </>
   );
 }
