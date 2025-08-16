@@ -52,9 +52,10 @@ export function WatchingList({ dramas }: WatchingListProps) {
       await updateProgress(dramaId, newEpisode);
       // Refresh user profile data to get updated stats
       await refreshUserProfile();
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
-      queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+      // Invalidate and refetch queries to refresh data immediately
+      await queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
+      await queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+      await queryClient.refetchQueries({ queryKey: ["watching-dramas"] });
     } catch (error) {
       console.error('Error updating progress:', error);
       throw error;
@@ -151,12 +152,13 @@ export function WatchingList({ dramas }: WatchingListProps) {
     );
   }
 
-  const handleDataUpdated = () => {
+  const handleDataUpdated = async () => {
     // Refresh user profile data
-    refreshUserProfile();
-    // Invalidate queries to refresh data
-    queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
-    queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+    await refreshUserProfile();
+    // Invalidate and refetch queries to refresh data immediately
+    await queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
+    await queryClient.invalidateQueries({ queryKey: ["user-stats"] });
+    await queryClient.refetchQueries({ queryKey: ["watching-dramas"] });
   };
 
   const renderItem = ({ item }: { item: { drama: Drama; userListItem: UserList } }) => (

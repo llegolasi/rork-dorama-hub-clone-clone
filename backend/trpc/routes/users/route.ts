@@ -398,14 +398,29 @@ export const getUserStatsProcedure = protectedProcedure
           .eq('user_id', targetUserId)
           .eq('list_type', 'completed');
 
-        // Get total watch time from completions
+        // Get total watch time from completions AND episode progress
         const { data: completions } = await ctx.supabase
           .from('drama_completions')
           .select('total_runtime_minutes')
           .eq('user_id', targetUserId);
 
-        const totalWatchTime = completions?.reduce((sum, completion) => 
+        // Get watch time from episodes watched in watching dramas
+        const { data: watchingDramasWithEpisodes } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('episodes_watched, total_runtime_minutes')
+          .eq('user_id', targetUserId)
+          .eq('list_type', 'watching');
+
+        const completionWatchTime = completions?.reduce((sum, completion) => 
           sum + (completion.total_runtime_minutes || 0), 0) || 0;
+        
+        const episodeWatchTime = watchingDramasWithEpisodes?.reduce((sum, drama) => {
+          // Estimate 60 minutes per episode watched
+          const episodesWatched = drama.episodes_watched || 0;
+          return sum + (episodesWatched * 60);
+        }, 0) || 0;
+        
+        const totalWatchTime = completionWatchTime + episodeWatchTime;
 
         const fallbackStats = {
           user_id: targetUserId,
@@ -499,14 +514,29 @@ export const updateUserStatsProcedure = protectedProcedure
           .eq('user_id', ctx.user.id)
           .eq('list_type', 'completed');
 
-        // Get total watch time from completions
+        // Get total watch time from completions AND episode progress
         const { data: completions } = await ctx.supabase
           .from('drama_completions')
           .select('total_runtime_minutes')
           .eq('user_id', ctx.user.id);
 
-        const totalWatchTime = completions?.reduce((sum, completion) => 
+        // Get watch time from episodes watched in watching dramas
+        const { data: watchingDramasWithEpisodes } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('episodes_watched, total_runtime_minutes')
+          .eq('user_id', ctx.user.id)
+          .eq('list_type', 'watching');
+
+        const completionWatchTime = completions?.reduce((sum, completion) => 
           sum + (completion.total_runtime_minutes || 0), 0) || 0;
+        
+        const episodeWatchTime = watchingDramasWithEpisodes?.reduce((sum, drama) => {
+          // Estimate 60 minutes per episode watched
+          const episodesWatched = drama.episodes_watched || 0;
+          return sum + (episodesWatched * 60);
+        }, 0) || 0;
+        
+        const totalWatchTime = completionWatchTime + episodeWatchTime;
 
         // Update user stats
         const { error: updateError } = await ctx.supabase

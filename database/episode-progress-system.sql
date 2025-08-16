@@ -231,17 +231,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create function to mark episode as watched
-CREATE OR REPLACE FUNCTION mark_episode_watched(
+-- Create function to mark episodes as watched up to a specific episode
+CREATE OR REPLACE FUNCTION mark_episodes_watched_up_to(
   p_user_id UUID,
   p_drama_id INTEGER,
   p_episode_number INTEGER
 )
-RETURNS VOID AS $$
+RETURNS VOID AS $
 DECLARE
-  current_watched JSONB;
-  new_watched JSONB;
   drama_record RECORD;
+  new_watched JSONB;
+  episode_num INTEGER;
 BEGIN
   -- Get current drama record
   SELECT * INTO drama_record
@@ -254,31 +254,30 @@ BEGIN
     RAISE EXCEPTION 'Drama not found in watching list for user';
   END IF;
   
-  -- Get current watched episodes
-  current_watched = COALESCE(drama_record.watched_episodes, '[]'::jsonb);
+  -- Create array of episodes from 1 to p_episode_number
+  new_watched = '[]'::jsonb;
+  FOR episode_num IN 1..p_episode_number LOOP
+    new_watched = new_watched || jsonb_build_array(episode_num);
+  END LOOP;
   
-  -- Add episode if not already watched
-  IF NOT current_watched ? p_episode_number::text THEN
-    new_watched = current_watched || jsonb_build_array(p_episode_number);
-    
-    -- Update the record
-    UPDATE user_drama_lists
-    SET 
-      watched_episodes = new_watched,
-      current_episode = GREATEST(current_episode, p_episode_number),
-      total_runtime_minutes = COALESCE(total_runtime_minutes, 0) + 60, -- Add 60 minutes per episode
-      updated_at = NOW()
-    WHERE user_id = p_user_id AND drama_id = p_drama_id AND list_type = 'watching';
-  END IF;
+  -- Update the record
+  UPDATE user_drama_lists
+  SET 
+    watched_episodes = new_watched,
+    current_episode = p_episode_number,
+    episodes_watched = p_episode_number,
+    total_runtime_minutes = p_episode_number * 60, -- 60 minutes per episode
+    updated_at = NOW()
+  WHERE user_id = p_user_id AND drama_id = p_drama_id AND list_type = 'watching';
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 -- Create function to complete all episodes at once
 CREATE OR REPLACE FUNCTION complete_all_episodes(
   p_user_id UUID,
   p_drama_id INTEGER
 )
-RETURNS VOID AS $$
+RETURNS VOID AS $
 DECLARE
   drama_record RECORD;
   all_episodes JSONB;
@@ -335,7 +334,89 @@ BEGIN
     episodes_watched = EXCLUDED.episodes_watched,
     completed_at = NOW();
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
+
+-- Create function to handle drama removal from watching list
+CREATE OR REPLACE FUNCTION remove_drama_from_watching(
+  p_user_id UUID,
+  p_drama_id INTEGER
+)
+RETURNS VOID AS $
+BEGIN
+  -- Delete the drama from user_drama_lists
+  DELETE FROM user_drama_lists
+  WHERE user_id = p_user_id 
+    AND drama_id = p_drama_id 
+    AND list_type = 'watching';
+  
+  -- The trigger will automatically update user stats
+END;
+$ LANGUAGE plpgsql;
+
+-- Create comprehensive function to get user stats including episode watch time
+CREATE OR REPLACE FUNCTION get_user_comprehensive_stats(p_user_id UUID)
+RETURNS TABLE (
+  user_id UUID,
+  total_watch_time_minutes INTEGER,
+  dramas_completed INTEGER,
+  dramas_watching INTEGER,
+  dramas_in_watchlist INTEGER,
+  average_drama_runtime NUMERIC,
+  first_completion_date TIMESTAMP,
+  latest_completion_date TIMESTAMP,
+  monthly_watch_time JSONB,
+  favorite_genres JSONB,
+  yearly_watch_time JSONB,
+  favorite_actor_id INTEGER,
+  favorite_actor_name TEXT,
+  favorite_actor_works_watched INTEGER,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+) AS $
+DECLARE
+  completion_watch_time INTEGER;
+  episode_watch_time INTEGER;
+  total_time INTEGER;
+BEGIN
+  -- Get watch time from completed dramas
+  SELECT COALESCE(SUM(dc.total_runtime_minutes), 0)
+  INTO completion_watch_time
+  FROM drama_completions dc
+  WHERE dc.user_id = p_user_id;
+  
+  -- Get watch time from episodes watched in watching dramas
+  SELECT COALESCE(SUM(udl.episodes_watched * 60), 0)
+  INTO episode_watch_time
+  FROM user_drama_lists udl
+  WHERE udl.user_id = p_user_id 
+    AND udl.list_type = 'watching';
+  
+  total_time := completion_watch_time + episode_watch_time;
+  
+  RETURN QUERY
+  SELECT 
+    p_user_id,
+    total_time,
+    (SELECT COUNT(*)::INTEGER FROM user_drama_lists WHERE user_id = p_user_id AND list_type = 'completed'),
+    (SELECT COUNT(*)::INTEGER FROM user_drama_lists WHERE user_id = p_user_id AND list_type = 'watching'),
+    (SELECT COUNT(*)::INTEGER FROM user_drama_lists WHERE user_id = p_user_id AND list_type = 'watchlist'),
+    CASE 
+      WHEN (SELECT COUNT(*) FROM drama_completions WHERE user_id = p_user_id) > 0 
+      THEN total_time::NUMERIC / (SELECT COUNT(*) FROM drama_completions WHERE user_id = p_user_id)
+      ELSE 0::NUMERIC
+    END,
+    (SELECT MIN(completed_at) FROM drama_completions WHERE user_id = p_user_id),
+    (SELECT MAX(completed_at) FROM drama_completions WHERE user_id = p_user_id),
+    '{}'::JSONB,
+    '{}'::JSONB,
+    '{}'::JSONB,
+    NULL::INTEGER,
+    NULL::TEXT,
+    0::INTEGER,
+    NOW(),
+    NOW();
+END;
+$ LANGUAGE plpgsql;
 
 -- Recalculate stats for all users to fix any inconsistencies
 DO $$
@@ -357,6 +438,71 @@ ON user_drama_lists(user_id, list_type, episodes_watched);
 
 CREATE INDEX IF NOT EXISTS idx_user_drama_lists_progress 
 ON user_drama_lists(user_id, drama_id, list_type, current_episode);
+
+-- Update user stats calculation to include episode watch time
+CREATE OR REPLACE FUNCTION update_user_statistics(p_user_id UUID)
+RETURNS VOID AS $
+DECLARE
+  completion_watch_time INTEGER;
+  episode_watch_time INTEGER;
+  total_time INTEGER;
+  watching_count INTEGER;
+  watchlist_count INTEGER;
+  completed_count INTEGER;
+BEGIN
+  -- Count dramas in each list
+  SELECT COUNT(*) INTO watching_count
+  FROM user_drama_lists
+  WHERE user_id = p_user_id AND list_type = 'watching';
+  
+  SELECT COUNT(*) INTO watchlist_count
+  FROM user_drama_lists
+  WHERE user_id = p_user_id AND list_type = 'watchlist';
+  
+  SELECT COUNT(*) INTO completed_count
+  FROM user_drama_lists
+  WHERE user_id = p_user_id AND list_type = 'completed';
+  
+  -- Get watch time from completed dramas
+  SELECT COALESCE(SUM(total_runtime_minutes), 0)
+  INTO completion_watch_time
+  FROM drama_completions
+  WHERE user_id = p_user_id;
+  
+  -- Get watch time from episodes watched in watching dramas
+  SELECT COALESCE(SUM(episodes_watched * 60), 0)
+  INTO episode_watch_time
+  FROM user_drama_lists
+  WHERE user_id = p_user_id AND list_type = 'watching';
+  
+  total_time := completion_watch_time + episode_watch_time;
+  
+  -- Update or insert user stats
+  INSERT INTO user_stats (
+    user_id,
+    dramas_watching,
+    dramas_in_watchlist,
+    dramas_completed,
+    total_watch_time_minutes,
+    created_at,
+    updated_at
+  ) VALUES (
+    p_user_id,
+    watching_count,
+    watchlist_count,
+    completed_count,
+    total_time,
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    dramas_watching = EXCLUDED.dramas_watching,
+    dramas_in_watchlist = EXCLUDED.dramas_in_watchlist,
+    dramas_completed = EXCLUDED.dramas_completed,
+    total_watch_time_minutes = EXCLUDED.total_watch_time_minutes,
+    updated_at = NOW();
+END;
+$ LANGUAGE plpgsql;
 
 -- Verify the changes
 SELECT 'Episode progress system implemented successfully. All triggers and functions updated.' as status;

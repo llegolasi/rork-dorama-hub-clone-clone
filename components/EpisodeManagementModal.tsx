@@ -171,17 +171,36 @@ export default function EpisodeManagementModal({
             <Text style={styles.sectionSubtitle}>
               Selecione até qual episódio você assistiu. Episódios com ✓ já foram marcados como assistidos.
             </Text>
-            {selectedEpisode > currentEpisode && (
-              <View style={styles.selectionInfo}>
-                <Text style={styles.selectionText}>
-                  📺 Marcando episódios {currentEpisode + 1} até {selectedEpisode} como assistidos
-                </Text>
-              </View>
-            )}
+
             
             <View style={styles.episodeGrid}>
               {renderEpisodeGrid()}
             </View>
+          </View>
+
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.updateButton,
+                (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonDisabled,
+              ]}
+              onPress={handleEpisodeUpdate}
+              disabled={selectedEpisode <= currentEpisode || isUpdating}
+            >
+              <Text style={[
+                styles.updateButtonText,
+                (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonTextDisabled,
+              ]}>
+                {isUpdating ? 'Atualizando...' : `Marcar até Ep. ${selectedEpisode}`}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.quickActions}>
@@ -220,30 +239,7 @@ export default function EpisodeManagementModal({
           </View>
         </ScrollView>
 
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={onClose}
-          >
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.updateButton,
-              (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonDisabled,
-            ]}
-            onPress={handleEpisodeUpdate}
-            disabled={selectedEpisode <= currentEpisode || isUpdating}
-          >
-            <Text style={[
-              styles.updateButtonText,
-              (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonTextDisabled,
-            ]}>
-              {isUpdating ? 'Atualizando...' : `Marcar até Ep. ${selectedEpisode}`}
-            </Text>
-          </TouchableOpacity>
-        </View>
+
       </View>
     </Modal>
   );
