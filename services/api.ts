@@ -698,3 +698,64 @@ export const getUpcomingDramasPreview = async (): Promise<Drama[]> => {
     throw error;
   }
 };
+
+// Calculate total runtime for a drama (all seasons and episodes)
+export const calculateDramaTotalRuntime = async (seriesId: number): Promise<number> => {
+  try {
+    console.log(`Calculating total runtime for series ID: ${seriesId}`);
+    
+    // First get the series details to know how many seasons
+    const seriesDetails = await getDramaDetails(seriesId);
+    const numberOfSeasons = seriesDetails.number_of_seasons || 1;
+    
+    console.log(`Series has ${numberOfSeasons} seasons`);
+    
+    let totalRuntimeMinutes = 0;
+    
+    // Iterate through each season
+    for (let seasonNumber = 1; seasonNumber <= numberOfSeasons; seasonNumber++) {
+      try {
+        const seasonDetails = await getSeasonDetails(seriesId, seasonNumber);
+        
+        // Sum up runtime for all episodes in this season
+        if (seasonDetails.episodes && Array.isArray(seasonDetails.episodes)) {
+          const seasonRuntime = seasonDetails.episodes.reduce((sum, episode) => {
+            return sum + (episode.runtime || 0);
+          }, 0);
+          
+          totalRuntimeMinutes += seasonRuntime;
+          console.log(`Season ${seasonNumber}: ${seasonRuntime} minutes (${seasonDetails.episodes.length} episodes)`);
+        }
+      } catch (seasonError) {
+        console.warn(`Error fetching season ${seasonNumber} for series ${seriesId}:`, seasonError);
+        // If we can't get season details, estimate based on episode count
+        // Use a default runtime of 60 minutes per episode for K-dramas
+        const avgRuntime = 60; // Default to 60 minutes for K-dramas
+        const estimatedEpisodes = Math.ceil((seriesDetails.number_of_episodes || 16) / numberOfSeasons);
+        const estimatedRuntime = avgRuntime * estimatedEpisodes;
+        totalRuntimeMinutes += estimatedRuntime;
+        console.log(`Season ${seasonNumber}: ${estimatedRuntime} minutes (estimated)`);
+      }
+    }
+    
+    console.log(`Total runtime for series ${seriesId}: ${totalRuntimeMinutes} minutes`);
+    return totalRuntimeMinutes;
+  } catch (error) {
+    console.error(`Error calculating total runtime for series ${seriesId}:`, error);
+    
+    // Fallback: estimate based on series details
+    try {
+      const seriesDetails = await getDramaDetails(seriesId);
+      const avgRuntime = 60; // Default runtime for K-dramas
+      const totalEpisodes = seriesDetails.number_of_episodes || 16;
+      const estimatedRuntime = avgRuntime * totalEpisodes;
+      console.log(`Using fallback estimation: ${estimatedRuntime} minutes`);
+      return estimatedRuntime;
+    } catch (fallbackError) {
+      console.error('Fallback estimation also failed:', fallbackError);
+    }
+    
+    // Last resort: return a default estimate
+    return 16 * 60; // 16 episodes * 60 minutes
+  }
+};

@@ -56,6 +56,14 @@ import {
 // Subscription routes
 import { subscriptionProcedures } from "./routes/subscription/route";
 
+// Completion routes
+import {
+  completeDramaProcedure,
+  getCompletionHistoryProcedure,
+  getCompletionStatsProcedure,
+  checkDramaCompletionProcedure
+} from "./routes/completions/route";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -114,6 +122,13 @@ export const appRouter = createTRPCRouter({
     createSubscription: subscriptionProcedures.createSubscription,
     cancelSubscription: subscriptionProcedures.cancelSubscription,
     hasActiveSubscription: subscriptionProcedures.hasActiveSubscription,
+  }),
+  
+  completions: createTRPCRouter({
+    completeDrama: completeDramaProcedure,
+    getHistory: getCompletionHistoryProcedure,
+    getStats: getCompletionStatsProcedure,
+    checkCompletion: checkDramaCompletionProcedure,
   }),
 });
 
