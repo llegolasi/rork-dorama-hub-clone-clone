@@ -30,13 +30,16 @@ export const completeDramaProcedure = protectedProcedure
       }
 
       // Update the drama to completed status with all episodes watched
+      const finalWatchedMinutes = dramaData.total_runtime_minutes || totalRuntimeMinutes;
+      console.log(`Completing drama: total_runtime_minutes=${dramaData.total_runtime_minutes}, input totalRuntimeMinutes=${totalRuntimeMinutes}, final=${finalWatchedMinutes}`);
+      
       const { error: updateError } = await supabase
         .from('user_drama_lists')
         .update({
           list_type: 'completed',
           current_episode: dramaData.total_episodes,
           episodes_watched: dramaData.total_episodes,
-          watched_minutes: dramaData.total_runtime_minutes || totalRuntimeMinutes,
+          watched_minutes: finalWatchedMinutes,
           updated_at: new Date().toISOString()
         })
         .eq('id', dramaData.id);

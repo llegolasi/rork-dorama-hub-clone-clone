@@ -246,6 +246,8 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       if (!total_runtime_minutes || total_runtime_minutes <= 0) {
         total_runtime_minutes = (total_episodes || 16) * 60;
       }
+      
+      console.log(`Final runtime for drama ${dramaId}: ${total_runtime_minutes} minutes, episodes: ${total_episodes}`);
 
       // First, check if drama exists in ANY list for this user
       const { data: existing } = await supabase
@@ -258,14 +260,17 @@ export const [UserContext, useUserStore] = createContextHook(() => {
 
       if (existing) {
         // Update existing record - change list type
-        const currentEpisode = listType === 'watchlist' ? 0 : (listType === 'watching' ? 0 : (listType === 'completed' ? (total_episodes || existing.total_episodes || 16) : existing.current_episode));
+        const finalTotalEpisodes = total_episodes || existing.total_episodes || 16;
+        const currentEpisode = listType === 'watchlist' ? 0 : (listType === 'watching' ? (existing.current_episode || 0) : (listType === 'completed' ? finalTotalEpisodes : existing.current_episode));
         const episodesWatched = currentEpisode;
-        const watchedMinutes = listType === 'completed' ? total_runtime_minutes : (listType === 'watchlist' ? 0 : Math.round((currentEpisode / (total_episodes || existing.total_episodes || 1)) * total_runtime_minutes));
+        const watchedMinutes = listType === 'completed' ? total_runtime_minutes : (listType === 'watchlist' ? 0 : Math.round((currentEpisode / finalTotalEpisodes) * total_runtime_minutes));
+        
+        console.log(`Updating existing drama ${dramaId}: listType=${listType}, currentEpisode=${currentEpisode}, totalEpisodes=${finalTotalEpisodes}, watchedMinutes=${watchedMinutes}, totalRuntime=${total_runtime_minutes}`);
         
         const updateData: any = {
           list_type: listType,
           current_episode: currentEpisode,
-          total_episodes: total_episodes ?? existing.total_episodes ?? null,
+          total_episodes: finalTotalEpisodes,
           drama_name: drama_name ?? existing.drama_name ?? null,
           poster_path: poster_path ?? existing.poster_path ?? null,
           drama_year: drama_year ?? existing.drama_year ?? null,
@@ -287,16 +292,19 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         }
       } else {
         // Insert new record
-        const currentEpisode = listType === 'watchlist' ? 0 : (listType === 'watching' ? 0 : (listType === 'completed' ? (total_episodes || 16) : 0));
+        const finalTotalEpisodes = total_episodes || 16;
+        const currentEpisode = listType === 'watchlist' ? 0 : (listType === 'watching' ? 0 : (listType === 'completed' ? finalTotalEpisodes : 0));
         const episodesWatched = currentEpisode;
         const watchedMinutes = listType === 'completed' ? total_runtime_minutes : 0;
+        
+        console.log(`Inserting new drama ${dramaId}: listType=${listType}, currentEpisode=${currentEpisode}, totalEpisodes=${finalTotalEpisodes}, watchedMinutes=${watchedMinutes}, totalRuntime=${total_runtime_minutes}`);
         
         const insertData: any = {
           user_id: user.id,
           drama_id: dramaId,
           list_type: listType,
           current_episode: currentEpisode,
-          total_episodes: total_episodes ?? null,
+          total_episodes: finalTotalEpisodes,
           drama_name: drama_name ?? null,
           poster_path: poster_path ?? null,
           drama_year: drama_year ?? null,

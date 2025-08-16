@@ -51,11 +51,18 @@ export default function EpisodeManagementModal({
     if (selectedEpisode > currentEpisode && selectedEpisode <= totalEpisodes) {
       setIsUpdating(true);
       try {
+        console.log(`Updating episode progress to ${selectedEpisode} for drama ${drama.id}`);
         await onProgressUpdate(selectedEpisode);
+        
+        // Force refresh data after update
         if (onDataUpdated) {
-          onDataUpdated();
+          await onDataUpdated();
         }
-        onClose();
+        
+        // Small delay to ensure UI updates
+        setTimeout(() => {
+          onClose();
+        }, 500);
       } catch (error) {
         console.error('Error updating episode:', error);
         Alert.alert('Erro', 'Não foi possível atualizar o episódio. Tente novamente.');
@@ -87,14 +94,21 @@ export default function EpisodeManagementModal({
           onPress: async () => {
             setIsUpdating(true);
             try {
+              console.log(`Completing drama ${drama.id} with ${totalEpisodes} episodes`);
               // First update progress to mark all episodes as watched
               await onProgressUpdate(totalEpisodes);
               // Then complete the drama
               await onComplete();
+              
+              // Force refresh data after completion
               if (onDataUpdated) {
-                onDataUpdated();
+                await onDataUpdated();
               }
-              onClose();
+              
+              // Small delay to ensure UI updates
+              setTimeout(() => {
+                onClose();
+              }, 500);
             } catch (error) {
               console.error('Error completing drama:', error);
               Alert.alert('Erro', 'Não foi possível concluir o drama. Tente novamente.');
