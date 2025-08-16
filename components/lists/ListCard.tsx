@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,11 @@ import {
   Image,
 } from "react-native";
 import { router } from "expo-router";
-import { Play, Check, Trash2 } from "lucide-react-native";
+import { Play, Trash2, Settings } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
 import { Drama } from "@/types/drama";
 import { UserList } from "@/types/user";
+import EpisodeManagementModal from "@/components/EpisodeManagementModal";
 
 const IMAGE_WIDTH = 80;
 const IMAGE_HEIGHT = 120;
@@ -34,6 +35,8 @@ export function ListCard({
   onMoveToWatching,
   onComplete,
 }: ListCardProps) {
+  const [showEpisodeModal, setShowEpisodeModal] = useState<boolean>(false);
+  
   const imageUrl = drama.poster_path
     ? `https://image.tmdb.org/t/p/w300${drama.poster_path}`
     : null;
@@ -46,14 +49,7 @@ export function ListCard({
     router.push(`/drama/${drama.id}`);
   };
 
-  const handleProgressPress = () => {
-    if (userListItem.progress && onProgressUpdate) {
-      const nextEpisode = userListItem.progress.currentEpisode + 1;
-      if (nextEpisode <= userListItem.progress.totalEpisodes) {
-        onProgressUpdate(nextEpisode);
-      }
-    }
-  };
+
 
   const handleEpisodePress = (episodeNumber: number) => {
     if (onProgressUpdate) {
@@ -140,14 +136,14 @@ export function ListCard({
               </TouchableOpacity>
             )}
             
-            {onComplete && (
+            {showProgress && onProgressUpdate && onComplete && (
               <TouchableOpacity
-                style={styles.completeButton}
-                onPress={onComplete}
-                testID={`complete-${drama.id}`}
+                style={styles.episodeManageButton}
+                onPress={() => setShowEpisodeModal(true)}
+                testID={`manage-episodes-${drama.id}`}
               >
-                <Check size={16} color={COLORS.background} />
-                <Text style={styles.completeButtonText}>Concluir</Text>
+                <Settings size={16} color={COLORS.accent} />
+                <Text style={styles.episodeManageButtonText}>Episódios</Text>
               </TouchableOpacity>
             )}
             
@@ -163,6 +159,17 @@ export function ListCard({
           </View>
         </View>
       </View>
+      
+      {showProgress && onProgressUpdate && onComplete && (
+        <EpisodeManagementModal
+          visible={showEpisodeModal}
+          onClose={() => setShowEpisodeModal(false)}
+          drama={drama}
+          userListItem={userListItem}
+          onProgressUpdate={onProgressUpdate}
+          onComplete={onComplete}
+        />
+      )}
     </TouchableOpacity>
   );
 }
@@ -260,19 +267,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.background,
   },
-  completeButton: {
+  episodeManageButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "#10B981",
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
     gap: 4,
   },
-  completeButtonText: {
+  episodeManageButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    color: COLORS.background,
+    color: COLORS.accent,
   },
   removeButton: {
     padding: 8,
