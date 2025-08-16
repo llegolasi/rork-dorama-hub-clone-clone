@@ -101,18 +101,57 @@ export default function CompletionShareModal({
   };
 
   const handleShare = async () => {
-    if (!completionData) return;
+    if (!completionData) {
+      console.log('Missing completion data');
+      return;
+    }
 
+    setIsGeneratingImage(true);
     try {
-      const shareText = `🎬 Acabei de concluir "${completionData.drama.name}"!\n\n⏱️ Tempo total de maratona: ${formatTime(completionData.hours, completionData.minutes)}\n\n#DoramaHub #KDrama`;
+      // Wait for images to load and view to be fully rendered
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Check if ref exists and is mounted
+      if (!certificateRef.current) {
+        console.log('Certificate ref does not exist');
+        Alert.alert('Erro', 'Não foi possível capturar a imagem. Tente novamente.');
+        setIsGeneratingImage(false);
+        return;
+      }
+
+      console.log('Capturing certificate view for sharing...');
       
+      // Capture the image
+      let uri: string;
+      try {
+        uri = await captureRef(certificateRef, {
+          format: 'png',
+          quality: 1.0,
+          result: 'tmpfile',
+        });
+      } catch (captureError) {
+        console.error('Capture error:', captureError);
+        // Retry with different options
+        await new Promise(resolve => setTimeout(resolve, 500));
+        uri = await captureRef(certificateRef, {
+          format: 'jpg',
+          quality: 0.9,
+          result: 'tmpfile',
+        });
+      }
+
+      console.log('Image captured successfully for sharing:', uri);
+      
+      // Share the image
       await Share.share({
-        message: shareText,
+        url: uri,
         title: 'Dorama Concluído!',
       });
     } catch (error) {
-      console.error('Error sharing:', error);
-      Alert.alert('Erro', 'Não foi possível compartilhar. Tente novamente.');
+      console.error('Error sharing image:', error);
+      Alert.alert('Erro', 'Não foi possível compartilhar a imagem. Tente novamente.');
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -254,21 +293,21 @@ export default function CompletionShareModal({
               <Text style={styles.celebrationEmoji}>🎉</Text>
               <Text style={styles.celebrationText}>PARABÉNS!</Text>
             </View>
-            
-            {/* Poster with modern frame */}
-            {posterUrl && (
-              <View style={styles.modernPosterContainer}>
-                <View style={styles.posterFrame}>
-                  <Image 
-                    source={{ uri: posterUrl }} 
-                    style={styles.modernPoster}
-                    resizeMode="cover"
-                  />
-                </View>
-                <View style={styles.posterGlow} />
-              </View>
-            )}
           </View>
+          
+          {/* Centered Poster */}
+          {posterUrl && (
+            <View style={styles.centeredPosterContainer}>
+              <View style={styles.posterFrame}>
+                <Image 
+                  source={{ uri: posterUrl }} 
+                  style={styles.centeredPoster}
+                  resizeMode="cover"
+                />
+              </View>
+              <View style={styles.posterGlow} />
+            </View>
+          )}
 
           {/* Main Content */}
           <View style={styles.mainContent}>
@@ -365,10 +404,17 @@ export default function CompletionShareModal({
                 <TouchableOpacity
                   style={[styles.actionButton, styles.shareButton]}
                   onPress={handleShare}
+                  disabled={isGeneratingImage}
                   activeOpacity={0.8}
                 >
-                  <Share2 size={20} color={COLORS.text} />
-                  <Text style={styles.actionButtonText}>Compartilhar</Text>
+                  {isGeneratingImage ? (
+                    <ActivityIndicator size={20} color={COLORS.text} />
+                  ) : (
+                    <Share2 size={20} color={COLORS.text} />
+                  )}
+                  <Text style={styles.actionButtonText}>
+                    {isGeneratingImage ? 'Preparando...' : 'Compartilhar'}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -530,28 +576,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 24,
   },
   celebrationContainer: {
     alignItems: 'center',
+    marginBottom: 16,
   },
   celebrationEmoji: {
-    fontSize: 32,
-    marginBottom: 4,
+    fontSize: 40,
+    marginBottom: 8,
   },
   celebrationText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    letterSpacing: 3,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
-  modernPosterContainer: {
+  centeredPosterContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
     position: 'relative',
   },
   posterFrame: {
@@ -565,18 +612,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
   },
-  modernPoster: {
-    width: 100,
-    height: 150,
+  centeredPoster: {
+    width: 140,
+    height: 210,
   },
   posterGlow: {
     position: 'absolute',
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    top: -12,
+    left: -12,
+    right: -12,
+    bottom: -12,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     zIndex: -1,
   },
   mainContent: {
@@ -612,35 +659,38 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   modernUserName: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 36,
+    fontWeight: '900',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
+    letterSpacing: 1,
   },
   modernCompletedText: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 20,
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
     marginBottom: 12,
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
+    letterSpacing: 0.5,
   },
   modernDramaTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '900',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 32,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    lineHeight: 34,
+    textShadowRadius: 6,
+    lineHeight: 38,
+    letterSpacing: 1,
   },
   modernStatsContainer: {
     borderRadius: 20,
@@ -667,22 +717,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   modernStatsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#FFFFFF',
-    fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  modernStatsValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
+    fontWeight: '700',
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+    letterSpacing: 0.5,
+  },
+  modernStatsValue: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
     marginBottom: 12,
+    letterSpacing: 0.5,
   },
   statsDecoration: {
     flexDirection: 'row',
@@ -724,20 +776,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modernAppName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    letterSpacing: 0.5,
+  },
+  modernAppTagline: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '600',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
-  },
-  modernAppTagline: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    letterSpacing: 0.3,
   },
   actionButtons: {
     flexDirection: 'row',
