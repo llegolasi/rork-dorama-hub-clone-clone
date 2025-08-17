@@ -582,9 +582,10 @@ export const markEpisodeWatchedProcedure = protectedProcedure
           drama_id: input.dramaId,
           episode_number: input.episodeNumber,
           episode_duration_minutes: input.episodeDurationMinutes,
-          started_at: startedAt,
-          completed_at: completedAt,
+          watch_started_at: startedAt,
+          watch_completed_at: completedAt,
           watched_at: completedAt,
+          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id,drama_id,episode_number'
@@ -651,102 +652,41 @@ export const completeDramaWithDateRangeProcedure = protectedProcedure
   }))
   .mutation(async ({ input, ctx }) => {
     try {
-      const startDate = new Date(input.startDate);
-      const endDate = new Date(input.endDate);
-      const daysInterval = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      console.log('completeDramaWithDateRangeProcedure called with:', {
+        userId: ctx.user.id,
+        dramaId: input.dramaId,
+        totalEpisodes: input.totalEpisodes,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        episodeDurationMinutes: input.episodeDurationMinutes,
+        dramaCategory: input.dramaCategory
+      });
+
+      // Use the database function to complete drama with date range
+      const { data, error } = await ctx.supabase.rpc('complete_drama_with_date_range', {
+        p_user_id: ctx.user.id,
+        p_drama_id: input.dramaId,
+        p_total_episodes: input.totalEpisodes,
+        p_start_date: input.startDate,
+        p_end_date: input.endDate,
+        p_episode_duration_minutes: input.episodeDurationMinutes,
+        p_drama_category: input.dramaCategory
+      });
       
-      // Calculate episodes per day
-      const episodesPerDay = input.totalEpisodes / daysInterval;
-      
-      const episodeHistory = [];
-      let episodeCounter = 1;
-      let currentDate = new Date(startDate);
-      
-      // Distribute episodes across the date range
-      while (episodeCounter <= input.totalEpisodes && currentDate <= endDate) {
-        let episodesToday;
-        
-        if (daysInterval < input.totalEpisodes) {
-          episodesToday = Math.ceil(episodesPerDay);
-          // Add some randomness
-          if (Math.random() > 0.7) {
-            episodesToday += 1;
-          }
-        } else {
-          // If we have more days than episodes, not every day will have an episode
-          episodesToday = Math.random() > 0.3 ? 1 : 0;
-        }
-        
-        // Create episodes for this day
-        for (let i = 0; i < episodesToday && episodeCounter <= input.totalEpisodes; i++) {
-          const randomHour = Math.floor(Math.random() * 16) + 8; // Between 8h and 24h
-          const watchTime = new Date(currentDate);
-          watchTime.setHours(randomHour, Math.floor(Math.random() * 60), 0, 0);
-          
-          const startTime = new Date(watchTime.getTime() - 60 * 60 * 1000); // 1 hour before
-          
-          episodeHistory.push({
-            user_id: ctx.user.id,
-            drama_id: input.dramaId,
-            episode_number: episodeCounter,
-            episode_duration_minutes: input.episodeDurationMinutes,
-            started_at: startTime.toISOString(),
-            completed_at: watchTime.toISOString(),
-            watched_at: watchTime.toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-          
-          episodeCounter++;
-        }
-        
-        currentDate.setDate(currentDate.getDate() + 1);
+      if (error) {
+        console.error('Error calling complete_drama_with_date_range RPC:', error);
+        throw new Error(`Failed to complete drama with date range: ${error.message}`);
       }
       
-      // Insert all episode history records
-      if (episodeHistory.length > 0) {
-        const { error: historyError } = await ctx.supabase
-          .from('episode_watch_history')
-          .upsert(episodeHistory, {
-            onConflict: 'user_id,drama_id,episode_number'
-          });
-        
-        if (historyError) {
-          console.error('Error inserting episode history:', historyError);
-          throw new Error('Failed to create episode history');
-        }
+      if (!data) {
+        throw new Error('RPC function returned no data');
       }
       
-      // Update the drama list with completion status and category
-      const totalWatchTime = input.totalEpisodes * input.episodeDurationMinutes;
-      
-      const updateData: any = {
-        list_type: 'completed',
-        episodes_watched: input.totalEpisodes,
-        current_episode: input.totalEpisodes,
-        watched_minutes: totalWatchTime,
-        updated_at: new Date().toISOString()
-      };
-      
-      if (input.dramaCategory) {
-        updateData.drama_category = input.dramaCategory;
-      }
-      
-      const { error: updateError } = await ctx.supabase
-        .from('user_drama_lists')
-        .update(updateData)
-        .eq('user_id', ctx.user.id)
-        .eq('drama_id', input.dramaId);
-      
-      if (updateError) {
-        console.error('Error updating drama completion:', updateError);
-        throw new Error('Failed to complete drama');
-      }
-      
+      console.log('Drama completed with date range successfully:', data);
       return { success: true, message: 'Drama completed with date range successfully' };
     } catch (error) {
       console.error('Error in completeDramaWithDateRangeProcedure:', error);
-      throw new Error('Failed to complete drama with date range');
+      throw new Error(`Failed to complete drama with date range: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
 
