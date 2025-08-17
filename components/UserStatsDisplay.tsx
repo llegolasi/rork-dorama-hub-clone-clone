@@ -5,14 +5,14 @@ import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
-import { useUserStore } from '@/hooks/useUserStore';
+
 
 interface UserStatsDisplayProps {
   userId?: string;
 }
 
 export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
-  const { userProfile } = useUserStore();
+
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
     { userId: userId || undefined },
     { 
@@ -23,7 +23,7 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
     }
   );
   
-  const isPremium = userProfile?.premium?.isSubscribed || false;
+
   
   const updateStatsMutation = trpc.users.updateStats.useMutation({
     onSuccess: () => {
@@ -96,15 +96,13 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
             </Text>
           </TouchableOpacity>
           
-          {isPremium && (
-            <TouchableOpacity 
-              style={styles.viewCompleteButton}
-              onPress={() => router.push('/statistics')}
-            >
-              <Text style={styles.viewCompleteButtonText}>Ver Completo</Text>
-              <ArrowRight size={16} color={COLORS.accent} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={styles.viewCompleteButton}
+            onPress={() => router.push('/statistics')}
+          >
+            <Text style={styles.viewCompleteButtonText}>Ver Completo</Text>
+            <ArrowRight size={16} color={COLORS.accent} />
+          </TouchableOpacity>
         </View>
       </View>
 

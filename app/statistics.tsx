@@ -44,13 +44,10 @@ export default function StatisticsScreen() {
   const [activeStatType, setActiveStatType] = useState<StatType>('overview');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Check if user is premium
-  const isPremium = userProfile?.premium?.isSubscribed || false;
-
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
     { userId: userProfile?.id || undefined },
     {
-      enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0 && isPremium,
+      enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0,
       refetchOnMount: true,
       retry: 2,
       retryDelay: 1000,
@@ -312,43 +309,7 @@ export default function StatisticsScreen() {
     );
   };
 
-  if (!isPremium) {
-    return (
-      <>
-        <Stack.Screen
-          options={{
-            title: "Estatísticas Premium",
-            headerStyle: { backgroundColor: COLORS.background },
-            headerTitleStyle: {
-              fontSize: 20,
-              fontWeight: "700",
-              color: COLORS.text,
-            },
-            headerShadowVisible: false,
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
-                <ArrowLeft size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            ),
-          }}
-        />
-        <View style={styles.premiumRequired}>
-          <Crown size={64} color={COLORS.accent} />
-          <Text style={styles.premiumTitle}>Estatísticas Premium</Text>
-          <Text style={styles.premiumDescription}>
-            Desbloqueie estatísticas detalhadas, gráficos avançados e insights personalizados sobre seus hábitos de assistir K-dramas.
-          </Text>
-          <TouchableOpacity 
-            style={styles.upgradeButton}
-            onPress={() => router.push('/subscription')}
-          >
-            <Crown size={20} color={COLORS.background} />
-            <Text style={styles.upgradeButtonText}>Assinar Premium</Text>
-          </TouchableOpacity>
-        </View>
-      </>
-    );
-  }
+
 
   if (isLoading) {
     return (
@@ -358,7 +319,7 @@ export default function StatisticsScreen() {
             title: "Estatísticas",
             headerStyle: { backgroundColor: COLORS.background },
             headerTitleStyle: {
-              fontSize: 20,
+              fontSize: 28,
               fontWeight: "700",
               color: COLORS.text,
             },
@@ -386,7 +347,7 @@ export default function StatisticsScreen() {
             title: "Estatísticas",
             headerStyle: { backgroundColor: COLORS.background },
             headerTitleStyle: {
-              fontSize: 20,
+              fontSize: 28,
               fontWeight: "700",
               color: COLORS.text,
             },
@@ -412,10 +373,10 @@ export default function StatisticsScreen() {
     <>
       <Stack.Screen
         options={{
-          title: "Estatísticas Premium",
+          title: "Estatísticas",
           headerStyle: { backgroundColor: COLORS.background },
           headerTitleStyle: {
-            fontSize: 20,
+            fontSize: 28,
             fontWeight: "700",
             color: COLORS.text,
           },
@@ -437,14 +398,7 @@ export default function StatisticsScreen() {
       />
       
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Premium Badge */}
-        <LinearGradient
-          colors={[COLORS.accent + '20', COLORS.accent + '10']}
-          style={styles.premiumBadge}
-        >
-          <Crown size={20} color={COLORS.accent} />
-          <Text style={styles.premiumBadgeText}>Estatísticas Premium</Text>
-        </LinearGradient>
+
 
         {/* Filters */}
         {showFilters && (
