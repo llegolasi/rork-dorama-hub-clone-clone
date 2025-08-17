@@ -52,8 +52,7 @@ export default function EpisodeManagementModal({
       if (onDataUpdated) {
         onDataUpdated();
       }
-      Alert.alert('Sucesso', 'Episódio marcado como assistido!');
-      onClose();
+      // Removed notification to avoid spam when marking multiple episodes
     },
     onError: (error) => {
       Alert.alert('Erro', `Falha ao marcar episódio: ${error.message}`);
