@@ -7,10 +7,9 @@ import {
   Modal,
   Alert,
   ScrollView,
-  TextInput,
   Platform,
 } from 'react-native';
-import { Calendar, Clock, Tag, X } from 'lucide-react-native';
+import { Calendar, X } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { COLORS } from '@/constants/colors';
@@ -25,23 +24,7 @@ interface CompleteDramaModalProps {
   onSuccess: () => void;
 }
 
-const DRAMA_CATEGORIES = [
-  'Romance',
-  'Comédia',
-  'Drama',
-  'Thriller',
-  'Histórico',
-  'Fantasia',
-  'Ação',
-  'Mistério',
-  'Slice of Life',
-  'Médico',
-  'Escolar',
-  'Família',
-  'Crime',
-  'Sobrenatural',
-  'Militar',
-];
+
 
 export default function CompleteDramaModal({
   visible,
@@ -53,8 +36,8 @@ export default function CompleteDramaModal({
 }: CompleteDramaModalProps) {
   const [startDate, setStartDate] = useState<Date>(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // 7 days ago
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [episodeDuration, setEpisodeDuration] = useState<string>('60');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [episodeDuration] = useState<string>('60'); // Hidden from user, auto-filled
+  const [selectedCategory] = useState<string>(''); // Hidden from user, auto-filled
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<boolean>(false);
 
@@ -70,11 +53,6 @@ export default function CompleteDramaModal({
   });
 
   const handleComplete = () => {
-    if (!selectedCategory) {
-      Alert.alert('Atenção', 'Por favor, selecione uma categoria para o drama.');
-      return;
-    }
-
     if (startDate >= endDate) {
       Alert.alert('Atenção', 'A data de início deve ser anterior à data de fim.');
       return;
@@ -82,7 +60,7 @@ export default function CompleteDramaModal({
 
     const duration = parseInt(episodeDuration);
     if (isNaN(duration) || duration < 1) {
-      Alert.alert('Atenção', 'Por favor, insira uma duração válida para os episódios.');
+      Alert.alert('Atenção', 'Erro interno: duração inválida.');
       return;
     }
 
@@ -136,40 +114,13 @@ export default function CompleteDramaModal({
             <Text style={styles.episodeCount}>{totalEpisodes} episódios</Text>
           </View>
 
-          {/* Category Selection */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Tag size={20} color={COLORS.accent} />
-              <Text style={styles.sectionTitle}>Categoria do Drama</Text>
-            </View>
-            <View style={styles.categoriesGrid}>
-              {DRAMA_CATEGORIES.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.categoryChip,
-                    selectedCategory === category && styles.categoryChipSelected,
-                  ]}
-                  onPress={() => setSelectedCategory(category)}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      selectedCategory === category && styles.categoryTextSelected,
-                    ]}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+
 
           {/* Date Selection */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Calendar size={20} color={COLORS.accent} />
-              <Text style={styles.sectionTitle}>Período de Assistência</Text>
+              <Text style={styles.sectionTitle}>Período que Assistiu</Text>
             </View>
 
             <View style={styles.dateRow}>
@@ -204,24 +155,7 @@ export default function CompleteDramaModal({
             </View>
           </View>
 
-          {/* Episode Duration */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Clock size={20} color={COLORS.accent} />
-              <Text style={styles.sectionTitle}>Duração por Episódio</Text>
-            </View>
-            <View style={styles.durationContainer}>
-              <TextInput
-                style={styles.durationInput}
-                value={episodeDuration}
-                onChangeText={setEpisodeDuration}
-                keyboardType="numeric"
-                placeholder="60"
-                placeholderTextColor={COLORS.textSecondary}
-              />
-              <Text style={styles.durationUnit}>minutos</Text>
-            </View>
-          </View>
+
 
           {/* Summary */}
           <View style={styles.summary}>
@@ -233,7 +167,7 @@ export default function CompleteDramaModal({
               • Tempo total estimado: {Math.round((totalEpisodes * parseInt(episodeDuration || '60')) / 60)}h {(totalEpisodes * parseInt(episodeDuration || '60')) % 60}m
             </Text>
             <Text style={styles.summaryText}>
-              • Categoria: {selectedCategory || 'Não selecionada'}
+              • Categoria e duração dos episódios serão preenchidas automaticamente
             </Text>
           </View>
         </ScrollView>

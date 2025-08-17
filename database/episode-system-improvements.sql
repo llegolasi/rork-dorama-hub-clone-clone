@@ -282,7 +282,6 @@ BEGIN
                 episode_duration_minutes,
                 watch_started_at,
                 watch_completed_at,
-                watched_at,
                 created_at,
                 updated_at
             ) VALUES (
@@ -292,14 +291,12 @@ BEGIN
                 p_episode_duration_minutes,
                 v_start_time,
                 v_watch_time,
-                v_watch_time,
                 NOW(),
                 NOW()
             ) ON CONFLICT (user_id, drama_id, episode_number) DO UPDATE SET
                 episode_duration_minutes = EXCLUDED.episode_duration_minutes,
                 watch_started_at = EXCLUDED.watch_started_at,
                 watch_completed_at = EXCLUDED.watch_completed_at,
-                watched_at = EXCLUDED.watched_at,
                 updated_at = NOW();
             
             v_episode_counter := v_episode_counter + 1;
@@ -330,7 +327,7 @@ BEGIN
             total_episodes,
             watched_minutes,
             drama_category,
-            created_at,
+            added_at,
             updated_at
         ) VALUES (
             p_user_id,
