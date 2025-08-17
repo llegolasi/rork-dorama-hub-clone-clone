@@ -16,7 +16,7 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
     { userId },
     { 
-      enabled: true,
+      enabled: !!userId,
       refetchOnMount: true,
       retry: 2,
       retryDelay: 1000
@@ -154,8 +154,6 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
           )}
         </View>
       )}
-
-
     </View>
   );
 }
