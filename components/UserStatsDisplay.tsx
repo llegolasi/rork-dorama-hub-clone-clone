@@ -1,15 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { BarChart3, Clock, Trophy, Eye, BookOpen, TrendingUp } from 'lucide-react-native';
+import { BarChart3, Clock, Trophy, Eye, BookOpen, TrendingUp, ArrowRight } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
+import { useUserStore } from '@/hooks/useUserStore';
 
 interface UserStatsDisplayProps {
   userId?: string;
 }
 
 export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
+  const { userProfile } = useUserStore();
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
     { userId },
     { 
@@ -19,6 +22,8 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
       retryDelay: 1000
     }
   );
+  
+  const isPremium = userProfile?.premium?.isSubscribed || false;
   
   const updateStatsMutation = trpc.users.updateStats.useMutation({
     onSuccess: () => {
@@ -79,16 +84,28 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
           <BarChart3 size={24} color={COLORS.accent} />
           <Text style={styles.title}>Estatísticas</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.updateButton}
-          onPress={handleUpdateStats}
-          disabled={updateStatsMutation.isPending}
-        >
-          <TrendingUp size={16} color={COLORS.accent} />
-          <Text style={styles.updateButtonText}>
-            {updateStatsMutation.isPending ? 'Atualizando...' : 'Atualizar'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={styles.updateButton}
+            onPress={handleUpdateStats}
+            disabled={updateStatsMutation.isPending}
+          >
+            <TrendingUp size={16} color={COLORS.accent} />
+            <Text style={styles.updateButtonText}>
+              {updateStatsMutation.isPending ? 'Atualizando...' : 'Atualizar'}
+            </Text>
+          </TouchableOpacity>
+          
+          {isPremium && (
+            <TouchableOpacity 
+              style={styles.viewCompleteButton}
+              onPress={() => router.push('/statistics')}
+            >
+              <Text style={styles.viewCompleteButtonText}>Ver Completo</Text>
+              <ArrowRight size={16} color={COLORS.accent} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.statsGrid}>
@@ -138,13 +155,7 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
         </View>
       )}
 
-      <View style={styles.debugInfo}>
-        <Text style={styles.debugTitle}>Debug Info:</Text>
-        <Text style={styles.debugText}>User ID: {stats.user_id}</Text>
-        <Text style={styles.debugText}>
-          Última atualização: {stats.updated_at ? new Date(stats.updated_at).toLocaleString('pt-BR') : 'N/A'}
-        </Text>
-      </View>
+
     </View>
   );
 }
@@ -161,6 +172,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -187,6 +203,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.accent,
     fontWeight: '500',
+  },
+  viewCompleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.accent + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  viewCompleteButtonText: {
+    fontSize: 12,
+    color: COLORS.accent,
+    fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -229,25 +259,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 4,
   },
-  debugInfo: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  debugTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  debugText: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    fontFamily: 'monospace',
-  },
+
   loadingText: {
     fontSize: 16,
     color: COLORS.textSecondary,
