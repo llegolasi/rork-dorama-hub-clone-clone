@@ -103,7 +103,12 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           listsData.forEach(item => {
             const userListItem: UserList = {
               dramaId: item.drama_id,
-              addedAt: item.added_at
+              addedAt: item.added_at,
+              current_episode: item.current_episode,
+              total_episodes: item.total_episodes,
+              total_runtime_minutes: item.total_runtime_minutes,
+              watched_minutes: item.watched_minutes,
+              episodes_watched: item.episodes_watched
             };
             
             if (item.list_type === 'watching' && item.total_episodes) {
@@ -123,7 +128,8 @@ export const [UserContext, useUserStore] = createContextHook(() => {
                 currentEpisode: item.current_episode || 0,
                 totalEpisodes: item.total_episodes,
                 watchedEpisodes,
-                totalWatchTimeMinutes: item.watched_minutes || 0
+                totalWatchTimeMinutes: item.watched_minutes || 0,
+                episodesWatched: item.episodes_watched || 0
               };
             }
             
@@ -528,11 +534,15 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         } else {
           const updatedItem = {
             ...watchingList[dramaIndex],
+            episodes_watched: Math.min(currentEpisode, ensuredTotalEpisodes),
+            watched_minutes: watchedMinutes,
+            current_episode: Math.min(currentEpisode, ensuredTotalEpisodes),
             progress: {
               ...watchingList[dramaIndex].progress!,
               currentEpisode: Math.min(currentEpisode, ensuredTotalEpisodes),
               watchedEpisodes: newWatchedEpisodes,
-              totalWatchTimeMinutes: watchedMinutes
+              totalWatchTimeMinutes: watchedMinutes,
+              episodesWatched: Math.min(currentEpisode, ensuredTotalEpisodes)
             }
           };
           
@@ -724,7 +734,12 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         listsData.forEach(item => {
           const userListItem: UserList = {
             dramaId: item.drama_id,
-            addedAt: item.added_at
+            addedAt: item.added_at,
+            current_episode: item.current_episode,
+            total_episodes: item.total_episodes,
+            total_runtime_minutes: item.total_runtime_minutes,
+            watched_minutes: item.watched_minutes,
+            episodes_watched: item.episodes_watched
           };
           
           if (item.list_type === 'watching' && item.total_episodes) {
@@ -744,7 +759,8 @@ export const [UserContext, useUserStore] = createContextHook(() => {
               currentEpisode: item.current_episode || 0,
               totalEpisodes: item.total_episodes,
               watchedEpisodes,
-              totalWatchTimeMinutes: item.watched_minutes || 0
+              totalWatchTimeMinutes: item.watched_minutes || 0,
+              episodesWatched: item.episodes_watched || 0
             };
           }
           

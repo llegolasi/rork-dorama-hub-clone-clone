@@ -7,12 +7,14 @@ export interface UserList {
   total_episodes?: number;
   total_runtime_minutes?: number;
   watched_minutes?: number;
+  episodes_watched?: number;
   // Legacy support for old progress structure
   progress?: {
     currentEpisode: number;
     totalEpisodes: number;
     watchedEpisodes: number[];
     totalWatchTimeMinutes: number;
+    episodesWatched?: number; // Add this field to progress as well
   };
 }
 

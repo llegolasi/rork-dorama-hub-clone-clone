@@ -36,22 +36,21 @@ export default function EpisodeManagementModal({
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const totalEpisodes = userListItem.progress?.totalEpisodes || drama.episodes || 16;
-  const currentEpisode = userListItem.progress?.currentEpisode || 0;
-  // Calculate watched episodes based on current_episode (not used in render but kept for potential future use)
-  // const watchedEpisodes = Array.from({ length: currentEpisode }, (_, i) => i + 1);
+  // Use episodes_watched as the primary field (episodes_watched is the main field now)
+  const episodesWatched = userListItem.episodes_watched || userListItem.progress?.episodesWatched || userListItem.progress?.currentEpisode || 0;
 
   // Reset selected episode when modal opens
   useEffect(() => {
     if (visible) {
-      setSelectedEpisode(currentEpisode + 1); // Default to next episode
+      setSelectedEpisode(episodesWatched + 1); // Default to next episode
     }
-  }, [visible, currentEpisode]);
+  }, [visible, episodesWatched]);
 
   const handleEpisodeUpdate = async () => {
-    if (selectedEpisode > currentEpisode && selectedEpisode <= totalEpisodes) {
+    if (selectedEpisode > episodesWatched && selectedEpisode <= totalEpisodes) {
       setIsUpdating(true);
       try {
-        console.log(`Updating episode progress to ${selectedEpisode} for drama ${drama.id}`);
+        console.log(`Updating episodes watched to ${selectedEpisode} for drama ${drama.id}`);
         await onProgressUpdate(selectedEpisode);
         
         // Force refresh data after update
@@ -69,7 +68,7 @@ export default function EpisodeManagementModal({
       } finally {
         setIsUpdating(false);
       }
-    } else if (selectedEpisode <= currentEpisode) {
+    } else if (selectedEpisode <= episodesWatched) {
       Alert.alert(
         'Episódio Inválido',
         'Você só pode marcar episódios posteriores ao atual como assistidos.'
@@ -124,9 +123,9 @@ export default function EpisodeManagementModal({
   const renderEpisodeGrid = () => {
     const episodes = [];
     for (let i = 1; i <= totalEpisodes; i++) {
-      const isWatched = i <= currentEpisode;
+      const isWatched = i <= episodesWatched;
       const isSelected = i === selectedEpisode;
-      const isAvailable = i > currentEpisode; // Can only select episodes after current
+      const isAvailable = i > episodesWatched; // Can only select episodes after watched
       
       episodes.push(
         <TouchableOpacity
@@ -180,7 +179,7 @@ export default function EpisodeManagementModal({
               {drama.name}
             </Text>
             <Text style={styles.progressText}>
-              Episódio {currentEpisode} de {totalEpisodes} assistidos
+              Episódio {episodesWatched} de {totalEpisodes} assistidos
             </Text>
             <Text style={styles.progressText}>
               Tempo assistido: {Math.round((userListItem.progress?.totalWatchTimeMinutes || 0) / 60)}h {Math.round((userListItem.progress?.totalWatchTimeMinutes || 0) % 60)}min
@@ -205,14 +204,14 @@ export default function EpisodeManagementModal({
             <TouchableOpacity
               style={[
                 styles.updateButton,
-                (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonDisabled,
+                (selectedEpisode <= episodesWatched || isUpdating) && styles.updateButtonDisabled,
               ]}
               onPress={handleEpisodeUpdate}
-              disabled={selectedEpisode <= currentEpisode || isUpdating}
+              disabled={selectedEpisode <= episodesWatched || isUpdating}
             >
               <Text style={[
                 styles.updateButtonText,
-                (selectedEpisode <= currentEpisode || isUpdating) && styles.updateButtonTextDisabled,
+                (selectedEpisode <= episodesWatched || isUpdating) && styles.updateButtonTextDisabled,
               ]}>
                 {isUpdating ? 'Atualizando...' : `Marcar até Ep. ${selectedEpisode}`}
               </Text>
@@ -223,17 +222,17 @@ export default function EpisodeManagementModal({
             <TouchableOpacity
               style={[
                 styles.quickActionButton,
-                (currentEpisode >= totalEpisodes || isUpdating) && styles.quickActionButtonDisabled
+                (episodesWatched >= totalEpisodes || isUpdating) && styles.quickActionButtonDisabled
               ]}
-              onPress={() => setSelectedEpisode(currentEpisode + 1)}
-              disabled={currentEpisode >= totalEpisodes || isUpdating}
+              onPress={() => setSelectedEpisode(episodesWatched + 1)}
+              disabled={episodesWatched >= totalEpisodes || isUpdating}
             >
-              <Play size={20} color={currentEpisode >= totalEpisodes ? COLORS.textSecondary : COLORS.accent} />
+              <Play size={20} color={episodesWatched >= totalEpisodes ? COLORS.textSecondary : COLORS.accent} />
               <Text style={[
                 styles.quickActionText,
-                (currentEpisode >= totalEpisodes || isUpdating) && styles.quickActionTextDisabled
+                (episodesWatched >= totalEpisodes || isUpdating) && styles.quickActionTextDisabled
               ]}>
-                Próximo Episódio ({currentEpisode + 1})
+                Próximo Episódio ({episodesWatched + 1})
               </Text>
             </TouchableOpacity>
 
