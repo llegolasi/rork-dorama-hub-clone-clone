@@ -222,8 +222,9 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       let poster_image: string | null = poster_path ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${poster_path}` : null;
       let total_runtime_minutes: number = 0;
 
-      // Fetch details if required metadata missing
-      if (!drama_name || !poster_path || !drama_year || !total_episodes) {
+      // Fetch details if required metadata missing or to get genre information
+      let drama_category: string | null = null;
+      if (!drama_name || !poster_path || !drama_year || !total_episodes || !drama_category) {
         try {
           const details = await getDramaDetails(dramaId);
           drama_name = drama_name ?? details.name;
@@ -232,6 +233,10 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           total_episodes = total_episodes ?? (details.number_of_episodes ?? null);
           if (!poster_image && details.poster_path) {
             poster_image = `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${details.poster_path}`;
+          }
+          // Extract primary genre as drama category
+          if (details.genres && details.genres.length > 0) {
+            drama_category = details.genres[0].name; // Use the first genre as primary category
           }
         } catch (e) {
           console.log('getDramaDetails failed, continuing with partial meta', e);
@@ -284,6 +289,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           total_runtime_minutes: total_runtime_minutes,
           watched_minutes: watchedMinutes,
           episodes_watched: episodesWatched,
+          drama_category: drama_category ?? existing.drama_category ?? null,
           updated_at: new Date().toISOString()
         };
         
@@ -318,6 +324,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           total_runtime_minutes: total_runtime_minutes,
           watched_minutes: watchedMinutes,
           episodes_watched: episodesWatched,
+          drama_category: drama_category ?? null,
         };
         
         const { error } = await supabase
@@ -448,15 +455,25 @@ export const [UserContext, useUserStore] = createContextHook(() => {
       
       let ensuredTotalEpisodes = dramaData.total_episodes || 0;
       let ensuredTotalRuntime = dramaData.total_runtime_minutes || 0;
+      let ensuredDramaCategory = dramaData.drama_category || null;
       
-      if (!ensuredTotalEpisodes || ensuredTotalEpisodes <= 0) {
+      // Fetch details if missing essential data or category
+      if (!ensuredTotalEpisodes || ensuredTotalEpisodes <= 0 || !ensuredDramaCategory) {
         try {
           const details = await getDramaDetails(dramaId);
-          ensuredTotalEpisodes = details.number_of_episodes || 16;
-          console.log(`updateProgress: filled total_episodes from TMDB = ${ensuredTotalEpisodes}`);
+          if (!ensuredTotalEpisodes || ensuredTotalEpisodes <= 0) {
+            ensuredTotalEpisodes = details.number_of_episodes || 16;
+            console.log(`updateProgress: filled total_episodes from TMDB = ${ensuredTotalEpisodes}`);
+          }
+          if (!ensuredDramaCategory && details.genres && details.genres.length > 0) {
+            ensuredDramaCategory = details.genres[0].name;
+            console.log(`updateProgress: filled drama_category from TMDB = ${ensuredDramaCategory}`);
+          }
         } catch (e) {
-          ensuredTotalEpisodes = 16;
-          console.log('updateProgress: failed to fetch total_episodes, using 16');
+          if (!ensuredTotalEpisodes || ensuredTotalEpisodes <= 0) {
+            ensuredTotalEpisodes = 16;
+            console.log('updateProgress: failed to fetch total_episodes, using 16');
+          }
         }
       }
       
@@ -483,6 +500,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         watched_minutes: isCompleted ? ensuredTotalRuntime : watchedMinutes,
         total_episodes: ensuredTotalEpisodes,
         total_runtime_minutes: ensuredTotalRuntime,
+        drama_category: ensuredDramaCategory,
         updated_at: new Date().toISOString()
       };
       

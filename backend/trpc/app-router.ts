@@ -68,6 +68,12 @@ import {
   checkDramaCompletionProcedure
 } from "./routes/completions/route";
 
+// Drama categories routes
+import {
+  backfillDramaCategoriesProcedure,
+  getDramaCategoryStatsProcedure
+} from "./routes/dramas/categories/route";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -137,6 +143,11 @@ export const appRouter = createTRPCRouter({
     getHistory: getCompletionHistoryProcedure,
     getStats: getCompletionStatsProcedure,
     checkCompletion: checkDramaCompletionProcedure,
+  }),
+  
+  dramas: createTRPCRouter({
+    backfillCategories: backfillDramaCategoriesProcedure,
+    getCategoryStats: getDramaCategoryStatsProcedure,
   }),
 });
 
