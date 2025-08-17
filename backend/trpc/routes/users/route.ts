@@ -354,10 +354,12 @@ export const getFollowingWithDetailsProcedure = protectedProcedure
 export const getUserStatsProcedure = protectedProcedure
   .input(z.object({
     userId: z.string().uuid().optional()
-  }).transform((data) => ({
-    ...data,
-    userId: data.userId && data.userId.trim() !== '' ? data.userId : undefined
-  })))
+  }).transform((data) => {
+    if (!data.userId || data.userId.trim() === '') {
+      return { userId: undefined };
+    }
+    return { userId: data.userId };
+  }))
   .query(async ({ input, ctx }) => {
     try {
       const targetUserId = input.userId || ctx.user.id;

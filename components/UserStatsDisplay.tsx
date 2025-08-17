@@ -14,9 +14,9 @@ interface UserStatsDisplayProps {
 export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
   const { userProfile } = useUserStore();
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
-    { userId },
+    { userId: userId || undefined },
     { 
-      enabled: !!userId && userId !== '',
+      enabled: !!userId && userId !== '' && userId.length > 0,
       refetchOnMount: true,
       retry: 2,
       retryDelay: 1000

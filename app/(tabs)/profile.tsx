@@ -38,7 +38,7 @@ export default function ProfileScreen() {
     limit: 10,
     offset: 0
   }, {
-    enabled: !!userProfile?.id && userProfile.id !== ''
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
   });
   
   // Auto-refresh user profile when screen is focused

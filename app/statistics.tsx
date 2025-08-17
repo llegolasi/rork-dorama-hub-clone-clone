@@ -48,9 +48,9 @@ export default function StatisticsScreen() {
   const isPremium = userProfile?.premium?.isSubscribed || false;
 
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
-    { userId: userProfile?.id },
+    { userId: userProfile?.id || undefined },
     {
-      enabled: !!userProfile?.id && userProfile.id !== '' && isPremium,
+      enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0 && isPremium,
       refetchOnMount: true,
       retry: 2,
       retryDelay: 1000,
