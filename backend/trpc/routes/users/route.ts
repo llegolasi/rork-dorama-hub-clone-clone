@@ -520,8 +520,59 @@ export const markEpisodeWatchedProcedure = protectedProcedure
   }))
   .mutation(async ({ input, ctx }) => {
     try {
+      console.log('markEpisodeWatchedProcedure called with:', {
+        userId: ctx.user.id,
+        dramaId: input.dramaId,
+        episodeNumber: input.episodeNumber,
+        episodeDurationMinutes: input.episodeDurationMinutes
+      });
+
       const completedAt = input.completedAt ? new Date(input.completedAt).toISOString() : new Date().toISOString();
       const startedAt = input.startedAt ? new Date(input.startedAt).toISOString() : new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+      // First, check if episode_watch_history table exists
+      const { error: tableCheckError } = await ctx.supabase
+        .from('episode_watch_history')
+        .select('id')
+        .limit(1);
+
+      if (tableCheckError) {
+        console.error('episode_watch_history table does not exist or is not accessible:', tableCheckError);
+        
+        // Fallback: directly update user_drama_lists without using episode_watch_history
+        const { data: currentDrama, error: getDramaError } = await ctx.supabase
+          .from('user_drama_lists')
+          .select('episodes_watched, watched_minutes, total_episodes, total_runtime_minutes')
+          .eq('user_id', ctx.user.id)
+          .eq('drama_id', input.dramaId)
+          .single();
+
+        if (getDramaError) {
+          console.error('Error getting current drama data:', getDramaError);
+          throw new Error(`Failed to get drama data: ${getDramaError.message}`);
+        }
+
+        const newEpisodesWatched = Math.max(currentDrama.episodes_watched || 0, input.episodeNumber);
+        const newWatchedMinutes = (currentDrama.watched_minutes || 0) + input.episodeDurationMinutes;
+
+        const { error: updateError } = await ctx.supabase
+          .from('user_drama_lists')
+          .update({
+            episodes_watched: newEpisodesWatched,
+            current_episode: newEpisodesWatched,
+            watched_minutes: newWatchedMinutes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', ctx.user.id)
+          .eq('drama_id', input.dramaId);
+
+        if (updateError) {
+          console.error('Error updating drama list (fallback):', updateError);
+          throw new Error(`Failed to update drama progress: ${updateError.message}`);
+        }
+
+        return { success: true, message: 'Episode marked as watched successfully (fallback mode)' };
+      }
 
       // Insert or update episode watch history
       const { error: historyError } = await ctx.supabase
@@ -541,7 +592,7 @@ export const markEpisodeWatchedProcedure = protectedProcedure
 
       if (historyError) {
         console.error('Error inserting episode history:', historyError);
-        throw new Error('Failed to record episode history');
+        throw new Error(`Failed to record episode history: ${historyError.message}`);
       }
 
       // Get the count of watched episodes for this drama
@@ -553,7 +604,7 @@ export const markEpisodeWatchedProcedure = protectedProcedure
 
       if (countError) {
         console.error('Error counting watched episodes:', countError);
-        throw new Error('Failed to count watched episodes');
+        throw new Error(`Failed to count watched episodes: ${countError.message}`);
       }
 
       const episodesWatched = watchedEpisodes?.length || 0;
@@ -573,13 +624,18 @@ export const markEpisodeWatchedProcedure = protectedProcedure
 
       if (updateError) {
         console.error('Error updating drama list:', updateError);
-        throw new Error('Failed to update drama progress');
+        throw new Error(`Failed to update drama progress: ${updateError.message}`);
       }
+
+      console.log('Episode marked as watched successfully:', {
+        episodesWatched,
+        totalWatchTime
+      });
 
       return { success: true, message: 'Episode marked as watched successfully' };
     } catch (error) {
       console.error('Error in markEpisodeWatchedProcedure:', error);
-      throw new Error('Failed to mark episode as watched');
+      throw new Error(`Failed to mark episode as watched: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
 
