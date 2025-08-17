@@ -11,8 +11,7 @@ import {
   Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Download, Share2 } from 'lucide-react-native';
-import * as MediaLibrary from 'expo-media-library';
+import { X, Share2 } from 'lucide-react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { COLORS } from '@/constants/colors';
@@ -155,82 +154,7 @@ export default function CompletionShareModal({
     }
   };
 
-  const handleDownload = async () => {
-    if (!completionData) {
-      console.log('Missing completion data');
-      return;
-    }
 
-    setIsGeneratingImage(true);
-    try {
-      // Request media library permissions
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permissão Necessária',
-          'Precisamos de permissão para salvar a imagem na sua galeria.'
-        );
-        setIsGeneratingImage(false);
-        return;
-      }
-
-      // Wait for images to load and view to be fully rendered
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Check if ref exists and is mounted
-      if (!certificateRef.current) {
-        console.log('Certificate ref does not exist');
-        Alert.alert('Erro', 'Não foi possível capturar a imagem. Tente novamente.');
-        setIsGeneratingImage(false);
-        return;
-      }
-
-      console.log('Capturing certificate view...');
-      
-      // Use a more reliable capture method
-      let uri: string;
-      try {
-        uri = await captureRef(certificateRef, {
-          format: 'png',
-          quality: 1.0,
-          result: 'tmpfile',
-        });
-      } catch (captureError) {
-        console.error('Capture error:', captureError);
-        // Retry with different options
-        await new Promise(resolve => setTimeout(resolve, 500));
-        uri = await captureRef(certificateRef, {
-          format: 'jpg',
-          quality: 0.9,
-          result: 'tmpfile',
-        });
-      }
-
-      console.log('Image captured successfully:', uri);
-      
-      // Save to media library
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      console.log('Asset created:', asset);
-      
-      // Try to create album, but don't fail if it already exists
-      try {
-        await MediaLibrary.createAlbumAsync('Dorama Hub', asset, false);
-      } catch (albumError) {
-        console.log('Album creation failed (might already exist):', albumError);
-      }
-
-      Alert.alert(
-        'Sucesso!',
-        'Certificado de conclusão salvo na sua galeria!',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Error downloading image:', error);
-      Alert.alert('Erro', 'Não foi possível salvar a imagem. Tente novamente.');
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
 
   const renderCertificate = () => {
     if (!completionData) return null;
@@ -402,7 +326,7 @@ export default function CompletionShareModal({
               {/* Action Buttons */}
               <View style={styles.actionButtons}>
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.shareButton]}
+                  style={[styles.actionButton, styles.shareButton, styles.shareButtonFullWidth]}
                   onPress={handleShare}
                   disabled={isGeneratingImage}
                   activeOpacity={0.8}
@@ -414,22 +338,6 @@ export default function CompletionShareModal({
                   )}
                   <Text style={styles.actionButtonText}>
                     {isGeneratingImage ? 'Preparando...' : 'Compartilhar'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.downloadButton]}
-                  onPress={handleDownload}
-                  disabled={isGeneratingImage}
-                  activeOpacity={0.8}
-                >
-                  {isGeneratingImage ? (
-                    <ActivityIndicator size={20} color={COLORS.text} />
-                  ) : (
-                    <Download size={20} color={COLORS.text} />
-                  )}
-                  <Text style={styles.actionButtonText}>
-                    {isGeneratingImage ? 'Salvando...' : 'Baixar'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -809,10 +717,8 @@ const styles = StyleSheet.create({
   shareButton: {
     backgroundColor: COLORS.accent,
   },
-  downloadButton: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  shareButtonFullWidth: {
+    width: '100%',
   },
   actionButtonText: {
     fontSize: 16,

@@ -16,8 +16,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Bookmark, BookmarkCheck, Plus, X, Eye } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
 import { calculateDramaTotalRuntime, getDramaDetails } from "@/services/api";
+import { useQuery } from "@tanstack/react-query";
 import CompletionShareModal from "@/components/CompletionShareModal";
 import CompletionShareModalAndroid from "@/components/CompletionShareModal.android";
+import CompleteDramaModal from "@/components/CompleteDramaModal";
 
 interface ListToggleProps {
   dramaId: number;
@@ -32,10 +34,18 @@ export function ListToggle({
 }: ListToggleProps) {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
+  const [showCompleteDramaModal, setShowCompleteDramaModal] = useState<boolean>(false);
   const { addToList, removeFromList, getCurrentList, deleteUserReview } = useUserLists();
   const { user } = useAuth();
   
   const completeDramaMutation = trpc.completions.completeDrama.useMutation();
+
+  // Fetch drama details for the modal
+  const { data: dramaDetails } = useQuery({
+    queryKey: ["drama-details", dramaId],
+    queryFn: () => getDramaDetails(dramaId),
+    enabled: !!dramaId,
+  });
 
   const currentList = getCurrentList(dramaId);
   const isInAnyList = currentList !== null;
@@ -92,15 +102,26 @@ export function ListToggle({
     const wasNotCompleted = getCurrentList(dramaId) !== 'completed';
     const isNowCompleted = listType === 'completed';
     
-    addToList(dramaId, listType, listType === "watching" ? totalEpisodes : undefined);
     setShowModal(false);
     
-    // If user just completed the drama, show completion sharing modal and open review modal
-    if (wasNotCompleted && isNowCompleted && user) {
-      // Small delay to ensure the UI updates first
+    // If user is marking as completed directly, show the complete drama modal
+    if (isNowCompleted && wasNotCompleted) {
+      setShowCompleteDramaModal(true);
+      return;
+    }
+    
+    // For other list types, add directly
+    addToList(dramaId, listType, listType === "watching" ? totalEpisodes : undefined);
+  };
+
+  const handleCompleteDramaSuccess = () => {
+    // This will be called after the CompleteDramaModal successfully completes the drama
+    setShowCompleteDramaModal(false);
+    
+    // Show completion sharing modal
+    if (user) {
       setTimeout(() => {
         handleCompletionShare();
-        // TODO: Open review modal here when available
       }, 500);
     }
   };
@@ -267,6 +288,16 @@ export function ListToggle({
           </View>
         </Pressable>
       </Modal>
+      
+      {/* Complete Drama Modal */}
+      <CompleteDramaModal
+        visible={showCompleteDramaModal}
+        onClose={() => setShowCompleteDramaModal(false)}
+        dramaId={dramaId}
+        dramaName={dramaDetails?.name || `Drama ${dramaId}`}
+        totalEpisodes={totalEpisodes}
+        onSuccess={handleCompleteDramaSuccess}
+      />
       
       {/* Completion Share Modal */}
       {user && (
