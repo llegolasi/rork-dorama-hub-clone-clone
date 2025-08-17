@@ -25,7 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
-import { useUserStore } from '@/hooks/useUserStore';
+import { useAuth } from '@/hooks/useAuth';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,15 +39,15 @@ interface ChartData {
 }
 
 export default function StatisticsScreen() {
-  const { userProfile } = useUserStore();
+  const { user } = useAuth();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [activeStatType, setActiveStatType] = useState<StatType>('overview');
   const [showFilters, setShowFilters] = useState(false);
 
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
-    { userId: userProfile?.id || undefined },
+    { userId: user?.id },
     {
-      enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0,
+      enabled: !!user?.id && user.id !== '' && user.id.length > 0,
       refetchOnMount: true,
       retry: 2,
       retryDelay: 1000,
@@ -162,7 +162,7 @@ export default function StatisticsScreen() {
                   {item.label}
                 </Text>
                 <Text style={styles.barValue}>
-                  {activeStatType === 'time' ? formatWatchTime(item.value) : item.value}
+                  {activeStatType === 'time' ? formatWatchTime(item.value) : item.value.toString()}
                 </Text>
               </View>
             );

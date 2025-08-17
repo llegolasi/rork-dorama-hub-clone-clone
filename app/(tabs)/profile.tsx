@@ -5,7 +5,7 @@ import { BookOpen, Check, Eye, Heart, MessageCircle, Edit3, Award, Crown, BarCha
 import { router, Stack, useFocusEffect } from "expo-router";
 
 import { COLORS } from "@/constants/colors";
-import { useUserStore } from "@/hooks/useUserStore";
+
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import AchievementsGrid from "@/components/AchievementsGrid";
@@ -20,7 +20,7 @@ import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures } from
 type TabType = 'posts' | 'dramas';
 
 export default function ProfileScreen() {
-  const { userProfile, isLoading, refreshUserProfile } = useUserStore();
+  const { user: userProfile, isLoading } = useAuth();
   const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('posts');
   const [showMenu, setShowMenu] = useState(false);
@@ -44,11 +44,10 @@ export default function ProfileScreen() {
   // Auto-refresh user profile when screen is focused
   useFocusEffect(
     useCallback(() => {
-      console.log('Profile screen focused - refreshing user profile');
-      refreshUserProfile();
+      console.log('Profile screen focused - refreshing data');
       refetchPosts();
       refetchCompletedDramas();
-    }, [refreshUserProfile, refetchPosts, refetchCompletedDramas])
+    }, [refetchPosts, refetchCompletedDramas])
   );
   
   // Filter posts by current user
@@ -103,9 +102,9 @@ export default function ProfileScreen() {
     );
   }
 
-  const watchingCount = userProfile?.lists?.watching?.length || 0;
-  const watchlistCount = userProfile?.lists?.watchlist?.length || 0;
-  const completedCount = userProfile?.lists?.completed?.length || 0;
+  const watchingCount = 0; // TODO: Get from user stats
+  const watchlistCount = 0; // TODO: Get from user stats
+  const completedCount = completedDramas?.length || 0;
 
   const handleEditProfile = () => {
     router.push('/profile/edit');
@@ -413,11 +412,11 @@ export default function ProfileScreen() {
               
               <View style={styles.socialStats}>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowersPress}>
-                  <Text style={styles.socialStatNumber}>{userProfile?.followersCount || 0}</Text>
+                  <Text style={styles.socialStatNumber}>0</Text>
                   <Text style={styles.socialStatLabel}>seguidores</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowingPress}>
-                  <Text style={styles.socialStatNumber}>{userProfile?.followingCount || 0}</Text>
+                  <Text style={styles.socialStatNumber}>0</Text>
                   <Text style={styles.socialStatLabel}>seguindo</Text>
                 </TouchableOpacity>
               </View>

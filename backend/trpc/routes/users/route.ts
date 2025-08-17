@@ -355,7 +355,7 @@ export const getUserStatsProcedure = protectedProcedure
   .input(z.object({
     userId: z.string().uuid().optional()
   }).transform((data) => {
-    if (!data.userId || data.userId.trim() === '') {
+    if (!data.userId || data.userId.trim() === '' || data.userId === 'undefined') {
       return { userId: undefined };
     }
     return { userId: data.userId };
@@ -364,7 +364,36 @@ export const getUserStatsProcedure = protectedProcedure
     try {
       const targetUserId = input.userId || ctx.user.id;
       
-      // First try to get stats from the RPC function
+      // First try to get detailed stats from the new RPC function
+      const { data: detailedStats, error: detailedError } = await ctx.supabase.rpc('get_user_detailed_stats', {
+        p_user_id: targetUserId
+      });
+
+      if (!detailedError && detailedStats && Array.isArray(detailedStats) && detailedStats.length > 0) {
+        const stats = detailedStats[0];
+        return {
+          user_id: targetUserId,
+          total_watch_time_minutes: stats.total_watch_time_minutes || 0,
+          dramas_completed: stats.dramas_completed || 0,
+          dramas_watching: stats.dramas_watching || 0,
+          dramas_in_watchlist: stats.dramas_in_watchlist || 0,
+          average_drama_runtime: stats.dramas_completed > 0 ? 
+            (stats.total_watch_time_minutes / stats.dramas_completed) : 0,
+          favorite_genres: stats.favorite_genres || {},
+          weekly_watch_time: stats.weekly_watch_time || {},
+          monthly_watch_time: stats.monthly_watch_time || {},
+          yearly_watch_time: stats.yearly_watch_time || {},
+          average_episodes_per_day: stats.average_episodes_per_day || 0,
+          most_active_hour: stats.most_active_hour || 20,
+          completion_rate: stats.completion_rate || 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
+
+      console.log('Detailed stats RPC failed, trying legacy function:', detailedError);
+      
+      // Fallback to legacy RPC function
       const { data: rpcData, error: rpcError } = await ctx.supabase.rpc('get_user_comprehensive_stats', {
         p_user_id: targetUserId
       });
@@ -373,7 +402,7 @@ export const getUserStatsProcedure = protectedProcedure
         return rpcData;
       }
 
-      console.log('RPC function failed or returned invalid data, falling back to manual calculation:', rpcError, rpcData);
+      console.log('Legacy RPC function failed, falling back to manual calculation:', rpcError, rpcData);
       
       // Fallback: manually calculate stats
       const { data: userStats, error: statsError } = await ctx.supabase
@@ -477,6 +506,72 @@ export const getUserStatsProcedure = protectedProcedure
     } catch (error) {
       console.error('Error in getUserStatsProcedure:', error);
       throw new Error('Failed to fetch user statistics');
+    }
+  });
+
+// Mark episode as watched
+export const markEpisodeWatchedProcedure = protectedProcedure
+  .input(z.object({
+    dramaId: z.number(),
+    episodeNumber: z.number().min(1),
+    episodeDurationMinutes: z.number().min(1).default(60),
+    startedAt: z.string().datetime().optional(),
+    completedAt: z.string().datetime().optional()
+  }))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      const { error } = await ctx.supabase.rpc('mark_episode_watched', {
+        p_user_id: ctx.user.id,
+        p_drama_id: input.dramaId,
+        p_episode_number: input.episodeNumber,
+        p_episode_duration_minutes: input.episodeDurationMinutes,
+        p_started_at: input.startedAt || null,
+        p_completed_at: input.completedAt || null
+      });
+
+      if (error) {
+        console.error('Error marking episode as watched:', error);
+        throw new Error('Failed to mark episode as watched');
+      }
+
+      return { success: true, message: 'Episode marked as watched successfully' };
+    } catch (error) {
+      console.error('Error in markEpisodeWatchedProcedure:', error);
+      throw new Error('Failed to mark episode as watched');
+    }
+  });
+
+// Complete drama with date range
+export const completeDramaWithDateRangeProcedure = protectedProcedure
+  .input(z.object({
+    dramaId: z.number(),
+    totalEpisodes: z.number().min(1),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    episodeDurationMinutes: z.number().min(1).default(60),
+    dramaCategory: z.string().optional()
+  }))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      const { error } = await ctx.supabase.rpc('complete_drama_with_date_range', {
+        p_user_id: ctx.user.id,
+        p_drama_id: input.dramaId,
+        p_total_episodes: input.totalEpisodes,
+        p_start_date: input.startDate,
+        p_end_date: input.endDate,
+        p_episode_duration_minutes: input.episodeDurationMinutes,
+        p_drama_category: input.dramaCategory || null
+      });
+
+      if (error) {
+        console.error('Error completing drama with date range:', error);
+        throw new Error('Failed to complete drama with date range');
+      }
+
+      return { success: true, message: 'Drama completed with date range successfully' };
+    } catch (error) {
+      console.error('Error in completeDramaWithDateRangeProcedure:', error);
+      throw new Error('Failed to complete drama with date range');
     }
   });
 

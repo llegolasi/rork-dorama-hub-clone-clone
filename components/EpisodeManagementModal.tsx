@@ -12,6 +12,7 @@ import { X, Check, Play, CheckCircle } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { Drama } from '@/types/drama';
 import { UserList } from '@/types/user';
+import { trpc } from '@/lib/trpc';
 
 interface EpisodeManagementModalProps {
   visible: boolean;
@@ -46,11 +47,35 @@ export default function EpisodeManagementModal({
     }
   }, [visible, episodesWatched]);
 
+  const markEpisodeMutation = trpc.users.markEpisodeWatched.useMutation({
+    onSuccess: () => {
+      if (onDataUpdated) {
+        onDataUpdated();
+      }
+      Alert.alert('Sucesso', 'Episódio marcado como assistido!');
+      onClose();
+    },
+    onError: (error) => {
+      Alert.alert('Erro', `Falha ao marcar episódio: ${error.message}`);
+    },
+  });
+
   const handleEpisodeUpdate = async () => {
     if (selectedEpisode > episodesWatched && selectedEpisode <= totalEpisodes) {
       setIsUpdating(true);
       try {
-        console.log(`Updating episodes watched to ${selectedEpisode} for drama ${drama.id}`);
+        console.log(`Marking episodes 1 to ${selectedEpisode} as watched for drama ${drama.id}`);
+        
+        // Mark all episodes from 1 to selectedEpisode as watched
+        for (let ep = episodesWatched + 1; ep <= selectedEpisode; ep++) {
+          await markEpisodeMutation.mutateAsync({
+            dramaId: drama.id,
+            episodeNumber: ep,
+            episodeDurationMinutes: 60, // Default duration
+          });
+        }
+        
+        // Also call the legacy update for compatibility
         await onProgressUpdate(selectedEpisode);
         
         // Force refresh data after update
@@ -58,10 +83,8 @@ export default function EpisodeManagementModal({
           await onDataUpdated();
         }
         
-        // Small delay to ensure UI updates
-        setTimeout(() => {
-          onClose();
-        }, 500);
+        Alert.alert('Sucesso', `Episódios 1-${selectedEpisode} marcados como assistidos!`);
+        onClose();
       } catch (error) {
         console.error('Error updating episode:', error);
         Alert.alert('Erro', 'Não foi possível atualizar o episódio. Tente novamente.');
@@ -94,9 +117,18 @@ export default function EpisodeManagementModal({
             setIsUpdating(true);
             try {
               console.log(`Completing drama ${drama.id} with ${totalEpisodes} episodes`);
-              // First update progress to mark all episodes as watched
+              
+              // Mark all remaining episodes as watched using the new system
+              for (let ep = episodesWatched + 1; ep <= totalEpisodes; ep++) {
+                await markEpisodeMutation.mutateAsync({
+                  dramaId: drama.id,
+                  episodeNumber: ep,
+                  episodeDurationMinutes: 60,
+                });
+              }
+              
+              // Also call legacy functions for compatibility
               await onProgressUpdate(totalEpisodes);
-              // Then complete the drama
               await onComplete();
               
               // Force refresh data after completion
@@ -104,10 +136,8 @@ export default function EpisodeManagementModal({
                 await onDataUpdated();
               }
               
-              // Small delay to ensure UI updates
-              setTimeout(() => {
-                onClose();
-              }, 500);
+              Alert.alert('Sucesso', 'Drama marcado como concluído!');
+              onClose();
             } catch (error) {
               console.error('Error completing drama:', error);
               Alert.alert('Erro', 'Não foi possível concluir o drama. Tente novamente.');
