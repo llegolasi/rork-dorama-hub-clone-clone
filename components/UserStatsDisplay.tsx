@@ -136,24 +136,7 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
         </View>
       </View>
 
-      {stats.average_drama_runtime > 0 && (
-        <View style={styles.additionalStats}>
-          <Text style={styles.additionalStatsTitle}>Estatísticas Adicionais</Text>
-          <Text style={styles.additionalStatsText}>
-            Duração média por drama: {formatWatchTime(Math.round(stats.average_drama_runtime))}
-          </Text>
-          {stats.first_completion_date && (
-            <Text style={styles.additionalStatsText}>
-              Primeira conclusão: {new Date(stats.first_completion_date).toLocaleDateString('pt-BR')}
-            </Text>
-          )}
-          {stats.latest_completion_date && (
-            <Text style={styles.additionalStatsText}>
-              Última conclusão: {new Date(stats.latest_completion_date).toLocaleDateString('pt-BR')}
-            </Text>
-          )}
-        </View>
-      )}
+
     </View>
   );
 }
@@ -240,23 +223,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
-  additionalStats: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-  },
-  additionalStatsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  additionalStatsText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
+
 
   loadingText: {
     fontSize: 16,
