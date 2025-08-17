@@ -520,18 +520,60 @@ export const markEpisodeWatchedProcedure = protectedProcedure
   }))
   .mutation(async ({ input, ctx }) => {
     try {
-      const { error } = await ctx.supabase.rpc('mark_episode_watched', {
-        p_user_id: ctx.user.id,
-        p_drama_id: input.dramaId,
-        p_episode_number: input.episodeNumber,
-        p_episode_duration_minutes: input.episodeDurationMinutes,
-        p_started_at: input.startedAt || null,
-        p_completed_at: input.completedAt || null
-      });
+      const completedAt = input.completedAt ? new Date(input.completedAt).toISOString() : new Date().toISOString();
+      const startedAt = input.startedAt ? new Date(input.startedAt).toISOString() : new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-      if (error) {
-        console.error('Error marking episode as watched:', error);
-        throw new Error('Failed to mark episode as watched');
+      // Insert or update episode watch history
+      const { error: historyError } = await ctx.supabase
+        .from('episode_watch_history')
+        .upsert({
+          user_id: ctx.user.id,
+          drama_id: input.dramaId,
+          episode_number: input.episodeNumber,
+          episode_duration_minutes: input.episodeDurationMinutes,
+          started_at: startedAt,
+          completed_at: completedAt,
+          watched_at: completedAt,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,drama_id,episode_number'
+        });
+
+      if (historyError) {
+        console.error('Error inserting episode history:', historyError);
+        throw new Error('Failed to record episode history');
+      }
+
+      // Get the count of watched episodes for this drama
+      const { data: watchedEpisodes, error: countError } = await ctx.supabase
+        .from('episode_watch_history')
+        .select('episode_number, episode_duration_minutes')
+        .eq('user_id', ctx.user.id)
+        .eq('drama_id', input.dramaId);
+
+      if (countError) {
+        console.error('Error counting watched episodes:', countError);
+        throw new Error('Failed to count watched episodes');
+      }
+
+      const episodesWatched = watchedEpisodes?.length || 0;
+      const totalWatchTime = watchedEpisodes?.reduce((sum, ep) => sum + (ep.episode_duration_minutes || 60), 0) || 0;
+
+      // Update user_drama_lists with the new episode count and watch time
+      const { error: updateError } = await ctx.supabase
+        .from('user_drama_lists')
+        .update({
+          episodes_watched: episodesWatched,
+          current_episode: episodesWatched,
+          watched_minutes: totalWatchTime,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', ctx.user.id)
+        .eq('drama_id', input.dramaId);
+
+      if (updateError) {
+        console.error('Error updating drama list:', updateError);
+        throw new Error('Failed to update drama progress');
       }
 
       return { success: true, message: 'Episode marked as watched successfully' };
@@ -553,21 +595,98 @@ export const completeDramaWithDateRangeProcedure = protectedProcedure
   }))
   .mutation(async ({ input, ctx }) => {
     try {
-      const { error } = await ctx.supabase.rpc('complete_drama_with_date_range', {
-        p_user_id: ctx.user.id,
-        p_drama_id: input.dramaId,
-        p_total_episodes: input.totalEpisodes,
-        p_start_date: input.startDate,
-        p_end_date: input.endDate,
-        p_episode_duration_minutes: input.episodeDurationMinutes,
-        p_drama_category: input.dramaCategory || null
-      });
-
-      if (error) {
-        console.error('Error completing drama with date range:', error);
-        throw new Error('Failed to complete drama with date range');
+      const startDate = new Date(input.startDate);
+      const endDate = new Date(input.endDate);
+      const daysInterval = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Calculate episodes per day
+      const episodesPerDay = input.totalEpisodes / daysInterval;
+      
+      const episodeHistory = [];
+      let episodeCounter = 1;
+      let currentDate = new Date(startDate);
+      
+      // Distribute episodes across the date range
+      while (episodeCounter <= input.totalEpisodes && currentDate <= endDate) {
+        let episodesToday;
+        
+        if (daysInterval < input.totalEpisodes) {
+          episodesToday = Math.ceil(episodesPerDay);
+          // Add some randomness
+          if (Math.random() > 0.7) {
+            episodesToday += 1;
+          }
+        } else {
+          // If we have more days than episodes, not every day will have an episode
+          episodesToday = Math.random() > 0.3 ? 1 : 0;
+        }
+        
+        // Create episodes for this day
+        for (let i = 0; i < episodesToday && episodeCounter <= input.totalEpisodes; i++) {
+          const randomHour = Math.floor(Math.random() * 16) + 8; // Between 8h and 24h
+          const watchTime = new Date(currentDate);
+          watchTime.setHours(randomHour, Math.floor(Math.random() * 60), 0, 0);
+          
+          const startTime = new Date(watchTime.getTime() - 60 * 60 * 1000); // 1 hour before
+          
+          episodeHistory.push({
+            user_id: ctx.user.id,
+            drama_id: input.dramaId,
+            episode_number: episodeCounter,
+            episode_duration_minutes: input.episodeDurationMinutes,
+            started_at: startTime.toISOString(),
+            completed_at: watchTime.toISOString(),
+            watched_at: watchTime.toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+          
+          episodeCounter++;
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1);
       }
-
+      
+      // Insert all episode history records
+      if (episodeHistory.length > 0) {
+        const { error: historyError } = await ctx.supabase
+          .from('episode_watch_history')
+          .upsert(episodeHistory, {
+            onConflict: 'user_id,drama_id,episode_number'
+          });
+        
+        if (historyError) {
+          console.error('Error inserting episode history:', historyError);
+          throw new Error('Failed to create episode history');
+        }
+      }
+      
+      // Update the drama list with completion status and category
+      const totalWatchTime = input.totalEpisodes * input.episodeDurationMinutes;
+      
+      const updateData: any = {
+        list_type: 'completed',
+        episodes_watched: input.totalEpisodes,
+        current_episode: input.totalEpisodes,
+        watched_minutes: totalWatchTime,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (input.dramaCategory) {
+        updateData.drama_category = input.dramaCategory;
+      }
+      
+      const { error: updateError } = await ctx.supabase
+        .from('user_drama_lists')
+        .update(updateData)
+        .eq('user_id', ctx.user.id)
+        .eq('drama_id', input.dramaId);
+      
+      if (updateError) {
+        console.error('Error updating drama completion:', updateError);
+        throw new Error('Failed to complete drama');
+      }
+      
       return { success: true, message: 'Drama completed with date range successfully' };
     } catch (error) {
       console.error('Error in completeDramaWithDateRangeProcedure:', error);
