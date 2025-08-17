@@ -584,7 +584,6 @@ export const markEpisodeWatchedProcedure = protectedProcedure
           episode_duration_minutes: input.episodeDurationMinutes,
           watch_started_at: startedAt,
           watch_completed_at: completedAt,
-          watched_at: completedAt,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }, {
