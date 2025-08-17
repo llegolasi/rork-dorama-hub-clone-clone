@@ -38,7 +38,7 @@ export default function ProfileScreen() {
     limit: 10,
     offset: 0
   }, {
-    enabled: !!userProfile?.id
+    enabled: !!userProfile?.id && userProfile.id !== ''
   });
   
   // Auto-refresh user profile when screen is focused
@@ -474,7 +474,9 @@ export default function ProfileScreen() {
       </View>
 
       {/* Componente de estatísticas detalhadas */}
-      <UserStatsDisplay userId={userProfile?.id} />
+      {userProfile?.id && userProfile.id !== '' && (
+        <UserStatsDisplay userId={userProfile.id} />
+      )}
 
         <View style={styles.tabContainer}>
           {renderTabButton(
