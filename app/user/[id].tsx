@@ -10,8 +10,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { 
-  BookOpen, 
-  Check, 
   Eye, 
   Heart, 
   MessageCircle, 
@@ -19,13 +17,12 @@ import {
   UserMinus,
   ArrowLeft 
 } from 'lucide-react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Stack } from 'expo-router';
+import { router, useLocalSearchParams, Stack } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import UserStatsDisplay from '@/components/UserStatsDisplay';
-import type { RankingWithDetails, UserProfile } from '@/types/user';
+
 
 type TabType = 'posts' | 'dramas';
 
@@ -73,7 +70,7 @@ const UserProfileScreen = () => {
   });
   
   const userProfile = userProfileData?.user;
-  const userLists = userProfileData?.lists || [];
+
   
   if (profileLoading) {
     return (
@@ -130,17 +127,7 @@ const UserProfileScreen = () => {
     router.push(`/drama/${dramaId}`);
   };
 
-  const renderTabButton = (tab: TabType, title: string, icon: React.ReactNode) => (
-    <TouchableOpacity
-      style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
-      onPress={() => setActiveTab(tab)}
-    >
-      {icon}
-      <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-        {title}
-      </Text>
-    </TouchableOpacity>
-  );
+
   
   const renderPostItem = ({ item }: { item: any }) => (
     <TouchableOpacity
@@ -278,31 +265,7 @@ const UserProfileScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <View style={[styles.statIcon, styles.watchingIcon]}>
-              <Eye size={18} color={COLORS.background} />
-            </View>
-            <Text style={styles.statCount}>{userLists.filter(item => item.list_type === 'watching').length}</Text>
-            <Text style={styles.statLabel}>Assistindo</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <View style={[styles.statIcon, styles.watchlistIcon]}>
-              <BookOpen size={18} color={COLORS.background} />
-            </View>
-            <Text style={styles.statCount}>{userLists.filter(item => item.list_type === 'watchlist').length}</Text>
-            <Text style={styles.statLabel}>Quero Ver</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <View style={[styles.statIcon, styles.completedIcon]}>
-              <Check size={18} color={COLORS.background} />
-            </View>
-            <Text style={styles.statCount}>{userLists.filter(item => item.list_type === 'completed').length}</Text>
-            <Text style={styles.statLabel}>Concluídos</Text>
-          </View>
-        </View>
+
 
         {/* Componente de estatísticas detalhadas */}
         {userProfile?.id && (
@@ -310,16 +273,24 @@ const UserProfileScreen = () => {
         )}
 
         <View style={styles.tabContainer}>
-          {renderTabButton(
-            'posts',
-            'Postagens',
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'posts' && styles.activeTabButton]}
+            onPress={() => setActiveTab('posts')}
+          >
             <MessageCircle size={16} color={activeTab === 'posts' ? COLORS.accent : COLORS.textSecondary} />
-          )}
-          {renderTabButton(
-            'dramas',
-            'Doramas Assistidos',
+            <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
+              Postagens
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'dramas' && styles.activeTabButton]}
+            onPress={() => setActiveTab('dramas')}
+          >
             <Eye size={16} color={activeTab === 'dramas' ? COLORS.accent : COLORS.textSecondary} />
-          )}
+            <Text style={[styles.tabText, activeTab === 'dramas' && styles.activeTabText]}>
+              Doramas Assistidos
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {activeTab === 'posts' && (
@@ -466,46 +437,7 @@ const styles = StyleSheet.create({
   followingButtonText: {
     color: COLORS.text,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    backgroundColor: COLORS.card,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  watchingIcon: {
-    backgroundColor: COLORS.accent,
-  },
-  watchlistIcon: {
-    backgroundColor: '#4CD964',
-  },
-  completedIcon: {
-    backgroundColor: '#5856D6',
-  },
-  statCount: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
+
   tabContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,

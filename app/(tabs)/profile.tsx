@@ -110,9 +110,7 @@ export default function ProfileScreen() {
     );
   }
 
-  const watchingCount = userStats?.dramas_watching || 0;
-  const watchlistCount = userStats?.dramas_in_watchlist || 0;
-  const completedCount = userStats?.dramas_completed || 0;
+
 
   const handleEditProfile = () => {
     router.push('/profile/edit');
@@ -454,31 +452,7 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statItemProfile}>
-          <View style={[styles.statIcon, styles.watchingIcon]}>
-            <Eye size={18} color={COLORS.background} />
-          </View>
-          <Text style={styles.statCount}>{watchingCount}</Text>
-          <Text style={styles.statLabel}>Assistindo</Text>
-        </View>
-        
-        <View style={styles.statItemProfile}>
-          <View style={[styles.statIcon, styles.watchlistIcon]}>
-            <BookOpen size={18} color={COLORS.background} />
-          </View>
-          <Text style={styles.statCount}>{watchlistCount}</Text>
-          <Text style={styles.statLabel}>Quero Ver</Text>
-        </View>
-        
-        <View style={styles.statItemProfile}>
-          <View style={[styles.statIcon, styles.completedIcon]}>
-            <Check size={18} color={COLORS.background} />
-          </View>
-          <Text style={styles.statCount}>{completedCount}</Text>
-          <Text style={styles.statLabel}>Concluídos</Text>
-        </View>
-      </View>
+
 
       {/* Componente de estatísticas detalhadas */}
       {userProfile?.id && userProfile.id !== '' && (
@@ -681,45 +655,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    backgroundColor: COLORS.card,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
   statItemProfile: {
     alignItems: "center",
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  watchingIcon: {
-    backgroundColor: COLORS.accent,
-  },
-  watchlistIcon: {
-    backgroundColor: "#4CD964",
-  },
-  completedIcon: {
-    backgroundColor: "#5856D6",
-  },
-  statCount: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
   },
   tabContainer: {
     flexDirection: 'row',
