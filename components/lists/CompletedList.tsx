@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -113,14 +114,24 @@ export function CompletedList({ dramas }: CompletedListProps) {
         testID={`drama-card-${item.userListItem.dramaId}`}
       >
         <View style={styles.cardContent}>
+          {/* Drama Poster */}
+          {item.userListItem.poster_image && (
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: `https://image.tmdb.org/t/p/w300${item.userListItem.poster_image}` }} 
+                style={styles.image} 
+              />
+            </View>
+          )}
+
           {/* Drama Info */}
           <View style={styles.infoContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              Drama ID: {item.userListItem.dramaId}
+              {item.userListItem.drama_name || `Drama ${item.userListItem.dramaId}`}
             </Text>
             
             <Text style={styles.subtitle} numberOfLines={1}>
-              {item.userListItem.total_episodes || 16} episódios • {Math.round((item.userListItem.total_runtime_minutes || 0) / 60)}h
+              {item.userListItem.drama_year && `${item.userListItem.drama_year} • `}{item.userListItem.total_episodes || 16} episódios • {Math.round((item.userListItem.total_runtime_minutes || 0) / 60)}h
             </Text>
 
             <Text style={styles.completedDate} numberOfLines={1}>
@@ -201,7 +212,7 @@ export function CompletedList({ dramas }: CompletedListProps) {
             setExistingReview(null);
           }}
           dramaId={selectedDrama.dramaId}
-          dramaName={`Drama ${selectedDrama.dramaId}`}
+          dramaName={selectedDrama.drama_name || `Drama ${selectedDrama.dramaId}`}
           onReviewSubmitted={handleReviewSubmitted}
           existingReview={existingReview}
         />
@@ -228,6 +239,14 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     padding: 16,
+  },
+  imageContainer: {
+    marginRight: 12,
+  },
+  image: {
+    width: 60,
+    height: 90,
+    borderRadius: 8,
   },
   infoContainer: {
     flex: 1,

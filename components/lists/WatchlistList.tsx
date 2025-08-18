@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
@@ -55,14 +56,24 @@ export function WatchlistList({ dramas }: WatchlistListProps) {
         testID={`drama-card-${item.dramaId}`}
       >
         <View style={styles.cardContent}>
+          {/* Drama Poster */}
+          {item.poster_image && (
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: `https://image.tmdb.org/t/p/w300${item.poster_image}` }} 
+                style={styles.image} 
+              />
+            </View>
+          )}
+
           {/* Drama Info */}
           <View style={styles.infoContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              Drama ID: {item.dramaId}
+              {item.drama_name || `Drama ${item.dramaId}`}
             </Text>
             
             <Text style={styles.subtitle} numberOfLines={1}>
-              {item.total_episodes || 16} episódios
+              {item.drama_year && `${item.drama_year} • `}{item.total_episodes || 16} episódios
             </Text>
 
             <Text style={styles.addedDate} numberOfLines={1}>
@@ -126,6 +137,14 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     padding: 16,
+  },
+  imageContainer: {
+    marginRight: 12,
+  },
+  image: {
+    width: 60,
+    height: 90,
+    borderRadius: 8,
   },
   infoContainer: {
     flex: 1,

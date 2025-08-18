@@ -8,6 +8,11 @@ export interface UserList {
   total_runtime_minutes?: number;
   watched_minutes?: number;
   episodes_watched?: number;
+  // Database fields
+  drama_name?: string;
+  drama_year?: number;
+  poster_image?: string;
+  poster_path?: string;
   // Legacy support for old progress structure
   progress?: {
     currentEpisode: number;

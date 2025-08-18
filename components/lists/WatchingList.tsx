@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -139,14 +140,24 @@ export function WatchingList({ dramas }: WatchingListProps) {
         testID={`drama-card-${item.dramaId}`}
       >
         <View style={styles.cardContent}>
+          {/* Drama Poster */}
+          {item.poster_image && (
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: `https://image.tmdb.org/t/p/w300${item.poster_image}` }} 
+                style={styles.image} 
+              />
+            </View>
+          )}
+
           {/* Drama Info */}
           <View style={styles.infoContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              Drama ID: {item.dramaId}
+              {item.drama_name || `Drama ${item.dramaId}`}
             </Text>
             
             <Text style={styles.subtitle} numberOfLines={1}>
-              {item.total_episodes || 16} episódios
+              {item.drama_year && `${item.drama_year} • `}{item.total_episodes || 16} episódios
             </Text>
 
             {/* Progress Bar */}
@@ -222,7 +233,7 @@ export function WatchingList({ dramas }: WatchingListProps) {
             setSelectedDrama(null);
           }}
           dramaId={selectedDrama.dramaId}
-          dramaName={`Drama ${selectedDrama.dramaId}`}
+          dramaName={selectedDrama.drama_name || `Drama ${selectedDrama.dramaId}`}
           onReviewSubmitted={handleReviewSubmitted}
         />
       )}
@@ -234,7 +245,7 @@ export function WatchingList({ dramas }: WatchingListProps) {
             setShowEpisodeModal(false);
             setSelectedDramaForEpisodes(null);
           }}
-          drama={{ id: selectedDramaForEpisodes.dramaId, name: `Drama ${selectedDramaForEpisodes.dramaId}`, number_of_episodes: selectedDramaForEpisodes.total_episodes || 16 } as any}
+          drama={{ id: selectedDramaForEpisodes.dramaId, name: selectedDramaForEpisodes.drama_name || `Drama ${selectedDramaForEpisodes.dramaId}`, number_of_episodes: selectedDramaForEpisodes.total_episodes || 16 } as any}
           userListItem={selectedDramaForEpisodes}
           onProgressUpdate={(newEpisode) => handleProgressUpdate(selectedDramaForEpisodes.dramaId, newEpisode)}
           onComplete={() => handleComplete(selectedDramaForEpisodes)}
@@ -263,6 +274,14 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     padding: 16,
+  },
+  imageContainer: {
+    marginRight: 12,
+  },
+  image: {
+    width: 60,
+    height: 90,
+    borderRadius: 8,
   },
   infoContainer: {
     flex: 1,
