@@ -321,15 +321,15 @@ export const getDramaById = publicProcedure
         homepage: serie.homepage,
         tagline: serie.tagline,
         // Dados relacionados
-        cast: serie.elenco?.map((actor: any) => ({
+        cast: (serie.elenco && Array.isArray(serie.elenco)) ? serie.elenco.map((actor: any) => ({
           id: actor.tmdb_person_id,
           name: actor.nome,
           character: actor.personagem,
           profile_path: actor.foto,
           order: actor.ordem
-        })) || [],
+        })) : [],
         videos: {
-          results: serie.videos?.map((video: any) => ({
+          results: (serie.videos && Array.isArray(serie.videos)) ? serie.videos.map((video: any) => ({
             id: video.tmdb_video_id,
             key: video.key,
             site: video.site,
@@ -338,14 +338,14 @@ export const getDramaById = publicProcedure
             size: video.tamanho,
             official: video.oficial,
             published_at: video.publicado_em
-          })) || []
+          })) : []
         },
         images: {
-          backdrops: serie.imagens?.filter((img: any) => img.tipo === 'backdrop') || [],
-          posters: serie.imagens?.filter((img: any) => img.tipo === 'poster') || [],
-          logos: serie.imagens?.filter((img: any) => img.tipo === 'logo') || []
+          backdrops: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'backdrop') : [],
+          posters: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'poster') : [],
+          logos: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'logo') : []
         },
-        seasons: serie.temporadas?.map((season: any) => ({
+        seasons: (serie.temporadas && Array.isArray(serie.temporadas)) ? serie.temporadas.map((season: any) => ({
           id: season.tmdb_season_id || season.id,
           season_number: season.numero,
           name: season.nome,
@@ -353,7 +353,7 @@ export const getDramaById = publicProcedure
           poster_path: season.capa,
           air_date: season.data_exibicao,
           episode_count: season.total_episodios
-        })) || []
+        })) : []
       };
       
     } catch (error) {
