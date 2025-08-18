@@ -28,6 +28,13 @@ const popularDramasSchema = z.object({
   page: z.number().optional().default(1),
 });
 
+// Utilitários
+const normalizePath = (p: unknown): string | null => {
+  if (typeof p !== 'string') return null;
+  if (!p) return null;
+  return p.startsWith('/') ? p : `/${p}`;
+};
+
 // Função auxiliar para buscar do TMDb
 async function fetchFromTMDb(endpoint: string) {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
@@ -400,7 +407,7 @@ async function upsertImagesCache(
 
   const mapItem = (item: any, tipo: 'backdrop' | 'poster' | 'logo') => ({
     serie_id: serieId,
-    caminho: item.file_path ?? item.caminho ?? null,
+    caminho: normalizePath(item.file_path ?? item.caminho ?? null),
     tipo,
     largura: item.width ?? item.largura ?? null,
     altura: item.height ?? item.altura ?? null,
@@ -446,6 +453,23 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     if (serie) {
       const needsUpdate = await serieNeedsUpdate(supabase, tmdbId);
       console.log(`[CACHE] Série precisa atualizar?`, needsUpdate);
+      // Se não precisa atualizar, mas faltam imagens, tentar completar assets leves
+      const hasImages = Array.isArray(serie?.imagens) && serie.imagens.length > 0;
+      if (!needsUpdate && !hasImages) {
+        try {
+          console.log('[CACHE] Cache-hit sem imagens. Buscando imagens do TMDb para completar...');
+          const imagesData = await fetchFromTMDb(`/tv/${tmdbId}/images`);
+          await upsertImagesCache(supabase, serie.id as number, tmdbId, imagesData);
+          console.log('[CACHE] Imagens salvas. Recarregando série do cache...');
+          const updated = await getSerieFromCache(supabase, tmdbId);
+          if (updated) {
+            status = 'cache-hit';
+            return { serie: updated, status, serieId: updated?.id ?? null };
+          }
+        } catch (e) {
+          console.warn('[CACHE] Falha ao completar imagens em cache-hit:', e);
+        }
+      }
       if (!needsUpdate) {
         console.log(`[CACHE] Retornando dados do cache (atualizados)`);
         status = 'cache-hit';
@@ -601,11 +625,23 @@ export const getDramaById = publicProcedure
             published_at: video.publicado_em || null
           }))
         },
-        images: {
-          backdrops: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'backdrop'),
-          posters: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'poster'),
-          logos: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'logo')
-        },
+        images: (() => {
+          const list: Array<any> = Array.isArray(serie?.imagens) ? serie.imagens : [];
+          const mapImg = (img: any) => ({
+            file_path: normalizePath(img.caminho ?? null),
+            width: img.largura ?? null,
+            height: img.altura ?? null,
+            vote_average: typeof img.avaliacao === 'number' ? img.avaliacao : 0,
+            vote_count: typeof img.votos === 'number' ? img.votos : 0,
+            iso_639_1: img.linguagem ?? null,
+            aspect_ratio: typeof img.aspecto === 'number' ? img.aspecto : (typeof img.largura === 'number' && typeof img.altura === 'number' && img.altura > 0 ? Number((img.largura / img.altura).toFixed(2)) : null),
+          });
+          return {
+            backdrops: list.filter((img: any) => img != null && img.tipo === 'backdrop').map(mapImg),
+            posters: list.filter((img: any) => img != null && img.tipo === 'poster').map(mapImg),
+            logos: list.filter((img: any) => img != null && img.tipo === 'logo').map(mapImg),
+          };
+        })(),
         seasons: (Array.isArray(serie?.temporadas) ? serie.temporadas : []).filter((season: any) => season != null).map((season: any) => ({
           id: season.tmdb_season_id || season.id || null,
           season_number: season.numero || null,
@@ -682,9 +718,33 @@ export const getDramaById = publicProcedure
             results: videosData.status === 'fulfilled' ? videosData.value?.results?.filter((video: any) => ['Trailer', 'Teaser'].includes(video.type)).slice(0, 10) || [] : []
           },
           images: imagesData.status === 'fulfilled' ? {
-            backdrops: Array.isArray(imagesData.value?.backdrops) ? imagesData.value.backdrops : [],
-            posters: Array.isArray(imagesData.value?.posters) ? imagesData.value.posters : [],
-            logos: Array.isArray(imagesData.value?.logos) ? imagesData.value.logos : [],
+            backdrops: Array.isArray(imagesData.value?.backdrops) ? imagesData.value.backdrops.map((img: any) => ({
+              file_path: normalizePath(img.file_path ?? null),
+              width: img.width ?? null,
+              height: img.height ?? null,
+              vote_average: img.vote_average ?? 0,
+              vote_count: img.vote_count ?? 0,
+              iso_639_1: img.iso_639_1 ?? null,
+              aspect_ratio: typeof img.aspect_ratio === 'number' ? Number(img.aspect_ratio.toFixed(2)) : null,
+            })) : [],
+            posters: Array.isArray(imagesData.value?.posters) ? imagesData.value.posters.map((img: any) => ({
+              file_path: normalizePath(img.file_path ?? null),
+              width: img.width ?? null,
+              height: img.height ?? null,
+              vote_average: img.vote_average ?? 0,
+              vote_count: img.vote_count ?? 0,
+              iso_639_1: img.iso_639_1 ?? null,
+              aspect_ratio: typeof img.aspect_ratio === 'number' ? Number(img.aspect_ratio.toFixed(2)) : null,
+            })) : [],
+            logos: Array.isArray(imagesData.value?.logos) ? imagesData.value.logos.map((img: any) => ({
+              file_path: normalizePath(img.file_path ?? null),
+              width: img.width ?? null,
+              height: img.height ?? null,
+              vote_average: img.vote_average ?? 0,
+              vote_count: img.vote_count ?? 0,
+              iso_639_1: img.iso_639_1 ?? null,
+              aspect_ratio: typeof img.aspect_ratio === 'number' ? Number(img.aspect_ratio.toFixed(2)) : null,
+            })) : [],
           } : { backdrops: [], posters: [], logos: [] },
           seasons: tmdbData.seasons || []
         };
