@@ -58,18 +58,22 @@ BEGIN
             WHERE id = p_drama_id;
         EXCEPTION WHEN OTHERS THEN
             -- Se a tabela dramas não existir ou houver erro, usa valores padrão
-            v_drama_info.drama_name := p_drama_name;
-            v_drama_info.poster_path := p_poster_path;
-            v_drama_info.poster_image := p_poster_image;
-            v_drama_info.drama_year := p_drama_year;
-            v_drama_info.total_runtime := COALESCE(p_total_runtime_minutes, p_total_episodes * p_episode_duration_minutes);
+            SELECT 
+                p_drama_name as drama_name,
+                p_poster_path as poster_path,
+                p_poster_image as poster_image,
+                p_drama_year as drama_year,
+                COALESCE(p_total_runtime_minutes, p_total_episodes * p_episode_duration_minutes) as total_runtime
+            INTO v_drama_info;
         END;
     ELSE
-        v_drama_info.drama_name := p_drama_name;
-        v_drama_info.poster_path := p_poster_path;
-        v_drama_info.poster_image := p_poster_image;
-        v_drama_info.drama_year := p_drama_year;
-        v_drama_info.total_runtime := COALESCE(p_total_runtime_minutes, p_total_episodes * p_episode_duration_minutes);
+        SELECT 
+            p_drama_name as drama_name,
+            p_poster_path as poster_path,
+            p_poster_image as poster_image,
+            p_drama_year as drama_year,
+            COALESCE(p_total_runtime_minutes, p_total_episodes * p_episode_duration_minutes) as total_runtime
+        INTO v_drama_info;
     END IF;
     
     -- Distribui episódios ao longo do período
