@@ -102,14 +102,19 @@ async function upsertSerieCache(supabase: any, serieData: any) {
     });
     
     if (error) {
-      console.error('Erro ao salvar série no cache:', error);
-      throw error;
+      console.error('Erro ao chamar RPC upsert_serie_cache, tentando fallback...', error);
+      throw error; // Pula para o bloco catch para usar o fallback
     }
-    
-    return data;
-  } catch (error) {
-    console.error('Função upsert_serie_cache não existe ou falhou:', error);
-    // Fallback: inserir diretamente na tabela
+
+    // Validar se o RPC retornou um ID válido
+    if (typeof data === 'number') {
+      return data;
+    }
+    // Se não retornou um número, usar fallback
+    throw new Error('RPC upsert_serie_cache não retornou um ID numérico válido.');
+
+  } catch {
+    console.log('Usando fallback de upsert direto para a tabela series.');
     const { data, error: insertError } = await supabase
       .from('series')
       .upsert({
@@ -140,7 +145,7 @@ async function upsertSerieCache(supabase: any, serieData: any) {
       .single();
       
     if (insertError) {
-      console.error('Erro ao inserir série diretamente:', insertError);
+      console.error('Erro no fallback de inserção direta:', insertError);
       throw insertError;
     }
     
@@ -279,63 +284,74 @@ export const getDramaById = publicProcedure
     console.log(`[CACHE] Buscando dorama ID: ${id}, forceRefresh: ${forceRefresh}`);
     
     try {
-      // Sempre usar fallback para TMDb por enquanto até o cache estar funcionando
-      console.log('[CACHE] Usando fallback direto para TMDb por enquanto...');
-      const tmdbData = await fetchFromTMDb(`/tv/${id}`);
-      const [castData, videosData] = await Promise.allSettled([
-        fetchFromTMDb(`/tv/${id}/credits`),
-        fetchFromTMDb(`/tv/${id}/videos`)
-      ]);
+      // Usar o sistema de cache primeiro
+      const serie = await getSerieWithCache(ctx.supabase, id, forceRefresh);
       
+      if (!serie) {
+        throw new Error('Dorama não encontrado no cache. Tentando fallback.');
+      }
+      
+      // Transformar dados do banco para o formato da API
       return {
-        id: tmdbData.id,
-        name: tmdbData.name,
-        original_name: tmdbData.original_name,
-        overview: tmdbData.overview,
-        poster_path: tmdbData.poster_path,
-        backdrop_path: tmdbData.backdrop_path,
-        first_air_date: tmdbData.first_air_date,
-        last_air_date: tmdbData.last_air_date,
-        vote_average: tmdbData.vote_average,
-        vote_count: tmdbData.vote_count,
-        popularity: tmdbData.popularity,
-        genre_ids: tmdbData.genre_ids || [],
-        origin_country: tmdbData.origin_country || [],
-        number_of_episodes: tmdbData.number_of_episodes,
-        number_of_seasons: tmdbData.number_of_seasons,
-        status: tmdbData.status,
-        episode_run_time: tmdbData.episode_run_time || [],
-        original_language: tmdbData.original_language,
-        homepage: tmdbData.homepage,
-        tagline: tmdbData.tagline,
-        cast: castData.status === 'fulfilled' ? castData.value?.cast?.slice(0, 20).map((actor: any) => ({
-          id: actor.id,
-          name: actor.name,
-          character: actor.character,
-          profile_path: actor.profile_path,
-          order: actor.order
-        })) || [] : [],
+        id: serie.tmdb_id,
+        name: serie.nome,
+        original_name: serie.nome_original,
+        overview: serie.descricao,
+        poster_path: serie.cover,
+        backdrop_path: serie.backcover,
+        first_air_date: serie.primeira_exibicao,
+        last_air_date: serie.ultima_exibicao,
+        vote_average: serie.avaliacao,
+        vote_count: serie.votos,
+        popularity: serie.popularidade,
+        genre_ids: serie.generos,
+        origin_country: serie.paises,
+        number_of_episodes: serie.total_episodios,
+        number_of_seasons: serie.total_temporadas,
+        status: serie.status,
+        episode_run_time: serie.runtime_episodio ? [serie.runtime_episodio] : [],
+        original_language: serie.linguagem_original,
+        homepage: serie.homepage,
+        tagline: serie.tagline,
+        cast: (serie.elenco && Array.isArray(serie.elenco)) ? serie.elenco.map((actor: any) => ({
+          id: actor.tmdb_person_id,
+          name: actor.nome,
+          character: actor.personagem,
+          profile_path: actor.foto,
+          order: actor.ordem
+        })) : [],
         videos: {
-          results: videosData.status === 'fulfilled' ? videosData.value?.results?.filter((video: any) => ['Trailer', 'Teaser'].includes(video.type)).slice(0, 10) || [] : []
+          results: (serie.videos && Array.isArray(serie.videos)) ? serie.videos.map((video: any) => ({
+            id: video.tmdb_video_id,
+            key: video.key,
+            site: video.site,
+            type: video.tipo,
+            name: video.nome,
+            size: video.tamanho,
+            official: video.oficial,
+            published_at: video.publicado_em
+          })) : []
         },
         images: {
-          backdrops: [],
-          posters: [],
-          logos: []
+          backdrops: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'backdrop') : [],
+          posters: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'poster') : [],
+          logos: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'logo') : []
         },
-        seasons: tmdbData.seasons || []
+        seasons: (serie.temporadas && Array.isArray(serie.temporadas)) ? serie.temporadas.map((season: any) => ({
+          id: season.tmdb_season_id || season.id,
+          season_number: season.numero,
+          name: season.nome,
+          overview: season.descricao,
+          poster_path: season.capa,
+          air_date: season.data_exibicao,
+          episode_count: season.total_episodios
+        })) : []
       };
-      
-      // TODO: Implementar sistema de cache quando estiver funcionando
-      // console.log('[CACHE] Tabela series existe, usando sistema de cache');
-      // const serie = await getSerieWithCache(ctx.supabase, id, forceRefresh);
-      
     } catch (error) {
-      console.error('[CACHE] Erro ao buscar dorama:', error);
+      console.error('[CACHE] Erro no sistema de cache, usando fallback para TMDb:', error);
       
       // Fallback para TMDb em caso de erro
       try {
-        console.log('[CACHE] Tentando fallback direto para TMDb...');
         const tmdbData = await fetchFromTMDb(`/tv/${id}`);
         const [castData, videosData] = await Promise.allSettled([
           fetchFromTMDb(`/tv/${id}/credits`),
@@ -354,7 +370,7 @@ export const getDramaById = publicProcedure
           vote_average: tmdbData.vote_average,
           vote_count: tmdbData.vote_count,
           popularity: tmdbData.popularity,
-          genre_ids: tmdbData.genre_ids || [],
+          genre_ids: tmdbData.genres?.map((g: any) => g.id) || [],
           origin_country: tmdbData.origin_country || [],
           number_of_episodes: tmdbData.number_of_episodes,
           number_of_seasons: tmdbData.number_of_seasons,
@@ -373,15 +389,11 @@ export const getDramaById = publicProcedure
           videos: {
             results: videosData.status === 'fulfilled' ? videosData.value?.results?.filter((video: any) => ['Trailer', 'Teaser'].includes(video.type)).slice(0, 10) || [] : []
           },
-          images: {
-            backdrops: [],
-            posters: [],
-            logos: []
-          },
+          images: { backdrops: [], posters: [], logos: [] },
           seasons: tmdbData.seasons || []
         };
       } catch (fallbackError) {
-        console.error('[CACHE] Fallback também falhou:', fallbackError);
+        console.error('[CACHE] Fallback para TMDb também falhou:', fallbackError);
         throw new Error('Erro ao carregar dorama');
       }
     }
