@@ -8,7 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Play, Star, Users, Film, X, Bookmark, BookmarkCheck, Plus } from "lucide-react-native";
 
 import { COLORS } from "@/constants/colors";
-import { getPopularDramas, getTrendingDramas } from "@/services/api";
+
 import { TMDB_IMAGE_BASE_URL, BACKDROP_SIZE, POSTER_SIZE } from "@/constants/config";
 import HorizontalList from "@/components/HorizontalList";
 import UpcomingReleasesCard from "@/components/UpcomingReleasesCard";
@@ -27,29 +27,10 @@ export default function DiscoverScreen() {
     offset: 0
   });
 
-  console.log('News query status:', {
-    isLoading: newsQuery.isLoading,
-    isError: newsQuery.isError,
-    error: newsQuery.error,
-    dataLength: newsQuery.data?.length,
-    data: newsQuery.data
-  });
 
-  const trendingQuery = useQuery({
-    queryKey: ["trending-dramas"],
-    queryFn: getTrendingDramas,
-    retry: 3,
-    retryDelay: 1000,
-    staleTime: 5 * 60 * 1000,
-  });
-  
-  const popularQuery = useQuery({
-    queryKey: ["popular-dramas"],
-    queryFn: getPopularDramas,
-    retry: 3,
-    retryDelay: 1000,
-    staleTime: 5 * 60 * 1000,
-  });
+
+  const trendingQuery = trpc.dramas.getTrending.useQuery();
+  const popularQuery = trpc.dramas.getPopular.useQuery({ page: 1 });
 
   const handleRefresh = () => {
     trendingQuery.refetch();
@@ -61,7 +42,7 @@ export default function DiscoverScreen() {
   const isRefreshing = trendingQuery.isFetching || popularQuery.isFetching;
   const hasError = !!trendingQuery.error || !!popularQuery.error;
 
-  const featuredDrama = trendingQuery.data?.[0] || popularQuery.data?.[0];
+  const featuredDrama = trendingQuery.data?.results?.[0] || popularQuery.data?.results?.[0];
 
 
 
@@ -80,7 +61,7 @@ export default function DiscoverScreen() {
             id: 'trending',
             type: 'horizontal-list',
             title: 'Trending Now',
-            data: trendingQuery.data || [],
+            data: trendingQuery.data?.results || [],
             viewAllRoute: '/trending',
             cardSize: 'medium',
           },
@@ -88,7 +69,7 @@ export default function DiscoverScreen() {
             id: 'popular',
             type: 'horizontal-list',
             title: 'Popular K-Dramas',
-            data: popularQuery.data || [],
+            data: popularQuery.data?.results || [],
             viewAllRoute: '/popular',
             cardSize: 'medium',
           },
@@ -110,7 +91,7 @@ export default function DiscoverScreen() {
       );
       setShowAddModal(false);
     } catch (e) {
-      console.log('Error adding to list from featured:', e);
+
     }
   };
 
@@ -229,7 +210,7 @@ export default function DiscoverScreen() {
           </View>
         );
       case 'news':
-        console.log('Rendering news section with data:', newsQuery.data);
+
         return <NewsCarousel news={newsQuery.data || []} />;
       case 'upcoming-releases':
         return <UpcomingReleasesCard />;
