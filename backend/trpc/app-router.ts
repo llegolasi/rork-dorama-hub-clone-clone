@@ -74,6 +74,16 @@ import {
   getDramaCategoryStatsProcedure
 } from "./routes/dramas/categories/route";
 
+// Drama cache routes
+import {
+  getDramaById,
+  searchDramas,
+  getPopularDramas,
+  getTrendingDramas,
+  syncSeriesCache,
+  cleanupCache
+} from "./routes/dramas/cache/route";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -146,8 +156,16 @@ export const appRouter = createTRPCRouter({
   }),
   
   dramas: createTRPCRouter({
+    // Categories
     backfillCategories: backfillDramaCategoriesProcedure,
     getCategoryStats: getDramaCategoryStatsProcedure,
+    // Cache system
+    getById: getDramaById,
+    search: searchDramas,
+    getPopular: getPopularDramas,
+    getTrending: getTrendingDramas,
+    syncCache: syncSeriesCache,
+    cleanupCache: cleanupCache,
   }),
 });
 
