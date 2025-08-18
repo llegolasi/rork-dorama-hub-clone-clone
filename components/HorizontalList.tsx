@@ -24,7 +24,10 @@ export default function HorizontalList({
 }: HorizontalListProps) {
   const router = useRouter();
   
-
+  console.log(`HorizontalList [${title}]:`, {
+    dataLength: data?.length || 0,
+    firstItem: data?.[0] ? { id: data[0].id, name: data[0].name } : null
+  });
   
   const handleViewAll = () => {
     if (viewAllRoute) {

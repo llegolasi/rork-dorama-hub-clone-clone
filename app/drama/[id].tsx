@@ -40,7 +40,9 @@ export default function DramaDetailScreen() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
+  console.log('DramaDetailScreen - received id:', id);
   const dramaId = parseInt(id || "0", 10);
+  console.log('DramaDetailScreen - parsed dramaId:', dramaId);
   
   // Usar o sistema de cache do tRPC
   const { data: drama, isLoading: isLoadingDrama } = trpc.dramas.getById.useQuery(
@@ -129,7 +131,7 @@ export default function DramaDetailScreen() {
   const hasUserReviewed = !!userReviewData;
   const recommendPercentage = statsData?.recommend_percentage ?? 0;
   
-
+  console.log('DramaDetailScreen - isCompleted:', isCompleted, 'dramaId:', dramaId);
   
 
   

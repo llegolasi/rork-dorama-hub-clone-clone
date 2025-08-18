@@ -51,7 +51,7 @@ const mockDramas: Drama[] = [
 // Helper to filter Korean dramas only
 const filterKoreanDramas = (dramas: Drama[]): Drama[] => {
   if (!dramas || !Array.isArray(dramas)) {
-
+    console.warn('Invalid dramas array received:', dramas);
     return [];
   }
   
@@ -74,7 +74,7 @@ const filterKoreanDramas = (dramas: Drama[]): Drama[] => {
 // Get trending K-dramas
 export const getTrendingDramas = async (): Promise<Drama[]> => {
   try {
-
+    console.log('Fetching trending dramas (primary: trending/day)...');
 
     const trendingRes = await fetch(
       `${TMDB_BASE_URL}/trending/tv/day?language=pt-BR`,
@@ -89,15 +89,17 @@ export const getTrendingDramas = async (): Promise<Drama[]> => {
     let trendingResults: Drama[] = [];
     if (trendingRes.ok) {
       const data = await trendingRes.json() as DramaResponse;
+      console.log(`TMDB returned ${data.results?.length || 0} trending/day results`);
       trendingResults = filterKoreanDramas(data.results || []);
+      console.log(`After KR filter: ${trendingResults.length}`);
     } else {
-
+      console.error(`TMDB trending error: ${trendingRes.status} ${trendingRes.statusText}`);
     }
 
     // If too few items, backfill with discover endpoints scoped to KR and KO
     let backfillResults: Drama[] = [];
     if (!trendingResults || trendingResults.length < 10) {
-
+      console.log('Backfilling trending with discover endpoints...');
 
       const [discoverOriginRes, discoverLangRes] = await Promise.all([
         fetch(`${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=1`, {
@@ -118,11 +120,14 @@ export const getTrendingDramas = async (): Promise<Drama[]> => {
         const d = await discoverOriginRes.json() as DramaResponse;
         backfillResults = backfillResults.concat(filterKoreanDramas(d.results || []));
       } else {
+        console.error(`Discover (origin KR) error: ${discoverOriginRes.status} ${discoverOriginRes.statusText}`);
       }
 
       if (discoverLangRes.ok) {
         const d2 = await discoverLangRes.json() as DramaResponse;
         backfillResults = backfillResults.concat(filterKoreanDramas(d2.results || []));
+      } else {
+        console.error(`Discover (lang ko) error: ${discoverLangRes.status} ${discoverLangRes.statusText}`);
       }
     }
 
@@ -134,12 +139,15 @@ export const getTrendingDramas = async (): Promise<Drama[]> => {
     const merged = Object.values(byId).slice(0, 20);
 
     if (merged.length === 0) {
+      console.log('No results after merge, using mock data');
       return mockDramas;
     }
 
+    console.log(`Trending final count: ${merged.length}`);
     return merged;
   } catch (error) {
     console.error('Error fetching trending dramas:', error);
+    console.log('Using mock data as fallback due to error');
     return mockDramas;
   }
 };
@@ -147,7 +155,7 @@ export const getTrendingDramas = async (): Promise<Drama[]> => {
 // Get popular K-dramas
 export const getPopularDramas = async (): Promise<Drama[]> => {
   try {
-
+    console.log('Fetching popular dramas...');
     const response = await fetch(
       `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc`,
       {
@@ -159,20 +167,27 @@ export const getPopularDramas = async (): Promise<Drama[]> => {
     );
     
     if (!response.ok) {
+      console.error(`TMDB API error: ${response.status} ${response.statusText}`);
+      console.log('Using mock data as fallback for popular dramas');
       return mockDramas;
     }
     
     const data = await response.json() as DramaResponse;
+    console.log(`TMDB returned ${data.results?.length || 0} popular results`);
+    
     const filteredResults = filterKoreanDramas(data.results || []);
+    console.log(`Filtered to ${filteredResults.length} Korean dramas`);
     
     // If no Korean dramas found, use mock data
     if (filteredResults.length === 0) {
+      console.log('No Korean dramas found, using mock data');
       return mockDramas;
     }
     
     return filteredResults;
   } catch (error) {
     console.error("Error fetching popular dramas:", error);
+    console.log('Using mock data as fallback due to error');
     return mockDramas;
   }
 };
