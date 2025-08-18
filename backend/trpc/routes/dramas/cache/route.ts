@@ -281,18 +281,18 @@ async function upsertVideosCache(supabase: any, serieId: number, tmdbId: number,
     .delete()
     .eq('serie_id', serieId);
   const videosToInsert = videosData.results
-    .filter((video: any) => ['Trailer', 'Teaser'].includes(video.type))
+    .filter((v: any) => ['Trailer', 'Teaser'].includes(v.type))
     .slice(0, 10)
-    .map((video: any) => ({
+    .map((v: any) => ({
       serie_id: serieId,
-      tmdb_video_id: video.id,
-      key: video.key,
-      site: video.site,
-      tipo: video.type,
-      nome: video.name,
-      tamanho: video.size,
-      oficial: video.official,
-      publicado_em: video.published_at
+      tmdb_video_id: v.id,
+      key: v.key,
+      site: v.site,
+      tipo: v.type,
+      nome: v.name,
+      tamanho: v.size,
+      oficial: v.official,
+      publicado_em: v.published_at
     }));
   if (videosToInsert.length > 0) {
     const { error } = await supabase
@@ -301,6 +301,75 @@ async function upsertVideosCache(supabase: any, serieId: number, tmdbId: number,
     if (error) {
       console.error('Erro ao salvar vídeos:', error);
     }
+  }
+}
+
+// Função para salvar temporadas no cache
+async function upsertSeasonsCache(
+  supabase: any,
+  serieId: number,
+  tmdbId: number,
+  seasons: Array<any>
+) {
+  console.log('[CACHE] upsertSeasonsCache iniciado', { serieId, tmdbId, seasonsCount: Array.isArray(seasons) ? seasons.length : 0 });
+  if (!Array.isArray(seasons) || seasons.length === 0) return;
+  if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
+    console.warn('upsertSeasonsCache: serieId inválido, abortando.', { tmdbId, serieId });
+    return;
+  }
+
+  // Buscar detalhes adicionais para temporadas que não possuem dados suficientes
+  const seasonsWithDetails = await Promise.all(
+    seasons.map(async (s: any) => {
+      const hasOverview = !!s.overview && typeof s.overview === 'string' && s.overview.length > 0;
+      const hasEpisodeCount = typeof s.episode_count === 'number' && s.episode_count >= 0;
+      if (hasOverview && hasEpisodeCount) return s;
+      try {
+        const detail = await fetchFromTMDb(`/tv/${tmdbId}/season/${s.season_number}`);
+        return {
+          ...s,
+          overview: detail?.overview ?? s.overview ?? null,
+          episode_count: typeof detail?.episodes?.length === 'number' ? detail.episodes.length : (s.episode_count ?? null),
+          air_date: detail?.air_date ?? s.air_date ?? null,
+          name: detail?.name ?? s.name ?? null,
+          poster_path: detail?.poster_path ?? s.poster_path ?? null,
+          id: detail?.id ?? s.id ?? null
+        };
+      } catch (e) {
+        console.warn('[CACHE] Falha ao buscar detalhes da temporada', { season_number: s?.season_number, tmdbId, error: (e as Error)?.message });
+        return s;
+      }
+    })
+  );
+
+  await supabase
+    .from('temporadas')
+    .delete()
+    .eq('serie_id', serieId);
+
+  const rows = seasonsWithDetails
+    .filter((s: any) => s != null && typeof s.season_number === 'number')
+    .map((s: any) => ({
+      serie_id: serieId,
+      tmdb_season_id: s.id ?? null,
+      numero: s.season_number ?? null,
+      nome: s.name ?? null,
+      descricao: s.overview ?? null,
+      capa: s.poster_path ?? null,
+      data_exibicao: s.air_date ?? null,
+      total_episodios: s.episode_count ?? (Array.isArray(s.episodes) ? s.episodes.length : null)
+    }));
+
+  if (rows.length === 0) {
+    console.log('[CACHE] Nenhuma temporada para inserir');
+    return;
+  }
+
+  const { error } = await supabase.from('temporadas').insert(rows);
+  if (error) {
+    console.error('[CACHE] Erro ao salvar temporadas:', error);
+  } else {
+    console.log(`[CACHE] ${rows.length} temporadas salvas para série ${tmdbId}`);
   }
 }
 
@@ -363,6 +432,15 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
       fetchFromTMDb(`/tv/${tmdbId}/credits`),
       fetchFromTMDb(`/tv/${tmdbId}/videos`)
     ]);
+
+    // Salvar temporadas primeiro usando dados do tmdbData
+    try {
+      const seasonsArray: Array<any> = Array.isArray((tmdbData as any)?.seasons) ? (tmdbData as any).seasons : [];
+      console.log('[CACHE] Salvando temporadas...', { count: seasonsArray.length });
+      await upsertSeasonsCache(supabase, serieId as number, tmdbId, seasonsArray);
+    } catch (e) {
+      console.error('[CACHE] Erro ao salvar temporadas:', e);
+    }
     
     // Salvar dados adicionais se disponíveis
     if (castData.status === 'fulfilled') {
