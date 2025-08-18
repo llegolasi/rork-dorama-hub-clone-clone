@@ -15,7 +15,8 @@ import {
   MessageCircle, 
   UserPlus, 
   UserMinus,
-  ArrowLeft 
+  ArrowLeft,
+  Trophy 
 } from 'lucide-react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 
@@ -129,41 +130,148 @@ const UserProfileScreen = () => {
 
 
   
-  const renderPostItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.postCard}
-      onPress={() => handlePostPress(item.id)}
-    >
-      <View style={styles.postHeader}>
-        <Text style={styles.postType}>
-          {item.post_type === 'ranking' ? '📊 Ranking' : '💬 Discussão'}
-        </Text>
-        <Text style={styles.postDate}>
-          {new Date(item.created_at).toLocaleDateString('pt-BR')}
-        </Text>
-      </View>
-      
-      <Text style={styles.postContent} numberOfLines={3}>
-        {item.content}
-      </Text>
-      
-      {item.drama_name && (
-        <View style={styles.mentionedDrama}>
-          <Text style={styles.mentionedDramaText}>📺 {item.drama_name}</Text>
-          {item.drama_year && (
-            <Text style={styles.mentionedDramaYear}>({item.drama_year})</Text>
+  const renderPostItem = ({ item }: { item: any }) => {
+    if (item.post_type === 'ranking') {
+      return renderRankingCard(item);
+    } else {
+      return renderPublicationCard(item);
+    }
+  };
+  
+  const renderRankingCard = (post: any) => {
+    if (!post.user_rankings) return null;
+
+    const items = Array.isArray(post.user_rankings?.ranking_items) ? [...post.user_rankings.ranking_items] : [];
+    items.sort((a: any, b: any) => (a?.rank_position ?? 0) - (b?.rank_position ?? 0));
+    const topItems = items.slice(0, 3);
+
+    return (
+      <TouchableOpacity
+        key={post.id}
+        style={styles.rankingCard}
+        onPress={() => handlePostPress(post.id)}
+      >
+        <View style={styles.rankingBannerProfile}>
+          {topItems.length > 0 ? (
+            <View style={styles.bannerRow}>
+              {topItems.map((it: any, idx: number) => (
+                <View key={idx} style={styles.bannerCol}>
+                  <Image
+                    source={{ uri: it.cover_image || it.poster_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama' }}
+                    style={styles.bannerImage}
+                    contentFit="cover"
+                  />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Image
+              source={{ uri: 'https://images.unsplash.com/photo-1527137342181-19aab11a8ee8?w=1200&auto=format&fit=crop&q=60' }}
+              style={styles.bannerImage}
+              contentFit="cover"
+            />
           )}
+          <View style={styles.bannerOverlay}>
+            <View style={styles.topBadge}>
+              <Text style={styles.topBadgeText}>Ranking</Text>
+            </View>
+          </View>
         </View>
+
+        <View style={styles.rankingContent}>
+          <View style={styles.rankingHeaderProfile}>
+            <View style={styles.userInfo}>
+              <Image
+                source={{
+                  uri: userProfile?.profile_image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+                }}
+                style={styles.userAvatar}
+                contentFit="cover"
+              />
+              <View style={styles.userDetails}>
+                <Text style={styles.userName}>{userProfile?.display_name || userProfile?.username}</Text>
+                <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+              </View>
+            </View>
+          </View>
+
+          <Text style={styles.rankingTitleProfile}>{post.user_rankings?.title || 'Ranking'}</Text>
+          {!!post.user_rankings?.description && (
+            <Text style={styles.rankingDescription} numberOfLines={3}>
+              {post.user_rankings.description}
+            </Text>
+          )}
+
+          <View style={styles.engagementStats}>
+            <View style={styles.statItemProfile}>
+              <Trophy size={16} color={COLORS.accent} />
+              <Text style={styles.statText}>{items.length > 0 ? `${items.length} itens` : 'Novo'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.actionButtonProfile}>
+            <Text style={styles.actionButtonTextProfile}>Ver Ranking e Comentar</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+  
+  const renderPublicationCard = (post: any) => (
+    <TouchableOpacity
+      key={post.id}
+      style={styles.publicationCard}
+      onPress={() => handlePostPress(post.id)}
+    >
+      <View style={styles.publicationHeader}>
+        <View style={styles.userInfo}>
+          <Image
+            source={{
+              uri: userProfile?.profile_image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+            }}
+            style={styles.userAvatar}
+            contentFit="cover"
+          />
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>{userProfile?.display_name || userProfile?.username}</Text>
+            <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.publicationContent}>{post.content}</Text>
+
+      {post.mentioned_drama_id && (
+        <TouchableOpacity 
+          style={styles.mentionedDrama}
+          onPress={() => handleDramaPress(post.mentioned_drama_id)}
+        >
+          <Image
+            source={{
+              uri: post.poster_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama',
+            }}
+            style={styles.mentionedPoster}
+            contentFit="cover"
+          />
+          <View style={styles.mentionedInfo}>
+            <Text style={styles.mentionedTitle}>{post.drama_name || 'Drama Mencionado'}</Text>
+            <Text style={styles.mentionedYear}>{post.drama_year || 'N/A'}</Text>
+          </View>
+        </TouchableOpacity>
       )}
-      
-      <View style={styles.postStats}>
-        <View style={styles.postStat}>
-          <Heart size={16} color={COLORS.textSecondary} />
-          <Text style={styles.postStatText}>{item.likes_count}</Text>
+
+      <View style={styles.engagementStats}>
+        <View style={styles.statItemProfile}>
+          <Heart
+            size={16}
+            color={post.is_liked ? COLORS.accent : COLORS.textSecondary}
+            fill={post.is_liked ? COLORS.accent : 'transparent'}
+          />
+          <Text style={styles.statText}>{post.likes_count || 0}</Text>
         </View>
-        <View style={styles.postStat}>
+        <View style={styles.statItemProfile}>
           <MessageCircle size={16} color={COLORS.textSecondary} />
-          <Text style={styles.postStatText}>{item.comments_count}</Text>
+          <Text style={styles.statText}>{post.comments_count || 0}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -607,28 +715,137 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
   },
-  postCard: {
+  // Ranking card styles
+  rankingCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
   },
-  postHeader: {
+  rankingBannerProfile: {
+    height: 140,
+    position: 'relative',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+    padding: 12,
+  },
+  topBadge: {
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  topBadgeText: {
+    color: COLORS.background,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  rankingContent: {
+    padding: 16,
+  },
+  rankingHeaderProfile: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  postType: {
-    fontSize: 12,
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: COLORS.text,
   },
-  postDate: {
-    fontSize: 12,
+  userHandle: {
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
-  postContent: {
+  rankingTitleProfile: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  rankingDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  engagementStats: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  statItemProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  bannerRow: {
+    flexDirection: 'row',
+    width: '100%',
+    height: '100%',
+  },
+  bannerCol: {
+    flex: 1,
+    height: '100%',
+  },
+  actionButtonProfile: {
+    backgroundColor: COLORS.accent + '20',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  actionButtonTextProfile: {
+    color: COLORS.accent,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Publication card styles
+  publicationCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  publicationHeader: {
+    marginBottom: 12,
+  },
+  publicationContent: {
     fontSize: 16,
     color: COLORS.text,
     lineHeight: 22,
@@ -636,36 +853,30 @@ const styles = StyleSheet.create({
   },
   mentionedDrama: {
     flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: COLORS.background,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 12,
-    gap: 4,
-  },
-  mentionedDramaText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  mentionedDramaYear: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  postStats: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  postStat: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 12,
   },
-  postStatText: {
+  mentionedPoster: {
+    width: 40,
+    height: 60,
+    borderRadius: 6,
+  },
+  mentionedInfo: {
+    flex: 1,
+  },
+  mentionedTitle: {
     fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  mentionedYear: {
+    fontSize: 12,
     color: COLORS.textSecondary,
-    fontWeight: '500',
   },
   dramasSection: {
     paddingBottom: 20,
