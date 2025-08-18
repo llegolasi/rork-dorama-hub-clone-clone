@@ -115,19 +115,33 @@ async function upsertSerieCache(supabase: any, serieData: any) {
       p_homepage: serieData.homepage,
       p_tagline: serieData.tagline
     });
-    
+
     if (error) {
       console.error('Erro ao chamar RPC upsert_serie_cache, tentando fallback...', error);
       throw error; // Pula para o bloco catch para usar o fallback
     }
 
-    // Validar se o RPC retornou um ID válido
     if (typeof data === 'number') {
       return data;
     }
-    // Se não retornou um número, usar fallback
-    throw new Error('RPC upsert_serie_cache não retornou um ID numérico válido.');
 
+    // Tentar obter o ID direto da tabela caso o RPC não retorne número
+    const { data: maybeRow, error: fetchErr } = await supabase
+      .from('series')
+      .select('id')
+      .eq('tmdb_id', serieData.id)
+      .maybeSingle();
+
+    if (fetchErr) {
+      console.error('Falha ao buscar série após RPC:', fetchErr);
+      throw fetchErr;
+    }
+
+    if (maybeRow?.id && typeof maybeRow.id === 'number') {
+      return maybeRow.id;
+    }
+
+    throw new Error('RPC upsert_serie_cache não retornou um ID válido e não foi possível localizar a série.');
   } catch {
     console.log('Usando fallback de upsert direto para a tabela series.');
     const { data, error: insertError } = await supabase
@@ -158,27 +172,41 @@ async function upsertSerieCache(supabase: any, serieData: any) {
       })
       .select('id')
       .single();
-      
+
     if (insertError) {
       console.error('Erro no fallback de inserção direta:', insertError);
       throw insertError;
     }
-    
-    return data?.id;
+
+    if (data?.id) return data.id;
+
+    // Última tentativa: buscar o ID
+    const { data: fetched, error: fetchAfterUpsertErr } = await supabase
+      .from('series')
+      .select('id')
+      .eq('tmdb_id', serieData.id)
+      .maybeSingle();
+
+    if (fetchAfterUpsertErr) {
+      console.error('Erro ao buscar série após upsert direto:', fetchAfterUpsertErr);
+      throw fetchAfterUpsertErr;
+    }
+
+    return fetched?.id;
   }
 }
 
 // Função para salvar elenco no cache
 async function upsertCastCache(supabase: any, serieId: number, tmdbId: number, castData: any) {
   if (!castData?.cast?.length) return;
-  
-  // Primeiro, remover elenco existente
+  if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
+    console.warn('upsertCastCache: serieId inválido, abortando. tmdbId:', tmdbId, 'serieId:', serieId);
+    return;
+  }
   await supabase
     .from('elenco')
     .delete()
     .eq('serie_id', serieId);
-  
-  // Inserir novo elenco
   const castToInsert = castData.cast.slice(0, 20).map((person: any, index: number) => ({
     serie_id: serieId,
     tmdb_person_id: person.id,
@@ -188,12 +216,10 @@ async function upsertCastCache(supabase: any, serieId: number, tmdbId: number, c
     ordem: index,
     tipo: 'cast'
   }));
-  
   if (castToInsert.length > 0) {
     const { error } = await supabase
       .from('elenco')
       .insert(castToInsert);
-      
     if (error) {
       console.error('Erro ao salvar elenco:', error);
     }
@@ -203,14 +229,14 @@ async function upsertCastCache(supabase: any, serieId: number, tmdbId: number, c
 // Função para salvar vídeos no cache
 async function upsertVideosCache(supabase: any, serieId: number, tmdbId: number, videosData: any) {
   if (!videosData?.results?.length) return;
-  
-  // Primeiro, remover vídeos existentes
+  if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
+    console.warn('upsertVideosCache: serieId inválido, abortando. tmdbId:', tmdbId, 'serieId:', serieId);
+    return;
+  }
   await supabase
     .from('videos')
     .delete()
     .eq('serie_id', serieId);
-  
-  // Inserir novos vídeos (apenas trailers e teasers)
   const videosToInsert = videosData.results
     .filter((video: any) => ['Trailer', 'Teaser'].includes(video.type))
     .slice(0, 10)
@@ -225,12 +251,10 @@ async function upsertVideosCache(supabase: any, serieId: number, tmdbId: number,
       oficial: video.official,
       publicado_em: video.published_at
     }));
-  
   if (videosToInsert.length > 0) {
     const { error } = await supabase
       .from('videos')
       .insert(videosToInsert);
-      
     if (error) {
       console.error('Erro ao salvar vídeos:', error);
     }
@@ -256,8 +280,22 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     const tmdbData = await fetchFromTMDb(`/tv/${tmdbId}`);
     
     // Salvar série no cache
-    const serieId = await upsertSerieCache(supabase, tmdbData);
-    
+    let serieId = await upsertSerieCache(supabase, tmdbData);
+
+    if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
+      const { data: fetchedRow, error: fetchIdErr } = await supabase
+        .from('series')
+        .select('id')
+        .eq('tmdb_id', tmdbId)
+        .maybeSingle();
+      if (fetchIdErr) {
+        console.error('Erro ao localizar ID da série após upsert:', fetchIdErr);
+      }
+      if (fetchedRow?.id) {
+        serieId = fetchedRow.id as number;
+      }
+    }
+
     // Buscar dados adicionais em paralelo
     const [castData, videosData] = await Promise.allSettled([
       fetchFromTMDb(`/tv/${tmdbId}/credits`),
