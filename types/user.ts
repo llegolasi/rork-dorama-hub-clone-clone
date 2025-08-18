@@ -176,6 +176,8 @@ export interface AuthUser {
   displayName: string;
   bio?: string;
   profileImage?: string;
+  followersCount?: number;
+  followingCount?: number;
   isOnboardingComplete: boolean;
   createdAt: string;
 }
