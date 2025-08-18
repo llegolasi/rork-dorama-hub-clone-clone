@@ -26,12 +26,27 @@ const popularDramasSchema = z.object({
 
 // Função auxiliar para buscar do TMDb
 async function fetchFromTMDb(endpoint: string) {
-  const response = await fetch(`${TMDB_BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}&language=pt-BR`);
-  
-  if (!response.ok) {
-    throw new Error(`TMDb API error: ${response.status}`);
+  const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
+  if (!url.searchParams.has('language')) {
+    url.searchParams.set('language', 'pt-BR');
   }
-  
+
+  let headers: Record<string, string> | undefined;
+  if (TMDB_API_KEY && TMDB_API_KEY.startsWith('eyJ')) {
+    headers = { Authorization: `Bearer ${TMDB_API_KEY}` };
+  } else if (TMDB_API_KEY) {
+    if (!url.searchParams.has('api_key')) {
+      url.searchParams.set('api_key', TMDB_API_KEY);
+    }
+  }
+
+  const response = await fetch(url.toString(), { headers });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`TMDb API error: ${response.status} ${text}`);
+  }
+
   return response.json();
 }
 
@@ -321,31 +336,31 @@ export const getDramaById = publicProcedure
           order: actor.ordem
         })) : [],
         videos: {
-          results: (serie.videos && Array.isArray(serie.videos)) ? serie.videos.map((video: any) => ({
-            id: video.tmdb_video_id,
-            key: video.key,
-            site: video.site,
-            type: video.tipo,
-            name: video.nome,
-            size: video.tamanho,
-            official: video.oficial,
-            published_at: video.publicado_em
-          })) : []
+          results: (Array.isArray(serie?.videos) ? serie.videos : []).map((video: any) => ({
+            id: video?.tmdb_video_id,
+            key: video?.key,
+            site: video?.site,
+            type: video?.tipo,
+            name: video?.nome,
+            size: video?.tamanho,
+            official: video?.oficial,
+            published_at: video?.publicado_em
+          }))
         },
         images: {
-          backdrops: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'backdrop') : [],
-          posters: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'poster') : [],
-          logos: (serie.imagens && Array.isArray(serie.imagens)) ? serie.imagens.filter((img: any) => img.tipo === 'logo') : []
+          backdrops: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img?.tipo === 'backdrop'),
+          posters: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img?.tipo === 'poster'),
+          logos: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img?.tipo === 'logo')
         },
-        seasons: (serie.temporadas && Array.isArray(serie.temporadas)) ? serie.temporadas.map((season: any) => ({
-          id: season.tmdb_season_id || season.id,
-          season_number: season.numero,
-          name: season.nome,
-          overview: season.descricao,
-          poster_path: season.capa,
-          air_date: season.data_exibicao,
-          episode_count: season.total_episodios
-        })) : []
+        seasons: (Array.isArray(serie?.temporadas) ? serie.temporadas : []).map((season: any) => ({
+          id: season?.tmdb_season_id || season?.id,
+          season_number: season?.numero,
+          name: season?.nome,
+          overview: season?.descricao,
+          poster_path: season?.capa,
+          air_date: season?.data_exibicao,
+          episode_count: season?.total_episodios
+        }))
       };
     } catch (error) {
       console.error('[CACHE] Erro no sistema de cache, usando fallback para TMDb:', error);
