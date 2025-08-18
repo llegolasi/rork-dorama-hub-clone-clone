@@ -2,8 +2,12 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, type Context } from '../../../create-context';
 
 // Configuração da API do TMDb
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY || process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+
+if (!TMDB_API_KEY) {
+  console.error('TMDB_API_KEY não configurada! Verifique as variáveis de ambiente.');
+}
 
 // Schemas de validação
 const dramaSearchSchema = z.object({
@@ -227,7 +231,67 @@ export const getDramaById = publicProcedure
   .query(async ({ input, ctx }: { input: z.infer<typeof dramaByIdSchema>; ctx: Context }) => {
     const { id, forceRefresh } = input;
     
+    console.log(`[CACHE] Buscando dorama ID: ${id}, forceRefresh: ${forceRefresh}`);
+    
     try {
+      // Verificar se a tabela series existe
+      const { data: tableExists, error: tableError } = await ctx.supabase
+        .from('series')
+        .select('count')
+        .limit(1);
+        
+      if (tableError) {
+        console.error('[CACHE] Erro ao verificar tabela series:', tableError);
+        console.log('[CACHE] Tabela series não existe ou não está acessível. Usando fallback para TMDb.');
+        
+        // Fallback direto para TMDb se a tabela não existir
+        const tmdbData = await fetchFromTMDb(`/tv/${id}`);
+        const [castData, videosData] = await Promise.allSettled([
+          fetchFromTMDb(`/tv/${id}/credits`),
+          fetchFromTMDb(`/tv/${id}/videos`)
+        ]);
+        
+        return {
+          id: tmdbData.id,
+          name: tmdbData.name,
+          original_name: tmdbData.original_name,
+          overview: tmdbData.overview,
+          poster_path: tmdbData.poster_path,
+          backdrop_path: tmdbData.backdrop_path,
+          first_air_date: tmdbData.first_air_date,
+          last_air_date: tmdbData.last_air_date,
+          vote_average: tmdbData.vote_average,
+          vote_count: tmdbData.vote_count,
+          popularity: tmdbData.popularity,
+          genre_ids: tmdbData.genre_ids || [],
+          origin_country: tmdbData.origin_country || [],
+          number_of_episodes: tmdbData.number_of_episodes,
+          number_of_seasons: tmdbData.number_of_seasons,
+          status: tmdbData.status,
+          episode_run_time: tmdbData.episode_run_time || [],
+          original_language: tmdbData.original_language,
+          homepage: tmdbData.homepage,
+          tagline: tmdbData.tagline,
+          cast: castData.status === 'fulfilled' ? castData.value?.cast?.slice(0, 20).map((actor: any) => ({
+            id: actor.id,
+            name: actor.name,
+            character: actor.character,
+            profile_path: actor.profile_path,
+            order: actor.order
+          })) || [] : [],
+          videos: {
+            results: videosData.status === 'fulfilled' ? videosData.value?.results?.filter((video: any) => ['Trailer', 'Teaser'].includes(video.type)).slice(0, 10) || [] : []
+          },
+          images: {
+            backdrops: [],
+            posters: [],
+            logos: []
+          },
+          seasons: tmdbData.seasons || []
+        };
+      }
+      
+      console.log('[CACHE] Tabela series existe, usando sistema de cache');
       const serie = await getSerieWithCache(ctx.supabase, id, forceRefresh);
       
       if (!serie) {
@@ -293,8 +357,59 @@ export const getDramaById = publicProcedure
       };
       
     } catch (error) {
-      console.error('Erro ao buscar dorama:', error);
-      throw new Error('Erro ao carregar dorama');
+      console.error('[CACHE] Erro ao buscar dorama:', error);
+      
+      // Fallback para TMDb em caso de erro
+      try {
+        console.log('[CACHE] Tentando fallback direto para TMDb...');
+        const tmdbData = await fetchFromTMDb(`/tv/${id}`);
+        const [castData, videosData] = await Promise.allSettled([
+          fetchFromTMDb(`/tv/${id}/credits`),
+          fetchFromTMDb(`/tv/${id}/videos`)
+        ]);
+        
+        return {
+          id: tmdbData.id,
+          name: tmdbData.name,
+          original_name: tmdbData.original_name,
+          overview: tmdbData.overview,
+          poster_path: tmdbData.poster_path,
+          backdrop_path: tmdbData.backdrop_path,
+          first_air_date: tmdbData.first_air_date,
+          last_air_date: tmdbData.last_air_date,
+          vote_average: tmdbData.vote_average,
+          vote_count: tmdbData.vote_count,
+          popularity: tmdbData.popularity,
+          genre_ids: tmdbData.genre_ids || [],
+          origin_country: tmdbData.origin_country || [],
+          number_of_episodes: tmdbData.number_of_episodes,
+          number_of_seasons: tmdbData.number_of_seasons,
+          status: tmdbData.status,
+          episode_run_time: tmdbData.episode_run_time || [],
+          original_language: tmdbData.original_language,
+          homepage: tmdbData.homepage,
+          tagline: tmdbData.tagline,
+          cast: castData.status === 'fulfilled' ? castData.value?.cast?.slice(0, 20).map((actor: any) => ({
+            id: actor.id,
+            name: actor.name,
+            character: actor.character,
+            profile_path: actor.profile_path,
+            order: actor.order
+          })) || [] : [],
+          videos: {
+            results: videosData.status === 'fulfilled' ? videosData.value?.results?.filter((video: any) => ['Trailer', 'Teaser'].includes(video.type)).slice(0, 10) || [] : []
+          },
+          images: {
+            backdrops: [],
+            posters: [],
+            logos: []
+          },
+          seasons: tmdbData.seasons || []
+        };
+      } catch (fallbackError) {
+        console.error('[CACHE] Fallback também falhou:', fallbackError);
+        throw new Error('Erro ao carregar dorama');
+      }
     }
   });
 

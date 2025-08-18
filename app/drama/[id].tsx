@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COLORS } from "@/constants/colors";
 import { BACKDROP_SIZE, POSTER_SIZE, TMDB_IMAGE_BASE_URL } from "@/constants/config";
-import { getDramaCredits, getDramaDetails, getDramaProviders, getDramaImages, getDramaVideos } from "@/services/api";
+import { trpc } from "@/lib/trpc";
 import ActorCard from "@/components/ActorCard";
 import { ListToggle } from "@/components/lists/ListToggle";
 import ReviewsSection from "@/components/ReviewsSection";
@@ -44,35 +44,18 @@ export default function DramaDetailScreen() {
   const dramaId = parseInt(id || "0", 10);
   console.log('DramaDetailScreen - parsed dramaId:', dramaId);
   
-  const { data: drama, isLoading: isLoadingDrama } = useQuery({
-    queryKey: ["drama-details", dramaId],
-    queryFn: () => getDramaDetails(dramaId),
-    enabled: !!dramaId,
-  });
+  // Usar o sistema de cache do tRPC
+  const { data: drama, isLoading: isLoadingDrama } = trpc.dramas.getById.useQuery(
+    { id: dramaId },
+    { enabled: !!dramaId }
+  );
   
-  const { data: credits, isLoading: isLoadingCredits } = useQuery({
-    queryKey: ["drama-credits", dramaId],
-    queryFn: () => getDramaCredits(dramaId),
-    enabled: !!dramaId,
-  });
-  
-  const { data: providers } = useQuery({
-    queryKey: ["drama-providers", dramaId],
-    queryFn: () => getDramaProviders(dramaId),
-    enabled: !!dramaId,
-  });
-  
-  const { data: images } = useQuery({
-    queryKey: ["drama-images", dramaId],
-    queryFn: () => getDramaImages(dramaId),
-    enabled: !!dramaId,
-  });
-  
-  const { data: videos } = useQuery({
-    queryKey: ["drama-videos", dramaId],
-    queryFn: () => getDramaVideos(dramaId),
-    enabled: !!dramaId,
-  });
+  // Os dados de credits, providers, images e videos já vêm junto com o drama do cache
+  const credits = drama ? { cast: drama.cast || [] } : null;
+  const providers = null; // Será implementado no cache posteriormente
+  const images = drama?.images || null;
+  const videos = drama?.videos || null;
+  const isLoadingCredits = isLoadingDrama;
   
 
 
@@ -180,8 +163,8 @@ export default function DramaDetailScreen() {
   
   const mainCast = credits?.cast.slice(0, 10) || [];
   
-  // Get streaming providers for Brazil (BR)
-  const streamingProviders = providers?.results?.BR?.flatrate || [];
+  // Get streaming providers for Brazil (BR) - temporariamente desabilitado
+  const streamingProviders: any[] = [];
   
   const renderStreamingSection = () => {
     if (!streamingProviders || streamingProviders.length === 0) {
@@ -294,9 +277,7 @@ export default function DramaDetailScreen() {
             </View>
             
             <View style={styles.genresContainer}>
-              {drama.genres.slice(0, 2).map((genre) => (
-                <Text key={genre.id} style={styles.genreText}>{genre.name}</Text>
-              ))}
+              {/* Gêneros serão implementados posteriormente no cache */}
             </View>
           </View>
         </View>
@@ -356,12 +337,12 @@ export default function DramaDetailScreen() {
         </View>
       )}
       
-      {drama.seasons && drama.seasons.length > 0 && (
+      {drama.seasons && Array.isArray(drama.seasons) && drama.seasons.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Temporadas</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.seasonsContainer}>
-              {drama.seasons.map((season) => (
+              {drama.seasons.map((season: any) => (
                 <TouchableOpacity 
                   key={season.id} 
                   style={styles.seasonCard}
@@ -388,7 +369,7 @@ export default function DramaDetailScreen() {
         </View>
       )}
       
-      {videos && videos.results.length > 0 && (
+      {videos && videos.results && Array.isArray(videos.results) && videos.results.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Vídeos</Text>
@@ -402,7 +383,7 @@ export default function DramaDetailScreen() {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.videosContainer}>
-              {videos.results.slice(0, 5).map((video) => (
+              {videos.results.slice(0, 5).map((video: any) => (
                 <TouchableOpacity 
                   key={video.id} 
                   style={styles.videoCard}
@@ -432,7 +413,7 @@ export default function DramaDetailScreen() {
         </View>
       )}
       
-      {images && (images.backdrops.length > 0 || images.posters.length > 0) && (
+      {images && images.backdrops && Array.isArray(images.backdrops) && (images.backdrops.length > 0 || (images.posters && images.posters.length > 0)) && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Galeria</Text>
@@ -446,7 +427,7 @@ export default function DramaDetailScreen() {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.galleryContainer}>
-              {images.backdrops.slice(0, 8).map((image, index) => (
+              {images.backdrops.slice(0, 8).map((image: any, index: number) => (
                 <TouchableOpacity 
                   key={`backdrop-${index}`} 
                   style={styles.galleryItem}
