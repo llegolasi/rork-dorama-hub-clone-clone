@@ -276,11 +276,16 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
   }
   
   try {
+    console.log(`[CACHE] Buscando dados do TMDb para ID: ${tmdbId}`);
+    
     // Buscar dados básicos do TMDb
     const tmdbData = await fetchFromTMDb(`/tv/${tmdbId}`);
+    console.log(`[CACHE] Dados TMDb recebidos:`, { id: tmdbData.id, name: tmdbData.name });
     
     // Salvar série no cache
+    console.log(`[CACHE] Salvando série no cache...`);
     let serieId = await upsertSerieCache(supabase, tmdbData);
+    console.log(`[CACHE] Série salva com ID: ${serieId}`);
 
     if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
       const { data: fetchedRow, error: fetchIdErr } = await supabase
@@ -317,14 +322,16 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     return serie;
     
   } catch (error) {
-    console.error('Erro ao buscar série do TMDb:', error);
+    console.error('[CACHE] Erro ao buscar série do TMDb:', error);
+    console.error('[CACHE] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     // Se falhou ao buscar do TMDb, retornar do cache se existir
     if (serie) {
+      console.log(`[CACHE] Retornando dados do cache após erro TMDb`);
       return serie;
     }
     
-    throw new Error('Série não encontrada');
+    throw new Error(`Série não encontrada: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
 
@@ -374,7 +381,7 @@ export const getDramaById = publicProcedure
           order: actor.ordem
         })) : [],
         videos: {
-          results: (Array.isArray(serie?.videos) ? serie.videos : []).filter(video => video != null).map((video: any) => ({
+          results: (Array.isArray(serie?.videos) ? serie.videos : []).filter((video: any) => video != null).map((video: any) => ({
             id: video.tmdb_video_id || null,
             key: video.key || null,
             site: video.site || null,
@@ -390,7 +397,7 @@ export const getDramaById = publicProcedure
           posters: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'poster'),
           logos: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'logo')
         },
-        seasons: (Array.isArray(serie?.temporadas) ? serie.temporadas : []).filter(season => season != null).map((season: any) => ({
+        seasons: (Array.isArray(serie?.temporadas) ? serie.temporadas : []).filter((season: any) => season != null).map((season: any) => ({
           id: season.tmdb_season_id || season.id || null,
           season_number: season.numero || null,
           name: season.nome || null,
@@ -401,11 +408,24 @@ export const getDramaById = publicProcedure
         }))
       };
     } catch (error) {
-      console.error('[CACHE] Erro no sistema de cache, usando fallback para TMDb:', error);
+      console.error('[CACHE] Erro no sistema de cache:', error);
+      console.error('[CACHE] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
       
       // Fallback para TMDb em caso de erro
       try {
+        console.log(`[CACHE] Tentando fallback TMDb para ID: ${id}`);
+        
+        if (!TMDB_API_KEY) {
+          throw new Error('TMDB_API_KEY não configurada');
+        }
+        
         const tmdbData = await fetchFromTMDb(`/tv/${id}`);
+        console.log(`[CACHE] TMDb data recebida para ${id}:`, { 
+          id: tmdbData.id, 
+          name: tmdbData.name,
+          status: tmdbData.status 
+        });
+        
         const [castData, videosData] = await Promise.allSettled([
           fetchFromTMDb(`/tv/${id}/credits`),
           fetchFromTMDb(`/tv/${id}/videos`)
@@ -447,7 +467,10 @@ export const getDramaById = publicProcedure
         };
       } catch (fallbackError) {
         console.error('[CACHE] Fallback para TMDb também falhou:', fallbackError);
-        throw new Error('Erro ao carregar dorama');
+        console.error('[CACHE] Fallback error stack:', fallbackError instanceof Error ? fallbackError.stack : 'No stack trace');
+        console.error('[CACHE] TMDB_API_KEY exists:', !!TMDB_API_KEY);
+        console.error('[CACHE] Requested drama ID:', id);
+        throw new Error(`Erro ao carregar dorama: ${fallbackError instanceof Error ? fallbackError.message : 'Erro desconhecido'}`);
       }
     }
   });
