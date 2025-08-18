@@ -58,7 +58,7 @@ async function fetchFromTMDb(endpoint: string) {
 async function getSerieFromCache(supabase: any, tmdbId: number) {
   console.log(`[CACHE] getSerieFromCache - buscando tmdb_id: ${tmdbId}`);
   
-  const { data, error } = await supabase
+  const { data, error, status } = await supabase
     .from('series')
     .select(`
       *,
@@ -68,21 +68,27 @@ async function getSerieFromCache(supabase: any, tmdbId: number) {
       imagens:imagens(*)
     `)
     .eq('tmdb_id', tmdbId)
-    .single();
+    .maybeSingle();
     
   if (error) {
-    if (error.code === 'PGRST116') {
-      console.log(`[CACHE] Série ${tmdbId} não encontrada no cache (PGRST116)`);
+    console.warn(`[CACHE] Erro ao buscar série ${tmdbId} do cache (status ${status}):`, error);
+    // Quando não encontra, o PostgREST pode retornar 406/400 com PGRST116; tratar como não encontrado
+    if (error.code === 'PGRST116' || status === 406 || status === 400) {
+      console.log(`[CACHE] Série ${tmdbId} não encontrada no cache (tratado como miss)`);
       return null;
     }
-    console.error(`[CACHE] Erro ao buscar série ${tmdbId} do cache:`, error);
     throw error;
+  }
+
+  if (!data) {
+    console.log(`[CACHE] Série ${tmdbId} não encontrada no cache (data null)`);
+    return null;
   }
   
   console.log(`[CACHE] Série ${tmdbId} encontrada no cache:`, {
-    id: data?.id,
-    nome: data?.nome,
-    last_update: data?.last_update
+    id: data.id,
+    nome: data.nome,
+    last_update: data.last_update
   });
     
   return data;
