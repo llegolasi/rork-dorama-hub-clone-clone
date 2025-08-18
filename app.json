@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Dorama Hub Clone Clone",
-    "slug": "dorama-hub-xstzcbm-9l3iwf0z-a5kim2bk",
+    "name": "Dorama Hub",
+    "slug": "doramahub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.dorama-hub-xstzcbm-9l3iwf0z-a5kim2bk",
+      "bundleIdentifier": "com.llegolasi.doramahub",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.dorama-hub-xstzcbm-9l3iwf0z-a5kim2bk",
+      "package": "com.llegolasi.doramahub",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
