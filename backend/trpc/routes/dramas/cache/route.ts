@@ -299,9 +299,11 @@ async function upsertVideosCache(supabase: any, serieId: number, tmdbId: number,
 }
 
 // Função principal para obter série com cache
-async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = false) {
+async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = false): Promise<{ serie: any | null; status: 'cache-hit' | 'stale-refreshed' | 'miss-saved' | 'cache-after-error' | 'not-found'; serieId?: number | null; }> {
   console.log(`[CACHE] getSerieWithCache iniciado - tmdbId: ${tmdbId}, forceRefresh: ${forceRefresh}`);
-  let serie = null;
+  let serie: any | null = null;
+  let status: 'cache-hit' | 'stale-refreshed' | 'miss-saved' | 'cache-after-error' | 'not-found' = 'not-found';
+  let serieId: number | null | undefined = null;
   
   if (!forceRefresh) {
     console.log(`[CACHE] Tentando buscar do cache primeiro...`);
@@ -315,7 +317,8 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
       console.log(`[CACHE] Série precisa atualizar?`, needsUpdate);
       if (!needsUpdate) {
         console.log(`[CACHE] Retornando dados do cache (atualizados)`);
-        return serie;
+        status = 'cache-hit';
+        return { serie, status, serieId: serie?.id ?? null };
       }
     }
   }
@@ -329,7 +332,7 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     
     // Salvar série no cache
     console.log(`[CACHE] Salvando série no cache...`);
-    let serieId = await upsertSerieCache(supabase, tmdbData);
+    serieId = await upsertSerieCache(supabase, tmdbData);
     console.log(`[CACHE] Série salva com ID: ${serieId}`);
 
     if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
@@ -358,14 +361,14 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     // Salvar dados adicionais se disponíveis
     if (castData.status === 'fulfilled') {
       console.log(`[CACHE] Salvando elenco...`);
-      await upsertCastCache(supabase, serieId, tmdbId, castData.value);
+      await upsertCastCache(supabase, serieId as number, tmdbId, castData.value);
     } else {
       console.log(`[CACHE] Erro ao buscar elenco:`, castData.reason);
     }
     
     if (videosData.status === 'fulfilled') {
       console.log(`[CACHE] Salvando vídeos...`);
-      await upsertVideosCache(supabase, serieId, tmdbId, videosData.value);
+      await upsertVideosCache(supabase, serieId as number, tmdbId, videosData.value);
     } else {
       console.log(`[CACHE] Erro ao buscar vídeos:`, videosData.reason);
     }
@@ -375,7 +378,8 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     serie = await getSerieFromCache(supabase, tmdbId);
     console.log(`[CACHE] Dados finais do cache:`, serie ? 'SUCESSO' : 'FALHOU');
     
-    return serie;
+    status = (serie && !forceRefresh) ? 'stale-refreshed' : 'miss-saved';
+    return { serie, status, serieId: serieId ?? (serie?.id ?? null) };
     
   } catch (error) {
     console.error('[CACHE] Erro ao buscar série do TMDb:', error);
@@ -384,7 +388,8 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     // Se falhou ao buscar do TMDb, retornar do cache se existir
     if (serie) {
       console.log(`[CACHE] Retornando dados do cache após erro TMDb`);
-      return serie;
+      status = 'cache-after-error';
+      return { serie, status, serieId: serie?.id ?? null };
     }
     
     throw new Error(`Série não encontrada: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -401,7 +406,7 @@ export const getDramaById = publicProcedure
     
     try {
       // Usar o sistema de cache primeiro
-      const serie = await getSerieWithCache(ctx.supabase, id, forceRefresh);
+      const { serie, status, serieId } = await getSerieWithCache(ctx.supabase, id, forceRefresh);
       
       if (!serie) {
         throw new Error('Dorama não encontrado no cache. Tentando fallback.');
@@ -461,7 +466,12 @@ export const getDramaById = publicProcedure
           poster_path: season.capa || null,
           air_date: season.data_exibicao || null,
           episode_count: season.total_episodios || null
-        }))
+        })),
+        _cache: {
+          status,
+          serieId: serieId ?? null,
+          last_update: serie?.last_update ?? null
+        }
       };
     } catch (error) {
       console.error('[CACHE] Erro no sistema de cache:', error);
