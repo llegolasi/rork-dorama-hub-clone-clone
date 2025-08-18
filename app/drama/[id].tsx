@@ -413,38 +413,53 @@ export default function DramaDetailScreen() {
         </View>
       )}
       
-      {images && images.backdrops && Array.isArray(images.backdrops) && (images.backdrops.length > 0 || (images.posters && images.posters.length > 0)) && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Galeria</Text>
-            <TouchableOpacity 
-              style={styles.viewAllButton}
-              onPress={() => router.push(`/drama/${dramaId}/gallery`)}
-            >
-              <Text style={styles.viewAllText}>Ver Todas</Text>
-              <ChevronRight size={16} color={COLORS.accent} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.galleryContainer}>
-              {images.backdrops.slice(0, 8).map((image: any, index: number) => (
-                <TouchableOpacity 
-                  key={`backdrop-${index}`} 
-                  style={styles.galleryItem}
-                  onPress={() => console.log('Image selected:', image.file_path)}
-                >
-                  <Image
-                    source={{
-                      uri: `https://image.tmdb.org/t/p/w500${image.file_path}`
-                    }}
-                    style={styles.galleryImage}
-                  />
-                </TouchableOpacity>
-              ))}
+      {(() => {
+        const backdrops = (images?.backdrops ?? []) as any[];
+        const posters = (images?.posters ?? []) as any[];
+        let allImages = [...backdrops, ...posters];
+        if (allImages.length === 0) {
+          const fallbackList: any[] = [];
+          if (drama.backdrop_path) fallbackList.push({ file_path: drama.backdrop_path });
+          if (drama.poster_path) fallbackList.push({ file_path: drama.poster_path });
+          allImages = fallbackList;
+        }
+        if (allImages.length === 0) return null;
+        return (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Galeria</Text>
+              <TouchableOpacity 
+                style={styles.viewAllButton}
+                testID="view-all-gallery"
+                onPress={() => router.push(`/drama/${dramaId}/gallery`)}
+              >
+                <Text style={styles.viewAllText}>Ver Todas</Text>
+                <ChevronRight size={16} color={COLORS.accent} />
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-        </View>
-      )}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.galleryContainer}>
+                {allImages.slice(0, 8).map((image: any, index: number) => (
+                  <TouchableOpacity 
+                    key={`img-${index}`} 
+                    style={styles.galleryItem}
+                    testID={`gallery-thumb-${index}`}
+                    onPress={() => console.log('Image selected:', image?.file_path)}
+                  >
+                    <Image
+                      source={{
+                        uri: `https://image.tmdb.org/t/p/w500${image?.file_path ?? ''}`
+                      }}
+                      style={styles.galleryImage}
+                      contentFit="cover"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        );
+      })()}
       
       <ReviewModal
         visible={showReviewModal}
