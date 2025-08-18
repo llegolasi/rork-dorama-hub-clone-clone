@@ -56,6 +56,8 @@ async function fetchFromTMDb(endpoint: string) {
 
 // Função para verificar se série existe no cache
 async function getSerieFromCache(supabase: any, tmdbId: number) {
+  console.log(`[CACHE] getSerieFromCache - buscando tmdb_id: ${tmdbId}`);
+  
   const { data, error } = await supabase
     .from('series')
     .select(`
@@ -68,9 +70,20 @@ async function getSerieFromCache(supabase: any, tmdbId: number) {
     .eq('tmdb_id', tmdbId)
     .single();
     
-  if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+  if (error) {
+    if (error.code === 'PGRST116') {
+      console.log(`[CACHE] Série ${tmdbId} não encontrada no cache (PGRST116)`);
+      return null;
+    }
+    console.error(`[CACHE] Erro ao buscar série ${tmdbId} do cache:`, error);
     throw error;
   }
+  
+  console.log(`[CACHE] Série ${tmdbId} encontrada no cache:`, {
+    id: data?.id,
+    nome: data?.nome,
+    last_update: data?.last_update
+  });
     
   return data;
 }
@@ -97,7 +110,10 @@ async function serieNeedsUpdate(supabase: any, tmdbId: number, maxAgeDays = 7) {
 
 // Função para salvar série no cache
 async function upsertSerieCache(supabase: any, serieData: any) {
+  console.log(`[CACHE] upsertSerieCache iniciado para tmdb_id: ${serieData.id}`);
+  
   try {
+    console.log(`[CACHE] Tentando RPC upsert_serie_cache...`);
     const { data, error } = await supabase.rpc('upsert_serie_cache', {
       p_tmdb_id: serieData.id,
       p_nome: serieData.name || serieData.original_name,
@@ -121,15 +137,19 @@ async function upsertSerieCache(supabase: any, serieData: any) {
     });
 
     if (error) {
-      console.error('Erro ao chamar RPC upsert_serie_cache, tentando fallback...', error);
+      console.error('[CACHE] Erro ao chamar RPC upsert_serie_cache:', error);
       throw error; // Pula para o bloco catch para usar o fallback
     }
 
+    console.log(`[CACHE] RPC retornou:`, data, typeof data);
+
     if (typeof data === 'number') {
+      console.log(`[CACHE] RPC sucesso - ID: ${data}`);
       return data;
     }
 
     // Tentar obter o ID direto da tabela caso o RPC não retorne número
+    console.log(`[CACHE] RPC não retornou número, buscando ID manualmente...`);
     const { data: maybeRow, error: fetchErr } = await supabase
       .from('series')
       .select('id')
@@ -137,17 +157,20 @@ async function upsertSerieCache(supabase: any, serieData: any) {
       .maybeSingle();
 
     if (fetchErr) {
-      console.error('Falha ao buscar série após RPC:', fetchErr);
+      console.error('[CACHE] Falha ao buscar série após RPC:', fetchErr);
       throw fetchErr;
     }
 
     if (maybeRow?.id && typeof maybeRow.id === 'number') {
+      console.log(`[CACHE] ID encontrado após RPC: ${maybeRow.id}`);
       return maybeRow.id;
     }
 
     throw new Error('RPC upsert_serie_cache não retornou um ID válido e não foi possível localizar a série.');
-  } catch {
-    console.log('Usando fallback de upsert direto para a tabela series.');
+  } catch (rpcError) {
+    console.log('[CACHE] RPC falhou, usando fallback de upsert direto para a tabela series.');
+    console.log('[CACHE] Erro RPC:', rpcError);
+    
     const { data, error: insertError } = await supabase
       .from('series')
       .upsert({
@@ -178,13 +201,17 @@ async function upsertSerieCache(supabase: any, serieData: any) {
       .single();
 
     if (insertError) {
-      console.error('Erro no fallback de inserção direta:', insertError);
+      console.error('[CACHE] Erro no fallback de inserção direta:', insertError);
       throw insertError;
     }
 
-    if (data?.id) return data.id;
+    if (data?.id) {
+      console.log(`[CACHE] Fallback sucesso - ID: ${data.id}`);
+      return data.id;
+    }
 
     // Última tentativa: buscar o ID
+    console.log(`[CACHE] Última tentativa - buscando ID após upsert...`);
     const { data: fetched, error: fetchAfterUpsertErr } = await supabase
       .from('series')
       .select('id')
@@ -192,11 +219,17 @@ async function upsertSerieCache(supabase: any, serieData: any) {
       .maybeSingle();
 
     if (fetchAfterUpsertErr) {
-      console.error('Erro ao buscar série após upsert direto:', fetchAfterUpsertErr);
+      console.error('[CACHE] Erro ao buscar série após upsert direto:', fetchAfterUpsertErr);
       throw fetchAfterUpsertErr;
     }
 
-    return fetched?.id;
+    if (fetched?.id) {
+      console.log(`[CACHE] ID encontrado na última tentativa: ${fetched.id}`);
+      return fetched.id;
+    }
+
+    console.error('[CACHE] Falha completa - não foi possível obter ID');
+    throw new Error('Falha completa ao salvar série no cache');
   }
 }
 
@@ -267,15 +300,23 @@ async function upsertVideosCache(supabase: any, serieId: number, tmdbId: number,
 
 // Função principal para obter série com cache
 async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = false) {
+  console.log(`[CACHE] getSerieWithCache iniciado - tmdbId: ${tmdbId}, forceRefresh: ${forceRefresh}`);
   let serie = null;
   
   if (!forceRefresh) {
+    console.log(`[CACHE] Tentando buscar do cache primeiro...`);
     // Tentar buscar do cache primeiro
     serie = await getSerieFromCache(supabase, tmdbId);
+    console.log(`[CACHE] Resultado do cache:`, serie ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
     
     // Se existe no cache, verificar se precisa atualizar
-    if (serie && !await serieNeedsUpdate(supabase, tmdbId)) {
-      return serie;
+    if (serie) {
+      const needsUpdate = await serieNeedsUpdate(supabase, tmdbId);
+      console.log(`[CACHE] Série precisa atualizar?`, needsUpdate);
+      if (!needsUpdate) {
+        console.log(`[CACHE] Retornando dados do cache (atualizados)`);
+        return serie;
+      }
     }
   }
   
@@ -292,20 +333,23 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     console.log(`[CACHE] Série salva com ID: ${serieId}`);
 
     if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
+      console.log(`[CACHE] ID inválido, tentando buscar manualmente...`);
       const { data: fetchedRow, error: fetchIdErr } = await supabase
         .from('series')
         .select('id')
         .eq('tmdb_id', tmdbId)
         .maybeSingle();
       if (fetchIdErr) {
-        console.error('Erro ao localizar ID da série após upsert:', fetchIdErr);
+        console.error('[CACHE] Erro ao localizar ID da série após upsert:', fetchIdErr);
       }
       if (fetchedRow?.id) {
         serieId = fetchedRow.id as number;
+        console.log(`[CACHE] ID encontrado manualmente: ${serieId}`);
       }
     }
 
     // Buscar dados adicionais em paralelo
+    console.log(`[CACHE] Buscando dados adicionais (cast, videos)...`);
     const [castData, videosData] = await Promise.allSettled([
       fetchFromTMDb(`/tv/${tmdbId}/credits`),
       fetchFromTMDb(`/tv/${tmdbId}/videos`)
@@ -313,15 +357,23 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     
     // Salvar dados adicionais se disponíveis
     if (castData.status === 'fulfilled') {
+      console.log(`[CACHE] Salvando elenco...`);
       await upsertCastCache(supabase, serieId, tmdbId, castData.value);
+    } else {
+      console.log(`[CACHE] Erro ao buscar elenco:`, castData.reason);
     }
     
     if (videosData.status === 'fulfilled') {
+      console.log(`[CACHE] Salvando vídeos...`);
       await upsertVideosCache(supabase, serieId, tmdbId, videosData.value);
+    } else {
+      console.log(`[CACHE] Erro ao buscar vídeos:`, videosData.reason);
     }
     
     // Buscar dados atualizados do cache
+    console.log(`[CACHE] Buscando dados atualizados do cache...`);
     serie = await getSerieFromCache(supabase, tmdbId);
+    console.log(`[CACHE] Dados finais do cache:`, serie ? 'SUCESSO' : 'FALHOU');
     
     return serie;
     
@@ -524,15 +576,25 @@ export const getPopularDramas = publicProcedure
     const { page } = input;
     
     try {
+      console.log(`[CACHE] getPopularDramas iniciado - página ${page}`);
+      
       // Primeiro, tentar buscar do cache (séries populares que já estão salvas)
-      const { data: cachedSeries } = await ctx.supabase
+      console.log('[CACHE] Verificando cache de séries populares...');
+      const { data: cachedSeries, error: cacheError } = await ctx.supabase
         .from('series')
         .select('*')
         .order('popularidade', { ascending: false })
         .range((page - 1) * 20, page * 20 - 1);
       
+      if (cacheError) {
+        console.error('[CACHE] Erro ao buscar do cache:', cacheError);
+      } else {
+        console.log(`[CACHE] Cache retornou ${cachedSeries?.length || 0} séries`);
+      }
+      
       // Se temos dados no cache, retornar
       if (cachedSeries && cachedSeries.length > 0) {
+        console.log('[CACHE] Retornando dados do cache');
         return {
           page,
           results: cachedSeries.map((serie: any) => ({
@@ -555,15 +617,20 @@ export const getPopularDramas = publicProcedure
       }
       
       // Se não tem no cache, buscar do TMDb
+      console.log('[CACHE] Cache vazio, buscando do TMDb...');
       const data = await fetchFromTMDb(`/tv/popular?page=${page}`);
+      console.log(`[CACHE] TMDb retornou ${data.results?.length || 0} resultados`);
       
       // Salvar no cache em background (não bloquear resposta)
+      console.log('[CACHE] Salvando resultados no cache em background...');
       Promise.all(
         data.results.slice(0, 10).map(async (drama: any) => {
           try {
+            console.log(`[CACHE] Salvando drama popular ${drama.id} (${drama.name})`);
             await upsertSerieCache(ctx.supabase, drama);
+            console.log(`[CACHE] Drama popular ${drama.id} salvo com sucesso`);
           } catch (error) {
-            console.error(`Erro ao salvar série ${drama.id} no cache:`, error);
+            console.error(`[CACHE] Erro ao salvar série ${drama.id} no cache:`, error);
           }
         })
       ).catch(console.error);
@@ -589,7 +656,7 @@ export const getPopularDramas = publicProcedure
       };
       
     } catch (error) {
-      console.error('Erro ao buscar doramas populares:', error);
+      console.error('[CACHE] Erro ao buscar doramas populares:', error);
       throw new Error('Erro ao carregar doramas populares');
     }
   });
@@ -597,16 +664,22 @@ export const getPopularDramas = publicProcedure
 export const getTrendingDramas = publicProcedure
   .query(async ({ ctx }: { ctx: Context }) => {
     try {
+      console.log('[CACHE] getTrendingDramas iniciado');
+      
       // Buscar trending do TMDb
       const data = await fetchFromTMDb('/trending/tv/week');
+      console.log(`[CACHE] TMDb trending retornou ${data.results?.length || 0} resultados`);
       
       // Salvar no cache em background
+      console.log('[CACHE] Salvando trending dramas no cache...');
       Promise.all(
         data.results.slice(0, 10).map(async (drama: any) => {
           try {
+            console.log(`[CACHE] Salvando trending drama ${drama.id} (${drama.name})`);
             await upsertSerieCache(ctx.supabase, drama);
+            console.log(`[CACHE] Trending drama ${drama.id} salvo com sucesso`);
           } catch (error) {
-            console.error(`Erro ao salvar série trending ${drama.id} no cache:`, error);
+            console.error(`[CACHE] Erro ao salvar série trending ${drama.id} no cache:`, error);
           }
         })
       ).catch(console.error);
@@ -629,7 +702,7 @@ export const getTrendingDramas = publicProcedure
       };
       
     } catch (error) {
-      console.error('Erro ao buscar doramas em alta:', error);
+      console.error('[CACHE] Erro ao buscar doramas em alta:', error);
       throw new Error('Erro ao carregar doramas em alta');
     }
   });
