@@ -6,12 +6,19 @@
 -- Estrutura normalizada para consultas eficientes
 
 -- =====================================================
+-- CORREÇÃO DA TABELA SERIES (se já existir)
+-- =====================================================
+
+-- Dropar tabela series se existir para recriar com estrutura correta
+DROP TABLE IF EXISTS public.series CASCADE;
+
+-- =====================================================
 -- TABELAS PRINCIPAIS DO CACHE
 -- =====================================================
 
 -- Tabela principal de séries (cache do TMDb)
 CREATE TABLE IF NOT EXISTS public.series (
-    id BIGINT PRIMARY KEY, -- id interno sequencial
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- id interno sequencial
     tmdb_id BIGINT UNIQUE NOT NULL, -- id da série no TMDb
     nome TEXT NOT NULL, -- título
     nome_original TEXT, -- título original

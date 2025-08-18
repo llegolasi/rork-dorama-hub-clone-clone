@@ -235,7 +235,7 @@ export const getDramaById = publicProcedure
     
     try {
       // Verificar se a tabela series existe
-      const { data: tableExists, error: tableError } = await ctx.supabase
+      const { error: tableError } = await ctx.supabase
         .from('series')
         .select('count')
         .limit(1);
@@ -346,7 +346,7 @@ export const getDramaById = publicProcedure
           logos: serie.imagens?.filter((img: any) => img.tipo === 'logo') || []
         },
         seasons: serie.temporadas?.map((season: any) => ({
-          id: season.tmdb_season_id,
+          id: season.tmdb_season_id || season.id,
           season_number: season.numero,
           name: season.nome,
           overview: season.descricao,
