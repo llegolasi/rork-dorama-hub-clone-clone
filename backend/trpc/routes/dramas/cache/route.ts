@@ -318,7 +318,6 @@ async function upsertSeasonsCache(
     return;
   }
 
-  // Buscar detalhes adicionais para temporadas que não possuem dados suficientes
   const seasonsWithDetails = await Promise.all(
     seasons.map(async (s: any) => {
       const hasOverview = !!s.overview && typeof s.overview === 'string' && s.overview.length > 0;
@@ -370,6 +369,63 @@ async function upsertSeasonsCache(
     console.error('[CACHE] Erro ao salvar temporadas:', error);
   } else {
     console.log(`[CACHE] ${rows.length} temporadas salvas para série ${tmdbId}`);
+  }
+}
+
+// Função para salvar imagens no cache
+async function upsertImagesCache(
+  supabase: any,
+  serieId: number,
+  tmdbId: number,
+  imagesData: any
+) {
+  console.log('[CACHE] upsertImagesCache iniciado', { serieId, tmdbId });
+  if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
+    console.warn('upsertImagesCache: serieId inválido, abortando.', { tmdbId, serieId });
+    return;
+  }
+  const backdrops: Array<any> = Array.isArray(imagesData?.backdrops) ? imagesData.backdrops : [];
+  const posters: Array<any> = Array.isArray(imagesData?.posters) ? imagesData.posters : [];
+  const logos: Array<any> = Array.isArray(imagesData?.logos) ? imagesData.logos : [];
+
+  if (backdrops.length === 0 && posters.length === 0 && logos.length === 0) {
+    console.log('[CACHE] Nenhuma imagem para inserir');
+    return;
+  }
+
+  await supabase
+    .from('imagens')
+    .delete()
+    .eq('serie_id', serieId);
+
+  const mapItem = (item: any, tipo: 'backdrop' | 'poster' | 'logo') => ({
+    serie_id: serieId,
+    caminho: item.file_path ?? item.caminho ?? null,
+    tipo,
+    largura: item.width ?? item.largura ?? null,
+    altura: item.height ?? item.altura ?? null,
+    aspecto: typeof item.aspect_ratio === 'number' ? Number(item.aspect_ratio.toFixed(2)) : null,
+    votos: item.vote_count ?? item.votos ?? 0,
+    avaliacao: typeof item.vote_average === 'number' ? Number(item.vote_average.toFixed(1)) : null,
+    linguagem: item.iso_639_1 ?? item.linguagem ?? null,
+  });
+
+  const rows = [
+    ...backdrops.slice(0, 20).map((i: any) => mapItem(i, 'backdrop')),
+    ...posters.slice(0, 20).map((i: any) => mapItem(i, 'poster')),
+    ...logos.slice(0, 20).map((i: any) => mapItem(i, 'logo')),
+  ].filter((r) => r.caminho != null);
+
+  if (rows.length === 0) {
+    console.log('[CACHE] Nenhuma imagem válida para inserir');
+    return;
+  }
+
+  const { error } = await supabase.from('imagens').insert(rows);
+  if (error) {
+    console.error('[CACHE] Erro ao salvar imagens:', error);
+  } else {
+    console.log(`[CACHE] ${rows.length} imagens salvas para série ${tmdbId}`);
   }
 }
 
@@ -427,10 +483,11 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
     }
 
     // Buscar dados adicionais em paralelo
-    console.log(`[CACHE] Buscando dados adicionais (cast, videos)...`);
-    const [castData, videosData] = await Promise.allSettled([
+    console.log(`[CACHE] Buscando dados adicionais (cast, videos, images)...`);
+    const [castData, videosData, imagesData] = await Promise.allSettled([
       fetchFromTMDb(`/tv/${tmdbId}/credits`),
-      fetchFromTMDb(`/tv/${tmdbId}/videos`)
+      fetchFromTMDb(`/tv/${tmdbId}/videos`),
+      fetchFromTMDb(`/tv/${tmdbId}/images`),
     ]);
 
     // Salvar temporadas primeiro usando dados do tmdbData
@@ -455,6 +512,13 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
       await upsertVideosCache(supabase, serieId as number, tmdbId, videosData.value);
     } else {
       console.log(`[CACHE] Erro ao buscar vídeos:`, videosData.reason);
+    }
+
+    if (imagesData.status === 'fulfilled') {
+      console.log(`[CACHE] Salvando imagens...`);
+      await upsertImagesCache(supabase, serieId as number, tmdbId, imagesData.value);
+    } else {
+      console.log(`[CACHE] Erro ao buscar imagens:`, imagesData.reason);
     }
     
     // Buscar dados atualizados do cache
@@ -580,9 +644,10 @@ export const getDramaById = publicProcedure
           status: tmdbData.status 
         });
         
-        const [castData, videosData] = await Promise.allSettled([
+        const [castData, videosData, imagesData] = await Promise.allSettled([
           fetchFromTMDb(`/tv/${id}/credits`),
-          fetchFromTMDb(`/tv/${id}/videos`)
+          fetchFromTMDb(`/tv/${id}/videos`),
+          fetchFromTMDb(`/tv/${id}/images`),
         ]);
         
         return {
@@ -616,7 +681,11 @@ export const getDramaById = publicProcedure
           videos: {
             results: videosData.status === 'fulfilled' ? videosData.value?.results?.filter((video: any) => ['Trailer', 'Teaser'].includes(video.type)).slice(0, 10) || [] : []
           },
-          images: { backdrops: [], posters: [], logos: [] },
+          images: imagesData.status === 'fulfilled' ? {
+            backdrops: Array.isArray(imagesData.value?.backdrops) ? imagesData.value.backdrops : [],
+            posters: Array.isArray(imagesData.value?.posters) ? imagesData.value.posters : [],
+            logos: Array.isArray(imagesData.value?.logos) ? imagesData.value.logos : [],
+          } : { backdrops: [], posters: [], logos: [] },
           seasons: tmdbData.seasons || []
         };
       } catch (fallbackError) {
