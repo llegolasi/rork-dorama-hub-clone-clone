@@ -58,7 +58,7 @@ async function fetchFromTMDb(endpoint: string) {
 async function getSerieFromCache(supabase: any, tmdbId: number) {
   console.log(`[CACHE] getSerieFromCache - buscando tmdb_id: ${tmdbId}`);
   
-  const { data, error } = await supabase
+  const { data, error } = await supabaseRead
     .from('series')
     .select(`
       *,
@@ -150,7 +150,7 @@ async function upsertSerieCache(supabase: any, serieData: any) {
 
     // Tentar obter o ID direto da tabela caso o RPC não retorne número
     console.log(`[CACHE] RPC não retornou número, buscando ID manualmente...`);
-    const { data: maybeRow, error: fetchErr } = await supabase
+    const { data: maybeRow, error: fetchErr } = await supabaseWrite
       .from('series')
       .select('id')
       .eq('tmdb_id', serieData.id)
@@ -212,7 +212,7 @@ async function upsertSerieCache(supabase: any, serieData: any) {
 
     // Última tentativa: buscar o ID
     console.log(`[CACHE] Última tentativa - buscando ID após upsert...`);
-    const { data: fetched, error: fetchAfterUpsertErr } = await supabase
+    const { data: fetched, error: fetchAfterUpsertErr } = await supabaseWrite
       .from('series')
       .select('id')
       .eq('tmdb_id', serieData.id)
@@ -254,7 +254,7 @@ async function upsertCastCache(supabase: any, serieId: number, tmdbId: number, c
     tipo: 'cast'
   }));
   if (castToInsert.length > 0) {
-    const { error } = await supabase
+    const { error } = await supabaseWrite
       .from('elenco')
       .insert(castToInsert);
     if (error) {
@@ -289,7 +289,7 @@ async function upsertVideosCache(supabase: any, serieId: number, tmdbId: number,
       publicado_em: video.published_at
     }));
   if (videosToInsert.length > 0) {
-    const { error } = await supabase
+    const { error } = await supabaseWrite
       .from('videos')
       .insert(videosToInsert);
     if (error) {
@@ -334,7 +334,7 @@ async function getSerieWithCache(supabase: any, tmdbId: number, forceRefresh = f
 
     if (typeof serieId !== 'number' || Number.isNaN(serieId)) {
       console.log(`[CACHE] ID inválido, tentando buscar manualmente...`);
-      const { data: fetchedRow, error: fetchIdErr } = await supabase
+      const { data: fetchedRow, error: fetchIdErr } = await supabaseRead
         .from('series')
         .select('id')
         .eq('tmdb_id', tmdbId)
