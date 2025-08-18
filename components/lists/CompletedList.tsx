@@ -4,16 +4,12 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   TouchableOpacity,
-  Image,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
 import { UserList } from "@/types/user";
-import { Drama } from "@/types/drama";
-import { getDramaDetails } from "@/services/api";
 import { useUserLists } from "@/hooks/useUserStore";
 import { EmptyState } from "./EmptyState";
 import { Star, Edit3, Trash2 } from "lucide-react-native";
@@ -29,41 +25,32 @@ export function CompletedList({ dramas }: CompletedListProps) {
   const { removeFromList } = useUserLists();
   const { user } = useAuth();
   const [reviewModalVisible, setReviewModalVisible] = useState<boolean>(false);
-  const [selectedDrama, setSelectedDrama] = useState<Drama | null>(null);
+  const [selectedDrama, setSelectedDrama] = useState<UserList | null>(null);
   const [existingReview, setExistingReview] = useState<any>(null);
 
-  const { data: dramaDetails, isLoading, refetch } = useQuery({
-    queryKey: ["completed-dramas", dramas.map(d => d.dramaId)],
+  const { data: dramaReviews, refetch } = useQuery({
+    queryKey: ["completed-dramas-reviews", dramas.map(d => d.dramaId), user],
     queryFn: async () => {
-      const details = await Promise.all(
+      if (!user) return [];
+      
+      const reviews = await Promise.all(
         dramas.map(async (userListItem) => {
           try {
-            const drama = await getDramaDetails(userListItem.dramaId);
-            
             // Fetch existing review
-            let review = null;
-            if (user) {
-              const { data: reviewData } = await supabase
-                .from('drama_reviews' as any)
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('drama_id', drama.id)
-                .single();
-              review = reviewData;
-            }
+            const { data: reviewData } = await supabase
+              .from('drama_reviews' as any)
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('drama_id', userListItem.dramaId)
+              .single();
             
-            return { drama, userListItem, review };
-          } catch (error) {
-            console.error(`Error fetching drama ${userListItem.dramaId}:`, error);
-            return null;
+            return { userListItem, review: reviewData };
+          } catch {
+            return { userListItem, review: null };
           }
         })
       );
-      return details.filter(Boolean) as { 
-        drama: Drama; 
-        userListItem: UserList; 
-        review?: any 
-      }[];
+      return reviews;
     },
     enabled: dramas.length > 0 && !!user,
   });
@@ -80,19 +67,11 @@ export function CompletedList({ dramas }: CompletedListProps) {
     removeFromList(dramaId, "completed");
   };
 
-  const handleEditReview = async (drama: Drama) => {
+  const handleEditReview = async (userListItem: UserList, existingReview?: any) => {
     if (!user) return;
     
-    // Fetch existing review
-    const { data: reviewData } = await supabase
-      .from('drama_reviews' as any)
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('drama_id', drama.id)
-      .single();
-    
-    setSelectedDrama(drama);
-    setExistingReview(reviewData);
+    setSelectedDrama(userListItem);
+    setExistingReview(existingReview);
     setReviewModalVisible(true);
   };
 
@@ -117,63 +96,36 @@ export function CompletedList({ dramas }: CompletedListProps) {
     );
   }
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Carregando dramas concluídos...</Text>
-      </View>
-    );
-  }
+
 
   const renderItem = ({ item }: { 
     item: { 
-      drama: Drama; 
       userListItem: UserList; 
       review?: any 
     } 
   }) => {
-    const imageUrl = item.drama.poster_path
-      ? `https://image.tmdb.org/t/p/w300${item.drama.poster_path}`
-      : null;
-
-    const year = item.drama.first_air_date
-      ? new Date(item.drama.first_air_date).getFullYear()
-      : "N/A";
+    const completedDate = new Date(item.userListItem.addedAt).toLocaleDateString('pt-BR');
 
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push(`/drama/${item.drama.id}`)}
-        testID={`drama-card-${item.drama.id}`}
+        onPress={() => router.push(`/drama/${item.userListItem.dramaId}`)}
+        testID={`drama-card-${item.userListItem.dramaId}`}
       >
         <View style={styles.cardContent}>
-          {/* Drama Poster */}
-          <View style={styles.imageContainer}>
-            {imageUrl ? (
-              <Image source={{ uri: imageUrl }} style={styles.image} />
-            ) : (
-              <View style={[styles.image, styles.placeholderImage]}>
-                <Text style={styles.placeholderText}>No Image</Text>
-              </View>
-            )}
-          </View>
-
           {/* Drama Info */}
           <View style={styles.infoContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              {item.drama.name}
+              Drama ID: {item.userListItem.dramaId}
             </Text>
             
             <Text style={styles.subtitle} numberOfLines={1}>
-              {year} • {item.drama.origin_country.join(", ")}
+              {item.userListItem.total_episodes || 16} episódios • {Math.round((item.userListItem.total_runtime_minutes || 0) / 60)}h
             </Text>
 
-            {item.drama.overview && (
-              <Text style={styles.overview} numberOfLines={2}>
-                {item.drama.overview}
-              </Text>
-            )}
+            <Text style={styles.completedDate} numberOfLines={1}>
+              Concluído em: {completedDate}
+            </Text>
 
             {/* Review Section */}
             {item.review ? (
@@ -190,8 +142,8 @@ export function CompletedList({ dramas }: CompletedListProps) {
                   </View>
                   <TouchableOpacity
                     style={styles.editButton}
-                    onPress={() => handleEditReview(item.drama)}
-                    testID={`edit-review-${item.drama.id}`}
+                    onPress={() => handleEditReview(item.userListItem, item.review)}
+                    testID={`edit-review-${item.userListItem.dramaId}`}
                   >
                     <Edit3 size={14} color={COLORS.textSecondary} />
                   </TouchableOpacity>
@@ -205,8 +157,8 @@ export function CompletedList({ dramas }: CompletedListProps) {
             ) : (
               <TouchableOpacity
                 style={styles.addReviewButton}
-                onPress={() => handleEditReview(item.drama)}
-                testID={`add-review-${item.drama.id}`}
+                onPress={() => handleEditReview(item.userListItem)}
+                testID={`add-review-${item.userListItem.dramaId}`}
               >
                 <Star size={16} color={COLORS.accent} />
                 <Text style={styles.addReviewText}>Adicionar Avaliação</Text>
@@ -217,8 +169,8 @@ export function CompletedList({ dramas }: CompletedListProps) {
             <View style={styles.actionContainer}>
               <TouchableOpacity
                 style={styles.removeButton}
-                onPress={() => handleRemove(item.drama.id)}
-                testID={`remove-${item.drama.id}`}
+                onPress={() => handleRemove(item.userListItem.dramaId)}
+                testID={`remove-${item.userListItem.dramaId}`}
               >
                 <Trash2 size={14} color={COLORS.textSecondary} />
               </TouchableOpacity>
@@ -232,9 +184,9 @@ export function CompletedList({ dramas }: CompletedListProps) {
   return (
     <View style={styles.container}>
       <FlatList
-        data={dramaDetails || []}
+        data={dramaReviews || []}
         renderItem={renderItem}
-        keyExtractor={(item) => item.drama.id.toString()}
+        keyExtractor={(item) => item.userListItem.dramaId.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         testID="completed-list"
@@ -248,8 +200,8 @@ export function CompletedList({ dramas }: CompletedListProps) {
             setSelectedDrama(null);
             setExistingReview(null);
           }}
-          dramaId={selectedDrama.id}
-          dramaName={selectedDrama.name}
+          dramaId={selectedDrama.dramaId}
+          dramaName={`Drama ${selectedDrama.dramaId}`}
           onReviewSubmitted={handleReviewSubmitted}
           existingReview={existingReview}
         />
@@ -258,25 +210,10 @@ export function CompletedList({ dramas }: CompletedListProps) {
   );
 }
 
-const IMAGE_WIDTH = 80;
-const IMAGE_HEIGHT = 120;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: 16,
-    textAlign: "center",
   },
   listContent: {
     paddingVertical: 8,
@@ -291,24 +228,6 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     padding: 16,
-  },
-  imageContainer: {
-    marginRight: 16,
-  },
-  image: {
-    width: IMAGE_WIDTH,
-    height: IMAGE_HEIGHT,
-    borderRadius: 8,
-  },
-  placeholderImage: {
-    backgroundColor: COLORS.border,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeholderText: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    textAlign: "center",
   },
   infoContainer: {
     flex: 1,
@@ -325,10 +244,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 8,
   },
-  overview: {
-    fontSize: 13,
+  completedDate: {
+    fontSize: 12,
     color: COLORS.textSecondary,
-    lineHeight: 18,
     marginBottom: 12,
   },
   reviewContainer: {
@@ -395,27 +313,5 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 16,
     backgroundColor: "transparent",
-  },
-  ratingContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  rateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: COLORS.accent,
-    borderRadius: 8,
-    marginTop: -8,
-    alignSelf: "flex-start",
-  },
-  rateButtonText: {
-    fontSize: 14,
-    color: COLORS.accent,
-    marginLeft: 8,
-    fontWeight: "500",
   },
 });

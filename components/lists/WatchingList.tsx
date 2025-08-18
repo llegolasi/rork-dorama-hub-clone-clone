@@ -4,18 +4,18 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
 import { UserList } from "@/types/user";
-import { Drama, DramaDetails } from "@/types/drama";
-import { getDramaDetails, calculateDramaTotalRuntime } from "@/services/api";
 import { useUserLists } from "@/hooks/useUserStore";
+import { Trash2, Settings } from "lucide-react-native";
 
-import { ListCard } from "./ListCard";
 import { EmptyState } from "./EmptyState";
 import ReviewModal from "@/components/ReviewModal";
+import EpisodeManagementModal from "@/components/EpisodeManagementModal";
 
 interface WatchingListProps {
   dramas: UserList[];
@@ -24,27 +24,10 @@ interface WatchingListProps {
 export function WatchingList({ dramas }: WatchingListProps) {
   const { updateProgress, removeFromList, addToList, refreshUserProfile } = useUserLists();
   const [reviewModalVisible, setReviewModalVisible] = useState<boolean>(false);
-  const [selectedDrama, setSelectedDrama] = useState<DramaDetails | null>(null);
+  const [selectedDrama, setSelectedDrama] = useState<UserList | null>(null);
+  const [showEpisodeModal, setShowEpisodeModal] = useState<boolean>(false);
+  const [selectedDramaForEpisodes, setSelectedDramaForEpisodes] = useState<UserList | null>(null);
   const queryClient = useQueryClient();
-
-  const { data: dramaDetails, isLoading } = useQuery({
-    queryKey: ["watching-dramas", dramas.map(d => d.dramaId)],
-    queryFn: async () => {
-      const details = await Promise.all(
-        dramas.map(async (userListItem) => {
-          try {
-            const drama = await getDramaDetails(userListItem.dramaId);
-            return { drama, userListItem };
-          } catch (error) {
-            console.error(`Error fetching drama ${userListItem.dramaId}:`, error);
-            return null;
-          }
-        })
-      );
-      return details.filter(Boolean) as { drama: Drama; userListItem: UserList }[];
-    },
-    enabled: dramas.length > 0,
-  });
 
   const handleProgressUpdate = async (dramaId: number, newEpisode: number) => {
     console.log(`Updating progress for drama ${dramaId} to episode ${newEpisode}`);
@@ -73,51 +56,37 @@ export function WatchingList({ dramas }: WatchingListProps) {
     removeFromList(dramaId, "watching");
   };
 
-  const handleComplete = async (drama: Drama) => {
+  const handleComplete = async (userListItem: UserList) => {
     try {
-      // Get full drama details to have number_of_episodes
-      const dramaDetails = await getDramaDetails(drama.id);
-      
       // Mark all episodes as watched before completing
-      const totalEpisodes = dramaDetails.number_of_episodes || 16;
-      await updateProgress(drama.id, totalEpisodes);
+      const totalEpisodes = userListItem.total_episodes || 16;
+      await updateProgress(userListItem.dramaId, totalEpisodes);
       
-      setSelectedDrama(dramaDetails);
+      setSelectedDrama(userListItem);
       setReviewModalVisible(true);
     } catch (error) {
-      console.error('Error fetching drama details for completion:', error);
-      // Fallback to basic drama info
-      setSelectedDrama(drama as DramaDetails);
+      console.error('Error completing drama:', error);
+      setSelectedDrama(userListItem);
       setReviewModalVisible(true);
     }
   };
 
   const handleReviewSubmitted = async () => {
     if (selectedDrama) {
-      console.log('Completing drama from watching list:', selectedDrama.id);
+      console.log('Completing drama from watching list:', selectedDrama.dramaId);
       
       try {
-        // Calculate total runtime
-        const totalRuntimeMinutes = await calculateDramaTotalRuntime(selectedDrama.id);
-        console.log(`Calculated runtime for drama ${selectedDrama.id}: ${totalRuntimeMinutes} minutes`);
-        
         // First remove from watching list
-        await removeFromList(selectedDrama.id, "watching");
+        await removeFromList(selectedDrama.dramaId, "watching");
         
-        // Then add to completed list with proper metadata
-        await addToList(selectedDrama.id, "completed", selectedDrama.number_of_episodes, {
-          name: selectedDrama.name,
-          poster_path: selectedDrama.poster_path,
-          first_air_date: selectedDrama.first_air_date,
-          number_of_episodes: selectedDrama.number_of_episodes
-        });
+        // Then add to completed list
+        await addToList(selectedDrama.dramaId, "completed", selectedDrama.total_episodes || 16);
         
         console.log('Drama completion process finished successfully');
         
         // Refresh user profile data to get updated stats
         await refreshUserProfile();
         // Invalidate queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
         queryClient.invalidateQueries({ queryKey: ["user-stats"] });
       } catch (error) {
         console.error('Error completing drama:', error);
@@ -141,14 +110,7 @@ export function WatchingList({ dramas }: WatchingListProps) {
     );
   }
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Carregando seus dramas...</Text>
-      </View>
-    );
-  }
+
 
   const handleDataUpdated = async () => {
     console.log('handleDataUpdated called, refreshing all data...');
@@ -157,11 +119,7 @@ export function WatchingList({ dramas }: WatchingListProps) {
       await refreshUserProfile();
       
       // Invalidate and refetch queries to refresh data immediately
-      await queryClient.invalidateQueries({ queryKey: ["watching-dramas"] });
       await queryClient.invalidateQueries({ queryKey: ["user-stats"] });
-      
-      // Force refetch to ensure fresh data
-      await queryClient.refetchQueries({ queryKey: ["watching-dramas"] });
       
       console.log('All data refreshed successfully');
     } catch (error) {
@@ -169,24 +127,88 @@ export function WatchingList({ dramas }: WatchingListProps) {
     }
   };
 
-  const renderItem = ({ item }: { item: { drama: Drama; userListItem: UserList } }) => (
-    <ListCard
-      drama={item.drama}
-      userListItem={item.userListItem}
-      showProgress={true}
-      onProgressUpdate={(newEpisode) => handleProgressUpdate(item.drama.id, newEpisode)}
-      onRemove={() => handleRemove(item.drama.id)}
-      onComplete={() => handleComplete(item.drama)}
-      onDataUpdated={handleDataUpdated}
-    />
-  );
+  const renderItem = ({ item }: { item: UserList }) => {
+    const progressPercentage = item.current_episode && item.total_episodes
+      ? (item.current_episode / item.total_episodes) * 100
+      : 0;
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push(`/drama/${item.dramaId}`)}
+        testID={`drama-card-${item.dramaId}`}
+      >
+        <View style={styles.cardContent}>
+          {/* Drama Info */}
+          <View style={styles.infoContainer}>
+            <Text style={styles.title} numberOfLines={2}>
+              Drama ID: {item.dramaId}
+            </Text>
+            
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {item.total_episodes || 16} episódios
+            </Text>
+
+            {/* Progress Bar */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${progressPercentage}%` },
+                  ]}
+                />
+              </View>
+              <View style={styles.episodeInfo}>
+                <TouchableOpacity
+                  style={styles.episodeButton}
+                  onPress={() => handleProgressUpdate(item.dramaId, (item.current_episode || 0) + 1)}
+                  testID={`episode-button-${item.dramaId}`}
+                >
+                  <Text style={styles.episodeText}>
+                    Episódio {(item.current_episode || 0) + 1} de {item.total_episodes || 16}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.watchTimeText}>
+                  {Math.round(item.watched_minutes || 0)}min assistidos
+                </Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionContainer}>
+              <TouchableOpacity
+                style={styles.episodeManageButton}
+                onPress={() => {
+                  setSelectedDramaForEpisodes(item);
+                  setShowEpisodeModal(true);
+                }}
+                testID={`manage-episodes-${item.dramaId}`}
+              >
+                <Settings size={16} color={COLORS.accent} />
+                <Text style={styles.episodeManageButtonText}>Episódios</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => handleRemove(item.dramaId)}
+                testID={`remove-${item.dramaId}`}
+              >
+                <Trash2 size={14} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={dramaDetails || []}
+        data={dramas}
         renderItem={renderItem}
-        keyExtractor={(item) => item.drama.id.toString()}
+        keyExtractor={(item) => item.dramaId.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         testID="watching-list"
@@ -199,9 +221,24 @@ export function WatchingList({ dramas }: WatchingListProps) {
             setReviewModalVisible(false);
             setSelectedDrama(null);
           }}
-          dramaId={selectedDrama.id}
-          dramaName={selectedDrama.name}
+          dramaId={selectedDrama.dramaId}
+          dramaName={`Drama ${selectedDrama.dramaId}`}
           onReviewSubmitted={handleReviewSubmitted}
+        />
+      )}
+      
+      {selectedDramaForEpisodes && (
+        <EpisodeManagementModal
+          visible={showEpisodeModal}
+          onClose={() => {
+            setShowEpisodeModal(false);
+            setSelectedDramaForEpisodes(null);
+          }}
+          drama={{ id: selectedDramaForEpisodes.dramaId, name: `Drama ${selectedDramaForEpisodes.dramaId}`, number_of_episodes: selectedDramaForEpisodes.total_episodes || 16 } as any}
+          userListItem={selectedDramaForEpisodes}
+          onProgressUpdate={(newEpisode) => handleProgressUpdate(selectedDramaForEpisodes.dramaId, newEpisode)}
+          onComplete={() => handleComplete(selectedDramaForEpisodes)}
+          onDataUpdated={handleDataUpdated}
         />
       )}
     </View>
@@ -213,19 +250,92 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: 16,
-    textAlign: "center",
-  },
   listContent: {
     paddingVertical: 8,
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    overflow: "hidden",
+  },
+  cardContent: {
+    flexDirection: "row",
+    padding: 16,
+  },
+  infoContainer: {
+    flex: 1,
+    justifyContent: "flex-start",
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  progressContainer: {
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: COLORS.accent,
+    borderRadius: 2,
+  },
+  episodeInfo: {
+    flexDirection: "column",
+    gap: 4,
+  },
+  episodeButton: {
+    alignSelf: "flex-start",
+  },
+  episodeText: {
+    fontSize: 12,
+    color: COLORS.accent,
+    fontWeight: "600",
+  },
+  watchTimeText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: "400",
+  },
+  actionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: "auto",
+  },
+  episodeManageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    gap: 4,
+  },
+  episodeManageButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.accent,
+  },
+  removeButton: {
+    padding: 8,
+    borderRadius: 16,
+    backgroundColor: "transparent",
+    marginLeft: "auto",
   },
 });

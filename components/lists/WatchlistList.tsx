@@ -4,16 +4,11 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   TouchableOpacity,
-  Image,
 } from "react-native";
-import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { COLORS } from "@/constants/colors";
 import { UserList } from "@/types/user";
-import { DramaDetails } from "@/types/drama";
-import { getDramaDetails } from "@/services/api";
 import { useUserLists } from "@/hooks/useUserStore";
 import { EmptyState } from "./EmptyState";
 import { Play, Trash2 } from "lucide-react-native";
@@ -25,30 +20,11 @@ interface WatchlistListProps {
 export function WatchlistList({ dramas }: WatchlistListProps) {
   const { addToList, removeFromList } = useUserLists();
 
-  const { data: dramaDetails, isLoading } = useQuery({
-    queryKey: ["watchlist-dramas", dramas.map(d => d.dramaId)],
-    queryFn: async () => {
-      const details = await Promise.all(
-        dramas.map(async (userListItem) => {
-          try {
-            const drama = await getDramaDetails(userListItem.dramaId);
-            return { drama, userListItem };
-          } catch (error) {
-            console.error(`Error fetching drama ${userListItem.dramaId}:`, error);
-            return null;
-          }
-        })
-      );
-      return details.filter(Boolean) as { drama: DramaDetails; userListItem: UserList }[];
-    },
-    enabled: dramas.length > 0,
-  });
-
-  const handleMoveToWatching = (dramaId: number, totalEpisodes: number) => {
+  const handleMoveToWatching = (userListItem: UserList) => {
     // Remove from watchlist
-    removeFromList(dramaId, "watchlist");
+    removeFromList(userListItem.dramaId, "watchlist");
     // Add to watching list
-    addToList(dramaId, "watching", totalEpisodes);
+    addToList(userListItem.dramaId, "watching", userListItem.total_episodes || 16);
   };
 
   const handleRemove = (dramaId: number) => {
@@ -69,64 +45,36 @@ export function WatchlistList({ dramas }: WatchlistListProps) {
     );
   }
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Carregando sua lista...</Text>
-      </View>
-    );
-  }
 
-  const renderItem = ({ item }: { item: { drama: DramaDetails; userListItem: UserList } }) => {
-    const imageUrl = item.drama.poster_path
-      ? `https://image.tmdb.org/t/p/w300${item.drama.poster_path}`
-      : null;
 
-    const year = item.drama.first_air_date
-      ? new Date(item.drama.first_air_date).getFullYear()
-      : "N/A";
-
+  const renderItem = ({ item }: { item: UserList }) => {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push(`/drama/${item.drama.id}`)}
-        testID={`drama-card-${item.drama.id}`}
+        onPress={() => router.push(`/drama/${item.dramaId}`)}
+        testID={`drama-card-${item.dramaId}`}
       >
         <View style={styles.cardContent}>
-          {/* Drama Poster */}
-          <View style={styles.imageContainer}>
-            {imageUrl ? (
-              <Image source={{ uri: imageUrl }} style={styles.image} />
-            ) : (
-              <View style={[styles.image, styles.placeholderImage]}>
-                <Text style={styles.placeholderText}>No Image</Text>
-              </View>
-            )}
-          </View>
-
           {/* Drama Info */}
           <View style={styles.infoContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              {item.drama.name}
+              Drama ID: {item.dramaId}
             </Text>
             
             <Text style={styles.subtitle} numberOfLines={1}>
-              {year} • {item.drama.origin_country.join(", ")}
+              {item.total_episodes || 16} episódios
             </Text>
 
-            {item.drama.overview && (
-              <Text style={styles.overview} numberOfLines={3}>
-                {item.drama.overview}
-              </Text>
-            )}
+            <Text style={styles.addedDate} numberOfLines={1}>
+              Adicionado em: {new Date(item.addedAt).toLocaleDateString('pt-BR')}
+            </Text>
 
             {/* Action Buttons */}
             <View style={styles.actionContainer}>
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() => handleMoveToWatching(item.drama.id, item.drama.number_of_episodes || 16)}
-                testID={`move-to-watching-${item.drama.id}`}
+                onPress={() => handleMoveToWatching(item)}
+                testID={`move-to-watching-${item.dramaId}`}
               >
                 <Play size={16} color={COLORS.background} />
                 <Text style={styles.primaryButtonText}>Começar</Text>
@@ -134,8 +82,8 @@ export function WatchlistList({ dramas }: WatchlistListProps) {
               
               <TouchableOpacity
                 style={styles.removeButton}
-                onPress={() => handleRemove(item.drama.id)}
-                testID={`remove-${item.drama.id}`}
+                onPress={() => handleRemove(item.dramaId)}
+                testID={`remove-${item.dramaId}`}
               >
                 <Trash2 size={14} color={COLORS.textSecondary} />
               </TouchableOpacity>
@@ -149,9 +97,9 @@ export function WatchlistList({ dramas }: WatchlistListProps) {
   return (
     <View style={styles.container}>
       <FlatList
-        data={dramaDetails || []}
+        data={dramas}
         renderItem={renderItem}
-        keyExtractor={(item) => item.drama.id.toString()}
+        keyExtractor={(item) => item.dramaId.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         testID="watchlist-list"
@@ -160,25 +108,10 @@ export function WatchlistList({ dramas }: WatchlistListProps) {
   );
 }
 
-const IMAGE_WIDTH = 80;
-const IMAGE_HEIGHT = 120;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: 16,
-    textAlign: "center",
   },
   listContent: {
     paddingVertical: 8,
@@ -193,24 +126,6 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     padding: 16,
-  },
-  imageContainer: {
-    marginRight: 16,
-  },
-  image: {
-    width: IMAGE_WIDTH,
-    height: IMAGE_HEIGHT,
-    borderRadius: 8,
-  },
-  placeholderImage: {
-    backgroundColor: COLORS.border,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeholderText: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    textAlign: "center",
   },
   infoContainer: {
     flex: 1,
@@ -227,10 +142,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 8,
   },
-  overview: {
-    fontSize: 13,
+  addedDate: {
+    fontSize: 12,
     color: COLORS.textSecondary,
-    lineHeight: 18,
     marginBottom: 12,
   },
   actionContainer: {
