@@ -41,13 +41,21 @@ export default function ProfileScreen() {
     enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
   });
   
+  // Fetch user stats for counts
+  const { data: userStats, refetch: refetchStats } = trpc.users.getStats.useQuery({
+    userId: userProfile?.id
+  }, {
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
+  });
+  
   // Auto-refresh user profile when screen is focused
   useFocusEffect(
     useCallback(() => {
       console.log('Profile screen focused - refreshing data');
       refetchPosts();
       refetchCompletedDramas();
-    }, [refetchPosts, refetchCompletedDramas])
+      refetchStats();
+    }, [refetchPosts, refetchCompletedDramas, refetchStats])
   );
   
   // Filter posts by current user
@@ -102,9 +110,9 @@ export default function ProfileScreen() {
     );
   }
 
-  const watchingCount = 0; // TODO: Get from user stats
-  const watchlistCount = 0; // TODO: Get from user stats
-  const completedCount = completedDramas?.length || 0;
+  const watchingCount = userStats?.dramas_watching || 0;
+  const watchlistCount = userStats?.dramas_in_watchlist || 0;
+  const completedCount = userStats?.dramas_completed || 0;
 
   const handleEditProfile = () => {
     router.push('/profile/edit');
@@ -412,11 +420,11 @@ export default function ProfileScreen() {
               
               <View style={styles.socialStats}>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowersPress}>
-                  <Text style={styles.socialStatNumber}>0</Text>
+                  <Text style={styles.socialStatNumber}>{userProfile?.followersCount || 0}</Text>
                   <Text style={styles.socialStatLabel}>seguidores</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowingPress}>
-                  <Text style={styles.socialStatNumber}>0</Text>
+                  <Text style={styles.socialStatNumber}>{userProfile?.followingCount || 0}</Text>
                   <Text style={styles.socialStatLabel}>seguindo</Text>
                 </TouchableOpacity>
               </View>
@@ -474,7 +482,7 @@ export default function ProfileScreen() {
 
       {/* Componente de estatísticas detalhadas */}
       {userProfile?.id && userProfile.id !== '' && (
-        <UserStatsDisplay userId={userProfile.id} />
+        <UserStatsDisplay userId={userProfile.id} isOwnProfile={true} />
       )}
 
         <View style={styles.tabContainer}>

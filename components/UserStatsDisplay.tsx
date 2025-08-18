@@ -9,9 +9,10 @@ import { trpc } from '@/lib/trpc';
 
 interface UserStatsDisplayProps {
   userId?: string;
+  isOwnProfile?: boolean;
 }
 
-export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
+export default function UserStatsDisplay({ userId, isOwnProfile = false }: UserStatsDisplayProps) {
 
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
     { userId: userId },
@@ -84,26 +85,28 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
           <BarChart3 size={24} color={COLORS.accent} />
           <Text style={styles.title}>Estatísticas</Text>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.updateButton}
-            onPress={handleUpdateStats}
-            disabled={updateStatsMutation.isPending}
-          >
-            <TrendingUp size={16} color={COLORS.accent} />
-            <Text style={styles.updateButtonText}>
-              {updateStatsMutation.isPending ? 'Atualizando...' : 'Atualizar'}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.viewCompleteButton}
-            onPress={() => router.push('/statistics')}
-          >
-            <Text style={styles.viewCompleteButtonText}>Ver Completo</Text>
-            <ArrowRight size={16} color={COLORS.accent} />
-          </TouchableOpacity>
-        </View>
+        {isOwnProfile && (
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.updateButton}
+              onPress={handleUpdateStats}
+              disabled={updateStatsMutation.isPending}
+            >
+              <TrendingUp size={16} color={COLORS.accent} />
+              <Text style={styles.updateButtonText}>
+                {updateStatsMutation.isPending ? 'Atualizando...' : 'Atualizar'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.viewCompleteButton}
+              onPress={() => router.push('/statistics')}
+            >
+              <Text style={styles.viewCompleteButtonText}>Ver Completo</Text>
+              <ArrowRight size={16} color={COLORS.accent} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <View style={styles.statsGrid}>
@@ -117,20 +120,20 @@ export default function UserStatsDisplay({ userId }: UserStatsDisplayProps) {
 
         <View style={styles.statCard}>
           <Trophy size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{stats.total_episodes_watched || 0}</Text>
+          <Text style={styles.statLabel}>Episódios</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Eye size={20} color={COLORS.accent} />
           <Text style={styles.statValue}>{stats.dramas_completed || 0}</Text>
           <Text style={styles.statLabel}>Concluídos</Text>
         </View>
 
         <View style={styles.statCard}>
-          <Eye size={20} color={COLORS.accent} />
+          <BookOpen size={20} color={COLORS.accent} />
           <Text style={styles.statValue}>{stats.dramas_watching || 0}</Text>
           <Text style={styles.statLabel}>Assistindo</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <BookOpen size={20} color={COLORS.accent} />
-          <Text style={styles.statValue}>{stats.dramas_in_watchlist || 0}</Text>
-          <Text style={styles.statLabel}>Quero Ver</Text>
         </View>
       </View>
 

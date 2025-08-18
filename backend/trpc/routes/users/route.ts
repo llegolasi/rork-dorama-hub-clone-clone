@@ -371,9 +371,19 @@ export const getUserStatsProcedure = protectedProcedure
 
       if (!detailedError && detailedStats && Array.isArray(detailedStats) && detailedStats.length > 0) {
         const stats = detailedStats[0];
+        
+        // Get total episodes watched from episode_watch_history
+        const { data: episodeHistory } = await ctx.supabase
+          .from('episode_watch_history')
+          .select('episode_number')
+          .eq('user_id', targetUserId);
+        
+        const totalEpisodesWatched = episodeHistory?.length || 0;
+        
         return {
           user_id: targetUserId,
           total_watch_time_minutes: stats.total_watch_time_minutes || 0,
+          total_episodes_watched: totalEpisodesWatched,
           dramas_completed: stats.dramas_completed || 0,
           dramas_watching: stats.dramas_watching || 0,
           dramas_in_watchlist: stats.dramas_in_watchlist || 0,
@@ -449,9 +459,18 @@ export const getUserStatsProcedure = protectedProcedure
           return sum;
         }, 0) || 0;
 
+        // Get total episodes watched from episode_watch_history
+        const { data: episodeHistory } = await ctx.supabase
+          .from('episode_watch_history')
+          .select('episode_number')
+          .eq('user_id', targetUserId);
+        
+        const totalEpisodesWatched = episodeHistory?.length || 0;
+        
         const fallbackStats = {
           user_id: targetUserId,
           total_watch_time_minutes: totalWatchTime,
+          total_episodes_watched: totalEpisodesWatched,
           dramas_completed: completedDramas?.length || 0,
           dramas_watching: watchingDramas?.length || 0,
           dramas_in_watchlist: watchlistDramas?.length || 0,
@@ -483,10 +502,19 @@ export const getUserStatsProcedure = protectedProcedure
         return fallbackStats;
       }
 
+      // Get total episodes watched from episode_watch_history
+      const { data: episodeHistory } = await ctx.supabase
+        .from('episode_watch_history')
+        .select('episode_number')
+        .eq('user_id', targetUserId);
+      
+      const totalEpisodesWatched = episodeHistory?.length || 0;
+      
       // Return existing user stats with additional calculated fields
       return {
         user_id: userStats.user_id,
         total_watch_time_minutes: userStats.total_watch_time_minutes || 0,
+        total_episodes_watched: totalEpisodesWatched,
         dramas_completed: userStats.dramas_completed || 0,
         dramas_watching: userStats.dramas_watching || 0,
         dramas_in_watchlist: userStats.dramas_in_watchlist || 0,

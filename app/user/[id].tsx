@@ -24,6 +24,7 @@ import { Stack } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
+import UserStatsDisplay from '@/components/UserStatsDisplay';
 import type { RankingWithDetails, UserProfile } from '@/types/user';
 
 type TabType = 'posts' | 'dramas';
@@ -114,11 +115,11 @@ const UserProfileScreen = () => {
 
 
   const handleFollowersPress = () => {
-    router.push(`/user/${id}/followers`);
+    router.push(`/followers?userId=${id}`);
   };
 
   const handleFollowingPress = () => {
-    router.push(`/user/${id}/following`);
+    router.push(`/following?userId=${id}`);
   };
   
   const handlePostPress = (postId: string) => {
@@ -302,6 +303,11 @@ const UserProfileScreen = () => {
             <Text style={styles.statLabel}>Concluídos</Text>
           </View>
         </View>
+
+        {/* Componente de estatísticas detalhadas */}
+        {userProfile?.id && (
+          <UserStatsDisplay userId={userProfile.id} isOwnProfile={false} />
+        )}
 
         <View style={styles.tabContainer}>
           {renderTabButton(
