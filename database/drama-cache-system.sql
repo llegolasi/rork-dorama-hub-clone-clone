@@ -200,6 +200,15 @@ CREATE INDEX IF NOT EXISTS idx_imagens_tipo ON public.imagens(tipo);
 -- TRIGGERS PARA ATUALIZAÇÃO AUTOMÁTICA
 -- =====================================================
 
+-- Função para atualizar updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$ LANGUAGE plpgsql;
+
 -- Trigger para atualizar updated_at nas tabelas
 CREATE TRIGGER update_series_updated_at 
     BEFORE UPDATE ON public.series

@@ -374,30 +374,30 @@ export const getDramaById = publicProcedure
           order: actor.ordem
         })) : [],
         videos: {
-          results: (Array.isArray(serie?.videos) ? serie.videos : []).map((video: any) => ({
-            id: video?.tmdb_video_id,
-            key: video?.key,
-            site: video?.site,
-            type: video?.tipo,
-            name: video?.nome,
-            size: video?.tamanho,
-            official: video?.oficial,
-            published_at: video?.publicado_em
+          results: (Array.isArray(serie?.videos) ? serie.videos : []).filter(video => video != null).map((video: any) => ({
+            id: video.tmdb_video_id || null,
+            key: video.key || null,
+            site: video.site || null,
+            type: video.tipo || null,
+            name: video.nome || null,
+            size: video.tamanho || null,
+            official: video.oficial || false,
+            published_at: video.publicado_em || null
           }))
         },
         images: {
-          backdrops: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img?.tipo === 'backdrop'),
-          posters: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img?.tipo === 'poster'),
-          logos: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img?.tipo === 'logo')
+          backdrops: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'backdrop'),
+          posters: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'poster'),
+          logos: (Array.isArray(serie?.imagens) ? serie.imagens : []).filter((img: any) => img != null && img.tipo === 'logo')
         },
-        seasons: (Array.isArray(serie?.temporadas) ? serie.temporadas : []).map((season: any) => ({
-          id: season?.tmdb_season_id || season?.id,
-          season_number: season?.numero,
-          name: season?.nome,
-          overview: season?.descricao,
-          poster_path: season?.capa,
-          air_date: season?.data_exibicao,
-          episode_count: season?.total_episodios
+        seasons: (Array.isArray(serie?.temporadas) ? serie.temporadas : []).filter(season => season != null).map((season: any) => ({
+          id: season.tmdb_season_id || season.id || null,
+          season_number: season.numero || null,
+          name: season.nome || null,
+          overview: season.descricao || null,
+          poster_path: season.capa || null,
+          air_date: season.data_exibicao || null,
+          episode_count: season.total_episodios || null
         }))
       };
     } catch (error) {
