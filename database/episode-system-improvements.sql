@@ -228,9 +228,14 @@ CREATE OR REPLACE FUNCTION complete_drama_with_date_range(
     p_start_date DATE,
     p_end_date DATE,
     p_episode_duration_minutes INTEGER DEFAULT 60,
-    p_drama_category TEXT DEFAULT NULL
+    p_drama_category TEXT DEFAULT NULL,
+    p_drama_name TEXT DEFAULT NULL,
+    p_poster_path TEXT DEFAULT NULL,
+    p_poster_image TEXT DEFAULT NULL,
+    p_drama_year INTEGER DEFAULT NULL,
+    p_total_runtime_minutes INTEGER DEFAULT NULL
 )
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN AS $
 DECLARE
     v_days_interval INTEGER;
     v_episodes_per_day NUMERIC;
@@ -240,6 +245,7 @@ DECLARE
     v_watch_time TIMESTAMP;
     v_start_time TIMESTAMP;
     v_category TEXT;
+    v_drama_info RECORD;
 BEGIN
     -- Calcula o intervalo de dias
     v_days_interval := (p_end_date - p_start_date) + 1;
@@ -249,6 +255,25 @@ BEGIN
     
     -- Define categoria
     v_category := COALESCE(p_drama_category, get_drama_category(p_drama_id));
+    
+    -- Busca informações do drama se não foram fornecidas
+    IF p_drama_name IS NULL OR p_poster_path IS NULL OR p_drama_year IS NULL THEN
+        SELECT 
+            COALESCE(p_drama_name, name) as drama_name,
+            COALESCE(p_poster_path, poster_path) as poster_path,
+            COALESCE(p_poster_image, poster_path) as poster_image,
+            COALESCE(p_drama_year, EXTRACT(YEAR FROM first_air_date::date)::integer) as drama_year,
+            COALESCE(p_total_runtime_minutes, number_of_episodes * episode_run_time[1]) as total_runtime
+        INTO v_drama_info
+        FROM dramas 
+        WHERE id = p_drama_id;
+    ELSE
+        v_drama_info.drama_name := p_drama_name;
+        v_drama_info.poster_path := p_poster_path;
+        v_drama_info.poster_image := p_poster_image;
+        v_drama_info.drama_year := p_drama_year;
+        v_drama_info.total_runtime := COALESCE(p_total_runtime_minutes, p_total_episodes * p_episode_duration_minutes);
+    END IF;
     
     -- Distribui episódios ao longo do período
     v_current_date := p_start_date;
@@ -311,8 +336,15 @@ BEGIN
         list_type = 'completed',
         episodes_watched = p_total_episodes,
         current_episode = p_total_episodes,
+        total_episodes = p_total_episodes,
         watched_minutes = p_total_episodes * p_episode_duration_minutes,
+        total_runtime_minutes = COALESCE(v_drama_info.total_runtime, p_total_episodes * p_episode_duration_minutes),
+        episode_runtime_minutes = p_episode_duration_minutes,
         drama_category = v_category,
+        drama_name = COALESCE(v_drama_info.drama_name, drama_name),
+        poster_path = COALESCE(v_drama_info.poster_path, poster_path),
+        poster_image = COALESCE(v_drama_info.poster_image, poster_image),
+        drama_year = COALESCE(v_drama_info.drama_year, drama_year),
         updated_at = NOW()
     WHERE user_id = p_user_id AND drama_id = p_drama_id;
     
@@ -326,7 +358,13 @@ BEGIN
             current_episode,
             total_episodes,
             watched_minutes,
+            total_runtime_minutes,
+            episode_runtime_minutes,
             drama_category,
+            drama_name,
+            poster_path,
+            poster_image,
+            drama_year,
             added_at,
             updated_at
         ) VALUES (
@@ -337,7 +375,13 @@ BEGIN
             p_total_episodes,
             p_total_episodes,
             p_total_episodes * p_episode_duration_minutes,
+            COALESCE(v_drama_info.total_runtime, p_total_episodes * p_episode_duration_minutes),
+            p_episode_duration_minutes,
             v_category,
+            v_drama_info.drama_name,
+            v_drama_info.poster_path,
+            v_drama_info.poster_image,
+            v_drama_info.drama_year,
             NOW(),
             NOW()
         );

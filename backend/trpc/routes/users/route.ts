@@ -647,7 +647,12 @@ export const completeDramaWithDateRangeProcedure = protectedProcedure
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     episodeDurationMinutes: z.number().min(1).default(60),
-    dramaCategory: z.string().optional()
+    dramaCategory: z.string().optional(),
+    dramaName: z.string().optional(),
+    posterPath: z.string().optional(),
+    posterImage: z.string().optional(),
+    dramaYear: z.number().optional(),
+    totalRuntimeMinutes: z.number().optional()
   }))
   .mutation(async ({ input, ctx }) => {
     try {
@@ -669,7 +674,12 @@ export const completeDramaWithDateRangeProcedure = protectedProcedure
         p_start_date: input.startDate,
         p_end_date: input.endDate,
         p_episode_duration_minutes: input.episodeDurationMinutes,
-        p_drama_category: input.dramaCategory
+        p_drama_category: input.dramaCategory,
+        p_drama_name: input.dramaName,
+        p_poster_path: input.posterPath,
+        p_poster_image: input.posterImage,
+        p_drama_year: input.dramaYear,
+        p_total_runtime_minutes: input.totalRuntimeMinutes
       });
       
       if (error) {

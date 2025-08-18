@@ -297,6 +297,11 @@ export function ListToggle({
         dramaName={dramaDetails?.name || `Drama ${dramaId}`}
         totalEpisodes={totalEpisodes}
         onSuccess={handleCompleteDramaSuccess}
+        posterPath={dramaDetails?.poster_path || undefined}
+        posterImage={dramaDetails?.poster_path || undefined}
+        dramaYear={dramaDetails?.first_air_date ? new Date(dramaDetails.first_air_date).getFullYear() : undefined}
+        totalRuntimeMinutes={dramaDetails ? (dramaDetails.number_of_episodes || totalEpisodes) * (dramaDetails.episode_run_time?.[0] || 60) : undefined}
+        episodeRuntimeMinutes={dramaDetails?.episode_run_time?.[0] || 60}
       />
       
       {/* Completion Share Modal */}

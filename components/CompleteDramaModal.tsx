@@ -22,6 +22,11 @@ interface CompleteDramaModalProps {
   dramaName: string;
   totalEpisodes: number;
   onSuccess: () => void;
+  posterPath?: string;
+  posterImage?: string;
+  dramaYear?: number;
+  totalRuntimeMinutes?: number;
+  episodeRuntimeMinutes?: number;
 }
 
 
@@ -33,10 +38,15 @@ export default function CompleteDramaModal({
   dramaName,
   totalEpisodes,
   onSuccess,
+  posterPath,
+  posterImage,
+  dramaYear,
+  totalRuntimeMinutes,
+  episodeRuntimeMinutes,
 }: CompleteDramaModalProps) {
   const [startDate, setStartDate] = useState<Date>(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // 7 days ago
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [episodeDuration] = useState<string>('60'); // Hidden from user, auto-filled
+  const [episodeDuration] = useState<string>(episodeRuntimeMinutes?.toString() || '60'); // Hidden from user, auto-filled
   const [selectedCategory] = useState<string>(''); // Hidden from user, auto-filled
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<boolean>(false);
@@ -71,6 +81,11 @@ export default function CompleteDramaModal({
       endDate: endDate.toISOString().split('T')[0],
       episodeDurationMinutes: duration,
       dramaCategory: selectedCategory,
+      dramaName,
+      posterPath,
+      posterImage,
+      dramaYear,
+      totalRuntimeMinutes,
     });
   };
 
