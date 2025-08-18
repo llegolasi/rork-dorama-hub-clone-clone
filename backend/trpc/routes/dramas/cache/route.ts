@@ -2,11 +2,12 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, type Context } from '../../../create-context';
 
 // Configuração da API do TMDb
-const TMDB_API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY || process.env.TMDB_API_KEY;
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 if (!TMDB_API_KEY) {
   console.error('TMDB_API_KEY não configurada! Verifique as variáveis de ambiente.');
+  console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('TMDB')));
 }
 
 // Schemas de validação
@@ -416,6 +417,7 @@ export const getDramaById = publicProcedure
         console.log(`[CACHE] Tentando fallback TMDb para ID: ${id}`);
         
         if (!TMDB_API_KEY) {
+          console.error('TMDB_API_KEY não encontrada. Env vars disponíveis:', Object.keys(process.env).filter(key => key.includes('TMDB')));
           throw new Error('TMDB_API_KEY não configurada');
         }
         
