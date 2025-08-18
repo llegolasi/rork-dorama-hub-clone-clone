@@ -108,7 +108,11 @@ export const [UserContext, useUserStore] = createContextHook(() => {
               total_episodes: item.total_episodes,
               total_runtime_minutes: item.total_runtime_minutes,
               watched_minutes: item.watched_minutes,
-              episodes_watched: item.episodes_watched
+              episodes_watched: item.episodes_watched,
+              drama_name: item.drama_name,
+              drama_year: item.drama_year,
+              poster_image: item.poster_image,
+              poster_path: item.poster_path
             };
             
             if (item.list_type === 'watching' && item.total_episodes) {
@@ -349,7 +353,13 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         // Add to target list
         const newItem: UserList = {
           dramaId,
-          addedAt: new Date().toISOString()
+          addedAt: new Date().toISOString(),
+          drama_name: drama_name || undefined,
+          drama_year: drama_year || undefined,
+          poster_image: poster_image || undefined,
+          poster_path: poster_path || undefined,
+          total_episodes: total_episodes || undefined,
+          total_runtime_minutes: total_runtime_minutes || undefined
         };
         
         if (listType === "watching" && total_episodes) {
@@ -534,9 +544,19 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         
         if (isCompleted) {
           const completedList = [...prev.lists.completed];
+          const currentItem = watchingList[dramaIndex];
           completedList.push({
             dramaId,
-            addedAt: new Date().toISOString()
+            addedAt: new Date().toISOString(),
+            drama_name: currentItem.drama_name,
+            drama_year: currentItem.drama_year,
+            poster_image: currentItem.poster_image,
+            poster_path: currentItem.poster_path,
+            total_episodes: ensuredTotalEpisodes,
+            total_runtime_minutes: ensuredTotalRuntime,
+            watched_minutes: ensuredTotalRuntime,
+            episodes_watched: ensuredTotalEpisodes,
+            current_episode: ensuredTotalEpisodes
           });
           
           const newWatchingList = watchingList.filter(item => item.dramaId !== dramaId);
@@ -757,7 +777,11 @@ export const [UserContext, useUserStore] = createContextHook(() => {
             total_episodes: item.total_episodes,
             total_runtime_minutes: item.total_runtime_minutes,
             watched_minutes: item.watched_minutes,
-            episodes_watched: item.episodes_watched
+            episodes_watched: item.episodes_watched,
+            drama_name: item.drama_name,
+            drama_year: item.drama_year,
+            poster_image: item.poster_image,
+            poster_path: item.poster_path
           };
           
           if (item.list_type === 'watching' && item.total_episodes) {
