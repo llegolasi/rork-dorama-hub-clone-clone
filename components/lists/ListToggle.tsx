@@ -35,7 +35,7 @@ export function ListToggle({
   const [showModal, setShowModal] = useState<boolean>(false);
   const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
   const [showCompleteDramaModal, setShowCompleteDramaModal] = useState<boolean>(false);
-  const { addToList, removeFromList, getCurrentList, deleteUserReview } = useUserLists();
+  const { addToList, removeFromList, getCurrentList, deleteUserReview, refreshUserProfile } = useUserLists();
   const { user } = useAuth();
   
   const completeDramaMutation = trpc.completions.completeDrama.useMutation();
@@ -114,9 +114,12 @@ export function ListToggle({
     addToList(dramaId, listType, listType === "watching" ? totalEpisodes : undefined);
   };
 
-  const handleCompleteDramaSuccess = () => {
+  const handleCompleteDramaSuccess = async () => {
     // This will be called after the CompleteDramaModal successfully completes the drama
     setShowCompleteDramaModal(false);
+    
+    // Refresh user profile to update the button state
+    await refreshUserProfile();
     
     // Show completion sharing modal
     if (user) {
