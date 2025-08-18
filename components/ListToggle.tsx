@@ -45,8 +45,8 @@ export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) 
         totalRuntimeMinutes,
       });
       
-      // Show completion modal
-      setShowCompletionModal(true);
+      // Show completion modal - DISABLED
+      // setShowCompletionModal(true);
     } catch (error) {
       console.error('Error handling completion share:', error);
     }
@@ -171,7 +171,7 @@ export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) 
       </TouchableOpacity>
       </View>
       
-      {/* Completion Share Modal */}
+      {/* Completion Share Modal - DISABLED
       {user && (
         <CompletionModal
           visible={showCompletionModal}
@@ -180,6 +180,7 @@ export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) 
           userName={user.displayName || user.username}
         />
       )}
+      */}
     </>
   );
 }

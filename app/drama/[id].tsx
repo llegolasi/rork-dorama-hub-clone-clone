@@ -483,12 +483,14 @@ export default function DramaDetailScreen() {
         }}
       />
       
+      {/* CompletionShareModal - DISABLED
       <CompletionShareModal
         visible={showCompletionModal}
         onClose={() => setShowCompletionModal(false)}
         dramaId={dramaId}
         userName={user?.username || 'Usuário'}
       />
+      */}
       </ScrollView>
     </SafeAreaView>
   );

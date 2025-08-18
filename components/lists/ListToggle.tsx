@@ -91,8 +91,8 @@ export function ListToggle({
         totalRuntimeMinutes,
       });
       
-      // Show completion modal
-      setShowCompletionModal(true);
+      // Show completion modal - DISABLED
+      // setShowCompletionModal(true);
     } catch (error) {
       console.error('Error handling completion share:', error);
     }
@@ -307,7 +307,7 @@ export function ListToggle({
         episodeRuntimeMinutes={dramaDetails?.episode_run_time?.[0] || 60}
       />
       
-      {/* Completion Share Modal */}
+      {/* Completion Share Modal - DISABLED
       {user && (
         <>  
           {Platform.OS === 'android' ? (
@@ -327,6 +327,7 @@ export function ListToggle({
           )}
         </>
       )}
+      */}
     </>
   );
 }
