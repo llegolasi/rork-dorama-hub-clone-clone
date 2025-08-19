@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
   ActionSheetIOS,
   ScrollView,
   KeyboardAvoidingView,
-  Keyboard,
 } from 'react-native';
 
 import { Heart, MessageCircle, Send, MoreVertical, X } from 'lucide-react-native';
@@ -64,8 +63,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
+  const [isKeyboardVisible] = useState<boolean>(false);
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
@@ -74,35 +72,9 @@ export default function NewsCommentSection(props: CommentSectionProps) {
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
-  const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
+  const keyboardOffset = Platform.OS === 'ios' ? insets.top + 56 : 0;
 
-  // Keyboard listeners
-  useEffect(() => {
-    const keyboardWillShowListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        setKeyboardHeight(e.endCoordinates.height);
-        setIsKeyboardVisible(true);
-        // Scroll to bottom when keyboard shows
-        setTimeout(() => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        }, Platform.OS === 'ios' ? 100 : 200);
-      }
-    );
 
-    const keyboardWillHideListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        setKeyboardHeight(0);
-        setIsKeyboardVisible(false);
-      }
-    );
-
-    return () => {
-      keyboardWillShowListener.remove();
-      keyboardWillHideListener.remove();
-    };
-  }, []);
 
   // Get the ID based on type
   const id = type === 'news' ? (props as NewsCommentSectionProps).articleId 
@@ -578,17 +550,13 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         style={styles.scrollContainer}
         contentContainerStyle={[
           styles.contentContainer, 
-          { 
-            paddingBottom: isKeyboardVisible 
-              ? keyboardHeight + 120 + (Platform.OS === 'android' ? 50 : 0)
-              : bottomPadding + 120 
-          }
+          { paddingBottom: bottomPadding + 120 }
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         nestedScrollEnabled
-        automaticallyAdjustKeyboardInsets={!disableKeyboardAvoidingView}
+        automaticallyAdjustKeyboardInsets
       >
         {renderHeader()}
         
@@ -618,16 +586,16 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         )}
       </ScrollView>
       
+      <KeyboardAvoidingView 
+        behavior={keyboardBehavior}
+        keyboardVerticalOffset={keyboardOffset}
+        style={styles.inputAvoider}
+      >
       <View 
         ref={inputContainerRef}
         style={[
           styles.inputContainer,
-          { 
-            paddingBottom: isKeyboardVisible 
-              ? (Platform.OS === 'ios' ? bottomPadding : 16)
-              : bottomPadding + (Platform.OS === 'android' ? 32 : 0),
-            marginBottom: isKeyboardVisible && Platform.OS === 'android' ? keyboardHeight : 0
-          }
+          { paddingBottom: bottomPadding }
         ]}
       > 
         {replyTo && (
@@ -680,6 +648,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
           </TouchableOpacity>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </>
   );
 
@@ -692,13 +661,9 @@ export default function NewsCommentSection(props: CommentSectionProps) {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={keyboardBehavior}
-      keyboardVerticalOffset={keyboardOffset}
-    >
+    <View style={styles.container}>
       {renderContent()}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -708,6 +673,12 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+  },
+  inputAvoider: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   contentContainer: {
     paddingHorizontal: 20,
