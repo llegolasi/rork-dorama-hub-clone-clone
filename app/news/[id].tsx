@@ -356,7 +356,7 @@ export default function NewsDetailScreen() {
             )}
           </View>
           
-          <NewsCommentSection articleId={post.id} />
+          <NewsCommentSection articleId={post.id} disableKeyboardAvoidingView />
 
           <AdBanner
             adUnitId="ca-app-pub-3940256099942544/6300978111"
