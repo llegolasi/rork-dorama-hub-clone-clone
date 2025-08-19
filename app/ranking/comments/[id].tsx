@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { ArrowLeft, Heart, MessageCircle } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +22,7 @@ import NewsCommentSection from '@/components/NewsCommentSection';
 export default function RankingCommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Fetch ranking details
   const { data: rankingData, isLoading, refetch } = trpc.rankings.getRankingDetails.useQuery(
@@ -60,10 +63,15 @@ export default function RankingCommentsScreen() {
 
 
 
-
+  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
+  const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior="padding"
+      keyboardVerticalOffset={keyboardOffset}
+    >
       <Stack.Screen
         options={{
           title: 'Comentários',
@@ -83,85 +91,85 @@ export default function RankingCommentsScreen() {
           <Text style={styles.loadingText}>Carregando...</Text>
         </View>
       ) : ranking ? (
-        <>
-          <ScrollView
-            style={styles.content}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 }]}
-          >
-            {/* Ranking Section */}
-            <View style={styles.rankingSection}>
-              <View style={styles.rankingHeader}>
-                <Image
-                  source={{ uri: ranking.users?.profile_image || 'https://via.placeholder.com/40x40/333/fff?text=U' }}
-                  style={styles.userAvatar}
-                  contentFit="cover"
-                />
-                <View style={styles.rankingHeaderInfo}>
-                  <Text style={styles.rankingTitle}>{ranking.title}</Text>
-                  <Text style={styles.rankingAuthor}>por @{ranking.users?.username}</Text>
-                  <View style={styles.rankingStats}>
-                    <TouchableOpacity 
-                      style={styles.statItem}
-                      onPress={() => handleLike('')}
-                    >
-                      <Heart 
-                        size={16} 
-                        color={ranking.is_liked ? COLORS.accent : COLORS.textSecondary}
-                        fill={ranking.is_liked ? COLORS.accent : 'transparent'}
-                      />
-                      <Text style={styles.statText}>{ranking.likes_count || 0}</Text>
-                    </TouchableOpacity>
-                    <View style={styles.statItem}>
-                      <MessageCircle size={16} color={COLORS.textSecondary} />
-                      <Text style={styles.statText}>{comments.length}</Text>
-                    </View>
+        <ScrollView
+          style={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
+        >
+          {/* Ranking Section */}
+          <View style={styles.rankingSection}>
+            <View style={styles.rankingHeader}>
+              <Image
+                source={{ uri: ranking.users?.profile_image || 'https://via.placeholder.com/40x40/333/fff?text=U' }}
+                style={styles.userAvatar}
+                contentFit="cover"
+              />
+              <View style={styles.rankingHeaderInfo}>
+                <Text style={styles.rankingTitle}>{ranking.title}</Text>
+                <Text style={styles.rankingAuthor}>por @{ranking.users?.username}</Text>
+                <View style={styles.rankingStats}>
+                  <TouchableOpacity 
+                    style={styles.statItem}
+                    onPress={() => handleLike('')}
+                  >
+                    <Heart 
+                      size={16} 
+                      color={ranking.is_liked ? COLORS.accent : COLORS.textSecondary}
+                      fill={ranking.is_liked ? COLORS.accent : 'transparent'}
+                    />
+                    <Text style={styles.statText}>{ranking.likes_count || 0}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.statItem}>
+                    <MessageCircle size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.statText}>{comments.length}</Text>
                   </View>
                 </View>
               </View>
-              
-              <View style={styles.rankingList}>
-                {ranking.ranking_items?.map((item: any, index: number) => (
-                  <TouchableOpacity
-                    key={item.drama_id}
-                    style={styles.rankingItem}
-                    onPress={() => router.push(`/drama/${item.drama_id}`)}
-                  >
-                    <View style={styles.rankBadge}>
-                      <Text style={styles.rankText}>{item.rank_position}</Text>
-                    </View>
-                    <Image
-                      source={{
-                        uri: item.poster_image || item.cover_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama',
-                      }}
-                      style={styles.rankingPoster}
-                      contentFit="cover"
-                    />
-                    <View style={styles.rankingInfo}>
-                      <Text style={styles.rankingDramaTitle} numberOfLines={2}>
-                        {item.drama_title ?? `Drama #${item.rank_position}`}
-                      </Text>
-                      {!!item.drama_year && (
-                        <Text style={styles.rankingYear}>{item.drama_year}</Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
             </View>
-          </ScrollView>
+            
+            <View style={styles.rankingList}>
+              {ranking.ranking_items?.map((item: any, index: number) => (
+                <TouchableOpacity
+                  key={item.drama_id}
+                  style={styles.rankingItem}
+                  onPress={() => router.push(`/drama/${item.drama_id}`)}
+                >
+                  <View style={styles.rankBadge}>
+                    <Text style={styles.rankText}>{item.rank_position}</Text>
+                  </View>
+                  <Image
+                    source={{
+                      uri: item.poster_image || item.cover_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama',
+                    }}
+                    style={styles.rankingPoster}
+                    contentFit="cover"
+                  />
+                  <View style={styles.rankingInfo}>
+                    <Text style={styles.rankingDramaTitle} numberOfLines={2}>
+                      {item.drama_title ?? `Drama #${item.rank_position}`}
+                    </Text>
+                    {!!item.drama_year && (
+                      <Text style={styles.rankingYear}>{item.drama_year}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
           
           {/* Comments Section */}
-          <NewsCommentSection rankingId={id!} type="ranking" />
-        </>
+          <NewsCommentSection rankingId={id!} type="ranking" disableKeyboardAvoidingView />
+        </ScrollView>
       ) : (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Ranking não encontrado</Text>
         </View>
       )}
-    </View>
+      
+
+    </KeyboardAvoidingView>
   );
 }
 

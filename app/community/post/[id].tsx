@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Heart, MessageCircle } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +23,7 @@ const PostDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Fetch post details
   const { data: postData, isLoading, refetch } = trpc.community.getPostDetails.useQuery(
@@ -83,12 +86,17 @@ const PostDetailScreen = () => {
     return `${Math.floor(diffInHours / 24)}d atrás`;
   };
 
-
+  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
+  const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
 
 
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior="padding"
+      keyboardVerticalOffset={keyboardOffset}
+    >
       <Stack.Screen
         options={{
           title: 'Publicação',
@@ -103,114 +111,114 @@ const PostDetailScreen = () => {
           <Text style={styles.loadingText}>Carregando...</Text>
         </View>
       ) : post ? (
-        <>
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 }]}
-          >
-            {/* Post Content */}
-            <View style={styles.postContainer}>
-              <View style={styles.postHeader}>
-                <TouchableOpacity 
-                  style={styles.userInfo}
-                  onPress={() => handleUserPress(post.user_id)}
-                >
-                  <Image
-                    source={{
-                      uri: post.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-                    }}
-                    style={styles.userAvatar}
-                  />
-                  <View style={styles.userDetails}>
-                    <Text style={styles.userName}>{post.users?.display_name}</Text>
-                    <Text style={styles.userHandle}>@{post.users?.username}</Text>
-                  </View>
-                </TouchableOpacity>
-                <Text style={styles.postTime}>{formatDate(post.created_at)}</Text>
-              </View>
-
-              <Text style={styles.postContent}>{post.content}</Text>
-
-              {post.mentioned_drama_id && (
-                <TouchableOpacity 
-                  style={styles.mentionedDrama}
-                  onPress={() => handleDramaPress(post.mentioned_drama_id)}
-                >
-                  <Image
-                    source={{
-                      uri: post.poster_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama',
-                    }}
-                    style={styles.mentionedPoster}
-                  />
-                  <View style={styles.mentionedInfo}>
-                    <Text style={styles.mentionedTitle}>{post.drama_name || 'Drama Mencionado'}</Text>
-                    <Text style={styles.mentionedYear}>{post.drama_year || 'N/A'}</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-
-              <View style={styles.engagementStats}>
-                <TouchableOpacity style={styles.statItem} onPress={handleLike}>
-                  <Heart
-                    size={20}
-                    color={post.is_liked ? COLORS.accent : COLORS.textSecondary}
-                    fill={post.is_liked ? COLORS.accent : 'transparent'}
-                  />
-                  <Text style={styles.statText}>{post.likes_count || 0}</Text>
-                </TouchableOpacity>
-                <View style={styles.statItem}>
-                  <MessageCircle size={20} color={COLORS.textSecondary} />
-                  <Text style={styles.statText}>{post.comments_count || 0}</Text>
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
+        >
+          {/* Post Content */}
+          <View style={styles.postContainer}>
+            <View style={styles.postHeader}>
+              <TouchableOpacity 
+                style={styles.userInfo}
+                onPress={() => handleUserPress(post.user_id)}
+              >
+                <Image
+                  source={{
+                    uri: post.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
+                  }}
+                  style={styles.userAvatar}
+                />
+                <View style={styles.userDetails}>
+                  <Text style={styles.userName}>{post.users?.display_name}</Text>
+                  <Text style={styles.userHandle}>@{post.users?.username}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
+              <Text style={styles.postTime}>{formatDate(post.created_at)}</Text>
             </View>
 
-            {/* Ranking preview inside post */}
-            {post?.post_type === 'ranking' && Array.isArray(rankingItems) && rankingItems.length > 0 && (
-              <View style={styles.rankingSection}>
-                <Text style={styles.rankingTitleInPost}>{post.user_rankings?.title}</Text>
-                {!!post.user_rankings?.description && (
-                  <Text style={styles.rankingDescriptionInPost}>{post.user_rankings.description}</Text>
-                )}
-                <View style={styles.rankingList}>
-                  {rankingItems.map((item: any) => (
-                    <TouchableOpacity
-                      key={`${item.drama_id}-${item.rank_position}`}
-                      style={styles.rankingItem}
-                      onPress={() => handleDramaPress(item.drama_id)}
-                    >
-                      <View style={styles.rankBadge}>
-                        <Text style={styles.rankText}>{item.rank_position}</Text>
-                      </View>
-                      <Image
-                        source={{ uri: item.poster_image || item.cover_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama' }}
-                        style={styles.rankingPoster}
-                      />
-                      <View style={styles.rankingInfo}>
-                        <Text style={styles.rankingDramaTitle} numberOfLines={2}>{item.drama_title ?? `Drama #${item.rank_position}`}</Text>
-                        <Text style={styles.rankingDramaMeta}>
-                          {String(item.drama_year ?? item.release_year ?? 'N/A')}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+            <Text style={styles.postContent}>{post.content}</Text>
+
+            {post.mentioned_drama_id && (
+              <TouchableOpacity 
+                style={styles.mentionedDrama}
+                onPress={() => handleDramaPress(post.mentioned_drama_id)}
+              >
+                <Image
+                  source={{
+                    uri: post.poster_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama',
+                  }}
+                  style={styles.mentionedPoster}
+                />
+                <View style={styles.mentionedInfo}>
+                  <Text style={styles.mentionedTitle}>{post.drama_name || 'Drama Mencionado'}</Text>
+                  <Text style={styles.mentionedYear}>{post.drama_year || 'N/A'}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
-          </ScrollView>
-          
+
+            <View style={styles.engagementStats}>
+              <TouchableOpacity style={styles.statItem} onPress={handleLike}>
+                <Heart
+                  size={20}
+                  color={post.is_liked ? COLORS.accent : COLORS.textSecondary}
+                  fill={post.is_liked ? COLORS.accent : 'transparent'}
+                />
+                <Text style={styles.statText}>{post.likes_count || 0}</Text>
+              </TouchableOpacity>
+              <View style={styles.statItem}>
+                <MessageCircle size={20} color={COLORS.textSecondary} />
+                <Text style={styles.statText}>{post.comments_count || 0}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Ranking preview inside post */}
+          {post?.post_type === 'ranking' && Array.isArray(rankingItems) && rankingItems.length > 0 && (
+            <View style={styles.rankingSection}>
+              <Text style={styles.rankingTitleInPost}>{post.user_rankings?.title}</Text>
+              {!!post.user_rankings?.description && (
+                <Text style={styles.rankingDescriptionInPost}>{post.user_rankings.description}</Text>
+              )}
+              <View style={styles.rankingList}>
+                {rankingItems.map((item: any) => (
+                  <TouchableOpacity
+                    key={`${item.drama_id}-${item.rank_position}`}
+                    style={styles.rankingItem}
+                    onPress={() => handleDramaPress(item.drama_id)}
+                  >
+                    <View style={styles.rankBadge}>
+                      <Text style={styles.rankText}>{item.rank_position}</Text>
+                    </View>
+                    <Image
+                      source={{ uri: item.poster_image || item.cover_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama' }}
+                      style={styles.rankingPoster}
+                    />
+                    <View style={styles.rankingInfo}>
+                      <Text style={styles.rankingDramaTitle} numberOfLines={2}>{item.drama_title ?? `Drama #${item.rank_position}`}</Text>
+                      <Text style={styles.rankingDramaMeta}>
+                        {String(item.drama_year ?? item.release_year ?? 'N/A')}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           {/* Comments Section */}
-          <NewsCommentSection postId={id!} type="post" />
-        </>
+          <NewsCommentSection postId={id!} type="post" disableKeyboardAvoidingView />
+        </ScrollView>
       ) : (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Publicação não encontrada</Text>
         </View>
       )}
-    </View>
+
+
+    </KeyboardAvoidingView>
   );
 };
 

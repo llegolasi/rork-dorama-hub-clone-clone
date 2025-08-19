@@ -64,8 +64,8 @@ export default function NewsCommentSection(props: CommentSectionProps) {
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
-  const [, setKeyboardHeight] = useState<number>(0);
-  const [, setIsKeyboardVisible] = useState<boolean>(false);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
@@ -74,7 +74,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
-  const keyboardOffset = Platform.OS === 'ios' ? 88 : 0;
+  const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
 
   // Keyboard listeners
   useEffect(() => {
@@ -83,10 +83,10 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       (e) => {
         setKeyboardHeight(e.endCoordinates.height);
         setIsKeyboardVisible(true);
-        // Scroll to bottom when keyboard shows with delay
+        // Scroll to bottom when keyboard shows
         setTimeout(() => {
           scrollRef.current?.scrollToEnd({ animated: true });
-        }, Platform.OS === 'ios' ? 250 : 350);
+        }, Platform.OS === 'ios' ? 100 : 200);
       }
     );
 
@@ -288,8 +288,8 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       // Scroll to bottom to ensure input is visible
       setTimeout(() => {
         scrollRef.current?.scrollToEnd({ animated: true });
-      }, Platform.OS === 'ios' ? 400 : 600);
-    }, 150);
+      }, Platform.OS === 'ios' ? 300 : 500);
+    }, 100);
   };
 
   const handleToggleArticleLike = () => {
@@ -579,14 +579,16 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         contentContainerStyle={[
           styles.contentContainer, 
           { 
-            paddingBottom: 140
+            paddingBottom: isKeyboardVisible 
+              ? keyboardHeight + 120 + (Platform.OS === 'android' ? 50 : 0)
+              : bottomPadding + 120 
           }
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
-        nestedScrollEnabled={false}
-        automaticallyAdjustKeyboardInsets={false}
+        nestedScrollEnabled
+        automaticallyAdjustKeyboardInsets={!disableKeyboardAvoidingView}
       >
         {renderHeader()}
         
@@ -621,7 +623,10 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         style={[
           styles.inputContainer,
           { 
-            paddingBottom: bottomPadding
+            paddingBottom: isKeyboardVisible 
+              ? (Platform.OS === 'ios' ? bottomPadding : 16)
+              : bottomPadding + (Platform.OS === 'android' ? 32 : 0),
+            marginBottom: isKeyboardVisible && Platform.OS === 'android' ? keyboardHeight : 0
           }
         ]}
       > 
@@ -653,7 +658,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
               // Ensure input is visible when focused
               setTimeout(() => {
                 scrollRef.current?.scrollToEnd({ animated: true });
-              }, Platform.OS === 'ios' ? 400 : 600);
+              }, Platform.OS === 'ios' ? 300 : 500);
             }}
           />
           
@@ -691,7 +696,6 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       style={styles.container}
       behavior={keyboardBehavior}
       keyboardVerticalOffset={keyboardOffset}
-      enabled={Platform.OS === 'ios'}
     >
       {renderContent()}
     </KeyboardAvoidingView>
@@ -743,10 +747,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   inputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -759,21 +759,19 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
     color: COLORS.text,
     fontSize: 16,
     maxHeight: 100,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   submitButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
   },
