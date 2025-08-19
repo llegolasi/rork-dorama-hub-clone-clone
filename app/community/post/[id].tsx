@@ -209,7 +209,7 @@ const PostDetailScreen = () => {
           )}
 
           {/* Comments Section */}
-          <NewsCommentSection postId={id!} type="post" disableKeyboardAvoidingView />
+          <NewsCommentSection postId={id!} type="post" />
         </ScrollView>
       ) : (
         <View style={styles.errorContainer}>

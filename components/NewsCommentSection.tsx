@@ -40,41 +40,34 @@ interface Comment {
 interface NewsCommentSectionProps {
   articleId: string;
   type?: 'news';
-  disableKeyboardAvoidingView?: boolean;
 }
 
 interface PostCommentSectionProps {
   postId: string;
   type: 'post';
-  disableKeyboardAvoidingView?: boolean;
 }
 
 interface RankingCommentSectionProps {
   rankingId: string;
   type: 'ranking';
-  disableKeyboardAvoidingView?: boolean;
 }
 
 type CommentSectionProps = NewsCommentSectionProps | PostCommentSectionProps | RankingCommentSectionProps;
 
 export default function NewsCommentSection(props: CommentSectionProps) {
-  const { type = 'news', disableKeyboardAvoidingView = false } = props;
+  const { type = 'news' } = props;
   const insets = useSafeAreaInsets();
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
-  const [isKeyboardVisible] = useState<boolean>(false);
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
-  const inputContainerRef = useRef<View | null>(null);
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
-  const keyboardOffset = Platform.OS === 'ios' ? insets.top + 56 : 0;
-
-
+  const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
 
   // Get the ID based on type
   const id = type === 'news' ? (props as NewsCommentSectionProps).articleId 
@@ -257,10 +250,6 @@ export default function NewsCommentSection(props: CommentSectionProps) {
     setReplyTo(comment);
     setTimeout(() => {
       inputRef.current?.focus();
-      // Scroll to bottom to ensure input is visible
-      setTimeout(() => {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }, Platform.OS === 'ios' ? 300 : 500);
     }, 100);
   };
 
@@ -543,20 +532,20 @@ export default function NewsCommentSection(props: CommentSectionProps) {
 
 
 
-  const renderContent = () => (
-    <>
+  return (
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={keyboardBehavior}
+      keyboardVerticalOffset={keyboardOffset}
+    >
       <ScrollView 
         ref={scrollRef}
         style={styles.scrollContainer}
-        contentContainerStyle={[
-          styles.contentContainer, 
-          { paddingBottom: bottomPadding + 120 }
-        ]}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: bottomPadding + 96 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         nestedScrollEnabled
-        automaticallyAdjustKeyboardInsets
       >
         {renderHeader()}
         
@@ -586,18 +575,10 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         )}
       </ScrollView>
       
-      <KeyboardAvoidingView 
-        behavior={keyboardBehavior}
-        keyboardVerticalOffset={keyboardOffset}
-        style={styles.inputAvoider}
-      >
-      <View 
-        ref={inputContainerRef}
-        style={[
-          styles.inputContainer,
-          { paddingBottom: bottomPadding }
-        ]}
-      > 
+      <View style={[
+        styles.inputContainer,
+        { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 32 : 0) }
+      ]}> 
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">
             <Text style={styles.replyText} numberOfLines={1}>Respondendo a {replyTo.full_name || replyTo.username || 'Usuário'}</Text>
@@ -622,12 +603,6 @@ export default function NewsCommentSection(props: CommentSectionProps) {
             returnKeyType="send"
             blurOnSubmit={false}
             onSubmitEditing={() => handleSubmitComment()}
-            onFocus={() => {
-              // Ensure input is visible when focused
-              setTimeout(() => {
-                scrollRef.current?.scrollToEnd({ animated: true });
-              }, Platform.OS === 'ios' ? 300 : 500);
-            }}
           />
           
           <TouchableOpacity
@@ -648,22 +623,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
           </TouchableOpacity>
         </View>
       </View>
-      </KeyboardAvoidingView>
-    </>
-  );
-
-  if (disableKeyboardAvoidingView) {
-    return (
-      <View style={styles.container}>
-        {renderContent()}
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      {renderContent()}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -673,12 +633,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-  },
-  inputAvoider: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
   contentContainer: {
     paddingHorizontal: 20,
