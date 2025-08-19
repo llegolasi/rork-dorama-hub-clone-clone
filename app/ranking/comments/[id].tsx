@@ -160,7 +160,7 @@ export default function RankingCommentsScreen() {
           </View>
           
           {/* Comments Section */}
-          <NewsCommentSection rankingId={id!} type="ranking" />
+          <NewsCommentSection rankingId={id!} type="ranking" disableKeyboardAvoidingView />
         </ScrollView>
       ) : (
         <View style={styles.errorContainer}>
