@@ -76,7 +76,7 @@ export default function HorizontalList({
             style={styles.viewAllButton}
             activeOpacity={0.7}
           >
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={styles.viewAllText}>Ver todas</Text>
             <ChevronRight size={16} color={COLORS.accent} />
           </TouchableOpacity>
         )}
@@ -119,6 +119,7 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontSize: 14,
     fontWeight: "600",
+    marginRight: 4,
   },
   listContent: {
     paddingLeft: 16,

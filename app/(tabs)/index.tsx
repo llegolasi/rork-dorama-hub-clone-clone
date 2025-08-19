@@ -79,7 +79,7 @@ export default function DiscoverScreen() {
           {
             id: 'trending',
             type: 'horizontal-list',
-            title: 'Trending Now',
+            title: 'Em Alta Agora',
             data: trendingQuery.data || [],
             viewAllRoute: '/trending',
             cardSize: 'medium',
@@ -87,7 +87,7 @@ export default function DiscoverScreen() {
           {
             id: 'popular',
             type: 'horizontal-list',
-            title: 'Popular K-Dramas',
+            title: 'K-Dramas Populares',
             data: popularQuery.data || [],
             viewAllRoute: '/popular',
             cardSize: 'medium',
@@ -119,7 +119,7 @@ export default function DiscoverScreen() {
       case 'header':
         return (
           <View style={styles.header}>
-            <Text style={styles.title}>Discover</Text>
+            <Text style={styles.title}>Descobrir</Text>
           </View>
         );
       case 'featured':
