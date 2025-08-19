@@ -56,9 +56,17 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardOffset = useMemo(() => {
-    const extra = 0;
-    return (Platform.OS === 'ios' ? extra : 0) + insets.bottom;
+    const extra = Platform.OS === 'android' ? 20 : 0;
+    return (Platform.OS === 'ios' ? extra : extra) + insets.bottom;
   }, [insets.bottom]);
+  
+  // Android-specific optimizations
+  const androidInputProps = Platform.OS === 'android' ? {
+    underlineColorAndroid: 'transparent',
+    selectionColor: COLORS.accent,
+    autoCorrect: true,
+    autoCapitalize: 'sentences' as const,
+  } : {};
   
   const handleSubmitComment = () => {
     if (!newComment.trim()) return;
@@ -112,9 +120,16 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
         )}
       </ScrollView>
 
-      <View style={[styles.inputContainer, { paddingBottom: bottomPadding }]}>
+      <View style={[
+        styles.inputContainer, 
+        Platform.OS === 'android' && styles.inputContainerAndroid,
+        { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 16 : 0) }
+      ]}>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            Platform.OS === 'android' && styles.inputAndroid
+          ]}
           placeholder="Add a comment..."
           placeholderTextColor={COLORS.textSecondary}
           value={newComment}
@@ -122,7 +137,10 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
           multiline
           maxLength={500}
           testID="comment-input"
-          textAlignVertical="top"
+          textAlignVertical={Platform.OS === 'android' ? 'top' : 'center'}
+          returnKeyType={Platform.OS === 'android' ? 'default' : 'send'}
+          blurOnSubmit={Platform.OS === 'android' ? true : false}
+          {...androidInputProps}
         />
         
         <TouchableOpacity
@@ -177,11 +195,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 12,
+    padding: Platform.OS === 'android' ? 14 : 12,
     color: COLORS.text,
     fontSize: 14,
-    minHeight: 48,
-    maxHeight: 100,
+    minHeight: Platform.OS === 'android' ? 52 : 48,
+    maxHeight: Platform.OS === 'android' ? 120 : 100,
+  },
+  inputAndroid: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
+    paddingTop: 14,
+    paddingBottom: 14,
+    lineHeight: 18,
+  },
+  inputContainerAndroid: {
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   submitButton: {
     backgroundColor: COLORS.accent,

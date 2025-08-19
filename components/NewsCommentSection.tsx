@@ -67,7 +67,16 @@ export default function NewsCommentSection(props: CommentSectionProps) {
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
-  const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
+  const keyboardOffset = Platform.OS === 'ios' ? 64 : Platform.OS === 'android' ? 20 : 0;
+  
+  // Android-specific optimizations
+  const androidInputProps = Platform.OS === 'android' ? {
+    underlineColorAndroid: 'transparent',
+    selectionColor: COLORS.accent,
+    autoCorrect: true,
+    autoCapitalize: 'sentences' as const,
+    keyboardType: 'default' as const,
+  } : {};
 
   // Get the ID based on type
   const id = type === 'news' ? (props as NewsCommentSectionProps).articleId 
@@ -577,7 +586,8 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       
       <View style={[
         styles.inputContainer,
-        { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 32 : 0) }
+        Platform.OS === 'android' && styles.inputContainerAndroid,
+        { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 40 : 0) }
       ]}> 
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">
@@ -591,18 +601,22 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         <View style={styles.inputRow}>
           <TextInput
             ref={inputRef}
-            style={styles.input}
-            textAlignVertical="top"
+            style={[
+              styles.input,
+              Platform.OS === 'android' && styles.inputAndroid
+            ]}
+            textAlignVertical={Platform.OS === 'android' ? 'top' : 'center'}
             placeholder={replyTo ? `Respondendo a ${replyTo.full_name || replyTo.username || 'usuário'}...` : 'Adicione um comentário...'}
             placeholderTextColor={COLORS.textSecondary}
             value={newComment}
             onChangeText={setNewComment}
-            multiline
+            multiline={Platform.OS === 'android' ? true : true}
             maxLength={1000}
             testID="comment-input"
-            returnKeyType="send"
-            blurOnSubmit={false}
-            onSubmitEditing={() => handleSubmitComment()}
+            returnKeyType={Platform.OS === 'android' ? 'default' : 'send'}
+            blurOnSubmit={Platform.OS === 'android' ? true : false}
+            onSubmitEditing={Platform.OS === 'android' ? undefined : () => handleSubmitComment()}
+            {...androidInputProps}
           />
           
           <TouchableOpacity
@@ -687,10 +701,26 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: Platform.OS === 'android' ? 14 : 12,
     color: COLORS.text,
     fontSize: 16,
-    maxHeight: 100,
+    maxHeight: Platform.OS === 'android' ? 120 : 100,
+    minHeight: Platform.OS === 'android' ? 48 : 40,
+  },
+  inputAndroid: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
+    paddingTop: 14,
+    paddingBottom: 14,
+    lineHeight: 20,
+  },
+  inputContainerAndroid: {
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   submitButton: {
     width: 40,

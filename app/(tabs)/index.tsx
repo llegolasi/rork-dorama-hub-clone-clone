@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View, Platform, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -51,11 +51,11 @@ export default function DiscoverScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     trendingQuery.refetch();
     popularQuery.refetch();
     newsQuery.refetch();
-  };
+  }, [trendingQuery, popularQuery, newsQuery]);
 
   const isLoading = trendingQuery.isLoading || popularQuery.isLoading;
   const isRefreshing = trendingQuery.isFetching || popularQuery.isFetching;
@@ -65,7 +65,7 @@ export default function DiscoverScreen() {
 
 
 
-  const sections = [
+  const sections = useMemo(() => [
     { id: 'header', type: 'header' },
     { id: 'featured', type: 'featured' },
     { id: 'news', type: 'news' },
@@ -93,9 +93,9 @@ export default function DiscoverScreen() {
             cardSize: 'medium',
           },
         ]),
-  ];
+  ], [isLoading, hasError, trendingQuery.data, popularQuery.data]);
 
-  const handleAddToList = async (listType: 'watchlist' | 'watching') => {
+  const handleAddToList = useCallback(async (listType: 'watchlist' | 'watching') => {
     if (!featuredDrama) return;
     try {
       await addToList(
@@ -112,9 +112,9 @@ export default function DiscoverScreen() {
     } catch (e) {
       console.log('Error adding to list from featured:', e);
     }
-  };
+  }, [featuredDrama, addToList]);
 
-  const renderSection = ({ item }: { item: any }) => {
+  const renderSection = useCallback(({ item }: { item: any }) => {
     switch (item.type) {
       case 'header':
         return (
@@ -262,19 +262,35 @@ export default function DiscoverScreen() {
       default:
         return null;
     }
-  };
+  }, [router, featuredDrama, newsQuery.data, handleRefresh, handleAddToList, setShowAddModal]);
 
   return (
     <>
       <FlatList
         style={styles.container}
-        contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'ios' ? insets.top + 16 : 16 }]}
+        contentContainerStyle={[
+          styles.content, 
+          { paddingTop: Platform.OS === 'ios' ? insets.top + 16 : 16 }
+        ]}
         data={sections}
         keyExtractor={(s) => s.id}
         renderItem={renderSection}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} colors={[COLORS.accent]} />}
+        refreshControl={
+          <RefreshControl 
+            refreshing={isRefreshing} 
+            onRefresh={handleRefresh} 
+            tintColor={COLORS.accent} 
+            colors={[COLORS.accent]}
+            progressBackgroundColor={Platform.OS === 'android' ? COLORS.card : undefined}
+          />
+        }
         showsVerticalScrollIndicator={false}
         testID="discover-screen"
+        removeClippedSubviews={Platform.OS === 'android'}
+        maxToRenderPerBatch={Platform.OS === 'android' ? 3 : 10}
+        windowSize={Platform.OS === 'android' ? 5 : 21}
+        initialNumToRender={Platform.OS === 'android' ? 3 : 10}
+        getItemLayout={undefined}
       />
 
       <Modal visible={showAddModal} transparent animationType="fade" onRequestClose={() => setShowAddModal(false)}>

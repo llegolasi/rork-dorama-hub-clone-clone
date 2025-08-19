@@ -1,8 +1,8 @@
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Image } from "expo-image";
+import React, { memo } from "react";
+import { StyleSheet, Text, TouchableOpacity, View, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Star } from "lucide-react-native";
+import OptimizedImage from './OptimizedImage';
 
 import { COLORS } from "@/constants/colors";
 import { POSTER_SIZE, TMDB_IMAGE_BASE_URL } from "@/constants/config";
@@ -13,7 +13,7 @@ interface DramaCardProps {
   size?: "small" | "medium" | "large";
 }
 
-export default function DramaCard({ drama, size = "medium" }: DramaCardProps) {
+function DramaCard({ drama, size = "medium" }: DramaCardProps) {
   const router = useRouter();
   
   const handlePress = () => {
@@ -70,7 +70,7 @@ export default function DramaCard({ drama, size = "medium" }: DramaCardProps) {
       activeOpacity={0.7}
       testID={`drama-card-${drama.id}`}
     >
-      <Image
+      <OptimizedImage
         source={{ 
           uri: drama.poster_path 
             ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${drama.poster_path}` 
@@ -78,7 +78,8 @@ export default function DramaCard({ drama, size = "medium" }: DramaCardProps) {
         }}
         style={[styles.image, getImageStyle()]}
         contentFit="cover"
-        transition={300}
+        priority={Platform.OS === 'android' ? 'normal' : 'high'}
+        cachePolicy="memory-disk"
       />
       
       <View style={styles.infoContainer}>
@@ -170,3 +171,5 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 });
+
+export default memo(DramaCard);

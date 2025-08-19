@@ -1,5 +1,5 @@
-import React from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback } from "react";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Platform } from "react-native";
 import { ChevronRight } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
@@ -34,6 +34,19 @@ export default function HorizontalList({
       router.push(viewAllRoute as any);
     }
   };
+
+  const renderItem = useCallback(({ item }: { item: Drama }) => (
+    <DramaCard drama={item} size={cardSize} />
+  ), [cardSize]);
+
+  const getItemLayout = useCallback((data: any, index: number) => {
+    const itemWidth = cardSize === 'large' ? 200 : cardSize === 'medium' ? 160 : 120;
+    return {
+      length: itemWidth + 16, // item width + margin
+      offset: (itemWidth + 16) * index,
+      index,
+    };
+  }, [cardSize]);
 
   if (loading) {
     // Show loading skeleton
@@ -85,11 +98,16 @@ export default function HorizontalList({
       <FlatList
         data={data}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <DramaCard drama={item} size={cardSize} />}
+        renderItem={renderItem}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         testID={`horizontal-list-${title.toLowerCase().replace(/\s/g, "-")}`}
+        removeClippedSubviews={Platform.OS === 'android'}
+        maxToRenderPerBatch={Platform.OS === 'android' ? 5 : 10}
+        windowSize={Platform.OS === 'android' ? 3 : 21}
+        initialNumToRender={Platform.OS === 'android' ? 3 : 10}
+        getItemLayout={getItemLayout}
       />
     </View>
   );
