@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ActionSheetIOS,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
 
 import { Heart, MessageCircle, Send, MoreVertical, X } from 'lucide-react-native';
@@ -63,14 +64,45 @@ export default function NewsCommentSection(props: CommentSectionProps) {
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
+  const inputContainerRef = useRef<View | null>(null);
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
   const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
+
+  // Keyboard listeners
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+        setIsKeyboardVisible(true);
+        // Scroll to bottom when keyboard shows
+        setTimeout(() => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+        }, Platform.OS === 'ios' ? 100 : 200);
+      }
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
 
   // Get the ID based on type
   const id = type === 'news' ? (props as NewsCommentSectionProps).articleId 
@@ -256,7 +288,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       // Scroll to bottom to ensure input is visible
       setTimeout(() => {
         scrollRef.current?.scrollToEnd({ animated: true });
-      }, 300);
+      }, Platform.OS === 'ios' ? 300 : 500);
     }, 100);
   };
 
@@ -544,7 +576,14 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       <ScrollView 
         ref={scrollRef}
         style={styles.scrollContainer}
-        contentContainerStyle={[styles.contentContainer, { paddingBottom: bottomPadding + 120 }]}
+        contentContainerStyle={[
+          styles.contentContainer, 
+          { 
+            paddingBottom: isKeyboardVisible 
+              ? keyboardHeight + 120 + (Platform.OS === 'android' ? 50 : 0)
+              : bottomPadding + 120 
+          }
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -579,10 +618,18 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         )}
       </ScrollView>
       
-      <View style={[
-        styles.inputContainer,
-        { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 32 : 0) }
-      ]}> 
+      <View 
+        ref={inputContainerRef}
+        style={[
+          styles.inputContainer,
+          { 
+            paddingBottom: isKeyboardVisible 
+              ? (Platform.OS === 'ios' ? bottomPadding : 16)
+              : bottomPadding + (Platform.OS === 'android' ? 32 : 0),
+            marginBottom: isKeyboardVisible && Platform.OS === 'android' ? keyboardHeight : 0
+          }
+        ]}
+      > 
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">
             <Text style={styles.replyText} numberOfLines={1}>Respondendo a {replyTo.full_name || replyTo.username || 'Usuário'}</Text>
@@ -611,7 +658,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
               // Ensure input is visible when focused
               setTimeout(() => {
                 scrollRef.current?.scrollToEnd({ animated: true });
-              }, 300);
+              }, Platform.OS === 'ios' ? 300 : 500);
             }}
           />
           
