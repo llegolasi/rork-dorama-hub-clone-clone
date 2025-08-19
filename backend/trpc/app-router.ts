@@ -8,6 +8,8 @@ import {
   getPostDetailsProcedure,
   togglePostLikeProcedure,
   addPostCommentProcedure,
+  deletePostCommentProcedure,
+  togglePostCommentLikeProcedure,
   getNewsPostsProcedure,
   getNewsPostByIdProcedure
 } from "./routes/community/posts/route";
@@ -29,7 +31,9 @@ import {
   getRankingDetailsProcedure,
   saveRankingProcedure,
   toggleRankingLikeProcedure,
-  addRankingCommentProcedure
+  addRankingCommentProcedure,
+  deleteRankingCommentProcedure,
+  toggleRankingCommentLikeProcedure
 } from "./routes/rankings/route";
 
 // Users routes
@@ -95,6 +99,8 @@ export const appRouter = createTRPCRouter({
     getPostDetails: getPostDetailsProcedure,
     togglePostLike: togglePostLikeProcedure,
     addPostComment: addPostCommentProcedure,
+    deletePostComment: deletePostCommentProcedure,
+    togglePostCommentLike: togglePostCommentLikeProcedure,
   }),
   
   news: createTRPCRouter({
@@ -115,6 +121,8 @@ export const appRouter = createTRPCRouter({
     saveRanking: saveRankingProcedure,
     toggleRankingLike: toggleRankingLikeProcedure,
     addRankingComment: addRankingCommentProcedure,
+    deleteRankingComment: deleteRankingCommentProcedure,
+    toggleRankingCommentLike: toggleRankingCommentLikeProcedure,
   }),
   
   users: createTRPCRouter({

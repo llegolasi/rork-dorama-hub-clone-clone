@@ -1,30 +1,27 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   Image,
-  TextInput,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Heart, MessageCircle, Send } from 'lucide-react-native';
+import { Heart, MessageCircle } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
+import NewsCommentSection from '@/components/NewsCommentSection';
 
 const PostDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [newComment, setNewComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -44,21 +41,10 @@ const PostDetailScreen = () => {
     }
   });
 
-  const addCommentMutation = trpc.community.addPostComment.useMutation({
-    onSuccess: () => {
-      setNewComment('');
-      refetch();
-      Alert.alert('Sucesso', 'Comentário adicionado!');
-    },
-    onError: (error: any) => {
-      console.error('Error adding comment:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar o comentário.');
-    }
-  });
+
 
   const post = postData?.post;
-  const comments = postData?.comments || [];
-  const [replyTo, setReplyTo] = useState<any | null>(null);
+
 
   const rankingItems = React.useMemo(() => {
     const items = Array.isArray(post?.user_rankings?.ranking_items) ? [...post!.user_rankings.ranking_items] : [];
@@ -79,33 +65,7 @@ const PostDetailScreen = () => {
     }
   };
 
-  const handleSubmitComment = async () => {
-    if (!newComment.trim()) {
-      Alert.alert('Erro', 'Por favor, escreva um comentário.');
-      return;
-    }
 
-    if (!user || !id) {
-      Alert.alert('Erro', 'Você precisa estar logado para comentar.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    
-    try {
-      await addCommentMutation.mutateAsync({
-        postId: id,
-        content: newComment.trim(),
-        parentCommentId: replyTo?.id,
-      });
-      setReplyTo(null);
-      setNewComment('');
-    } catch (error) {
-      console.error('Error submitting comment:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleUserPress = (userId: string) => {
     router.push(`/user/${userId}`);
@@ -129,63 +89,7 @@ const PostDetailScreen = () => {
   const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
 
-  const renderComment = (comment: any) => (
-    <View key={comment.id} style={styles.commentItem}>
-      <View style={styles.commentHeader}>
-        <TouchableOpacity onPress={() => handleUserPress(comment.user_id)}>
-          <Image
-            source={{
-              uri: comment.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-            }}
-            style={styles.commentAvatar}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.commentContent}
-          onPress={() => handleUserPress(comment.user_id)}
-        >
-          <Text style={styles.commentUserName}>{comment.users?.display_name}</Text>
-        </TouchableOpacity>
-        <Text style={styles.commentTime}>{formatDate(comment.created_at)}</Text>
-      </View>
-      <Text style={styles.commentText}>{comment.content}</Text>
 
-      <View style={styles.commentActionsRow}>
-        <TouchableOpacity style={styles.replyButton} onPress={() => setReplyTo(comment)} testID={`reply-${comment.id}`}>
-          <MessageCircle size={16} color={COLORS.textSecondary} />
-          <Text style={styles.replyTextAction}>Responder</Text>
-        </TouchableOpacity>
-      </View>
-
-      {Array.isArray(comment.replies) && comment.replies.length > 0 && (
-        <View style={styles.repliesContainer}>
-          {comment.replies.map((reply: any) => (
-            <View key={reply.id} style={styles.replyItem}>
-              <View style={styles.commentHeader}>
-                <TouchableOpacity onPress={() => handleUserPress(reply.user_id)}>
-                  <Image
-                    source={{ uri: reply.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
-                    style={styles.commentAvatar}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.commentContent} onPress={() => handleUserPress(reply.user_id)}>
-                  <Text style={styles.commentUserName}>{reply.users?.display_name}</Text>
-                </TouchableOpacity>
-                <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
-              </View>
-              <Text style={styles.commentText}>{reply.content}</Text>
-              <View style={styles.commentActionsRow}>
-                <TouchableOpacity style={styles.replyButton} onPress={() => setReplyTo(comment)} testID={`reply-to-${comment.id}`}>
-                  <MessageCircle size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.replyTextAction}>Responder</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-  );
 
   return (
     <KeyboardAvoidingView
@@ -305,11 +209,7 @@ const PostDetailScreen = () => {
           )}
 
           {/* Comments Section */}
-          <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>Comentários ({comments.length})</Text>
-            
-            {comments.map(renderComment)}
-          </View>
+          <NewsCommentSection postId={id!} type="post" />
         </ScrollView>
       ) : (
         <View style={styles.errorContainer}>
@@ -317,49 +217,7 @@ const PostDetailScreen = () => {
         </View>
       )}
 
-      {/* Comment Input */}
-      <View style={[styles.commentInputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
-        {replyTo && (
-          <View style={styles.replyBanner} testID="reply-banner">
-            <Text style={styles.replyingToText} numberOfLines={1}>Respondendo a {replyTo.users?.display_name || 'usuário'}</Text>
-            <TouchableOpacity onPress={() => setReplyTo(null)} style={styles.cancelReplyBtn} testID="cancel-reply">
-              <Text style={styles.cancelReplyText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        <View style={styles.commentInputRow}>
-          <TextInput
-            style={styles.commentInput}
-            placeholder={replyTo ? `Respondendo a ${replyTo.users?.display_name || 'usuário'}...` : 'Escreva um comentário...'}
-            placeholderTextColor={COLORS.textSecondary}
-            value={newComment}
-            onChangeText={setNewComment}
-            multiline
-            maxLength={300}
-            testID="comment-input"
-            returnKeyType="send"
-            blurOnSubmit={false}
-            textAlignVertical="top"
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, !newComment.trim() && styles.sendButtonDisabled]}
-            onPress={handleSubmitComment}
-            disabled={!newComment.trim() || isSubmitting}
-            testID="send-comment"
-            accessibilityRole="button"
-            accessibilityLabel="Enviar comentário"
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color={COLORS.accent} />
-            ) : (
-              <Send 
-                size={20} 
-                color={newComment.trim() ? COLORS.accent : COLORS.textSecondary} 
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+
     </KeyboardAvoidingView>
   );
 };

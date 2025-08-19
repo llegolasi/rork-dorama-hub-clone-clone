@@ -277,3 +277,102 @@ export const addRankingCommentProcedure = protectedProcedure
       throw new Error('Failed to add comment');
     }
   });
+
+// Delete ranking comment
+export const deleteRankingCommentProcedure = protectedProcedure
+  .input(z.object({
+    commentId: z.string().uuid()
+  }))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      // Check if comment exists and belongs to user
+      const { data: comment, error: fetchError } = await ctx.supabase
+        .from('ranking_comments')
+        .select('user_id')
+        .eq('id', input.commentId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching comment:', fetchError);
+        if ((fetchError as any)?.code === 'PGRST116') {
+          throw new Error('Comment not found');
+        }
+        throw new Error('Failed to fetch comment');
+      }
+
+      if (!comment) {
+        throw new Error('Comment not found');
+      }
+
+      if (comment.user_id !== ctx.user.id) {
+        throw new Error('You can only delete your own comments');
+      }
+
+      // Delete the comment
+      const { error: deleteError } = await ctx.supabase
+        .from('ranking_comments')
+        .delete()
+        .eq('id', input.commentId)
+        .eq('user_id', ctx.user.id);
+
+      if (deleteError) {
+        console.error('Error deleting comment:', deleteError);
+        throw new Error('Failed to delete comment');
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Delete ranking comment procedure error:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to delete comment');
+    }
+  });
+
+// Toggle ranking comment like
+export const toggleRankingCommentLikeProcedure = protectedProcedure
+  .input(z.object({
+    commentId: z.string().uuid()
+  }))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      // Check if user already liked this comment
+      const { data: existingLike, error: checkError } = await ctx.supabase
+        .from('ranking_comment_likes')
+        .select('id')
+        .eq('comment_id', input.commentId)
+        .eq('user_id', ctx.user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingLike) {
+        // Unlike the comment
+        const { error: deleteError } = await ctx.supabase
+          .from('ranking_comment_likes')
+          .delete()
+          .eq('comment_id', input.commentId)
+          .eq('user_id', ctx.user.id);
+
+        if (deleteError) throw deleteError;
+        return { liked: false };
+      } else {
+        // Like the comment
+        const { error: insertError } = await ctx.supabase
+          .from('ranking_comment_likes')
+          .insert({
+            comment_id: input.commentId,
+            user_id: ctx.user.id
+          });
+
+        if (insertError) throw insertError;
+        return { liked: true };
+      }
+    } catch (error) {
+      console.error('Error toggling ranking comment like:', error);
+      throw new Error('Failed to toggle comment like');
+    }
+  });

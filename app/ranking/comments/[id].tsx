@@ -1,24 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Send, Heart, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, Heart, MessageCircle } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
+import NewsCommentSection from '@/components/NewsCommentSection';
 
 
 export default function RankingCommentsScreen() {
@@ -42,52 +40,12 @@ export default function RankingCommentsScreen() {
     }
   });
 
-  const addCommentMutation = trpc.rankings.addRankingComment.useMutation({
-    onSuccess: () => {
-      setNewComment('');
-      setReplyingTo(null);
-      refetch();
-    },
-    onError: (error) => {
-      console.error('Error adding comment:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar o comentário.');
-    }
-  });
+
   
   const ranking = rankingData?.ranking;
   const comments = rankingData?.comments || [];
-  const [newComment, setNewComment] = useState('');
-  const [replyingTo, setReplyingTo] = useState<{ id: string; userName?: string } | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendComment = async () => {
-    if (!newComment.trim()) return;
 
-    if (!user || !id) {
-      Alert.alert('Erro', 'Você precisa estar logado para comentar.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    
-    try {
-      await addCommentMutation.mutateAsync({
-        rankingId: id,
-        content: newComment.trim(),
-        parentCommentId: replyingTo?.id || undefined
-      });
-      setNewComment('');
-      setReplyingTo(null);
-    } catch (error) {
-      console.error('Error submitting comment:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReply = (commentId: string, userName?: string) => {
-    setReplyingTo({ id: commentId, userName });
-  };
 
   const handleLike = async (commentId: string) => {
     if (!user || !id) return;
@@ -101,66 +59,9 @@ export default function RankingCommentsScreen() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    if (diffInHours < 1) return 'Agora há pouco';
-    if (diffInHours < 24) return `${diffInHours}h atrás`;
-    if (diffInHours < 48) return 'Ontem';
-    return `${Math.floor(diffInHours / 24)}d atrás`;
-  };
 
-  const renderComment = (comment: any) => (
-    <View key={comment.id} style={styles.commentItem}>
-      <View style={styles.commentHeaderRow}>
-        <Image
-          source={{
-            uri: comment.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-          }}
-          style={styles.commentAvatar}
-        />
-        <View style={styles.commentContentWrap}>
-          <Text style={styles.commentUserName}>{comment.users?.display_name}</Text>
-        </View>
-        <Text style={styles.commentTime}>{formatDate(comment.created_at)}</Text>
-      </View>
-      <Text style={styles.commentText}>{comment.content}</Text>
 
-      <View style={styles.commentActionsRow}>
-        <TouchableOpacity style={styles.replyButton} onPress={() => handleReply(comment.id, comment.users?.display_name)} testID={`reply-${comment.id}`}>
-          <MessageCircle size={16} color={COLORS.textSecondary} />
-          <Text style={styles.replyTextAction}>Responder</Text>
-        </TouchableOpacity>
-      </View>
 
-      {Array.isArray(comment.replies) && comment.replies.length > 0 && (
-        <View style={styles.repliesContainer}>
-          {comment.replies.map((reply: any) => (
-            <View key={reply.id} style={styles.replyItem}>
-              <View style={styles.commentHeaderRow}>
-                <Image
-                  source={{ uri: reply.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
-                  style={styles.commentAvatar}
-                />
-                <View style={styles.commentContentWrap}>
-                  <Text style={styles.commentUserName}>{reply.users?.display_name}</Text>
-                </View>
-                <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
-              </View>
-              <Text style={styles.commentText}>{reply.content}</Text>
-              <View style={styles.commentActionsRow}>
-                <TouchableOpacity style={styles.replyButton} onPress={() => handleReply(comment.id, comment.users?.display_name)} testID={`reply-to-${comment.id}`}>
-                  <MessageCircle size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.replyTextAction}>Responder</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-  );
 
   const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
@@ -259,10 +160,7 @@ export default function RankingCommentsScreen() {
           </View>
           
           {/* Comments Section */}
-          <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>Comentários ({comments.length})</Text>
-            {comments.map(renderComment)}
-          </View>
+          <NewsCommentSection rankingId={id!} type="ranking" />
         </ScrollView>
       ) : (
         <View style={styles.errorContainer}>
@@ -270,40 +168,7 @@ export default function RankingCommentsScreen() {
         </View>
       )}
       
-      <View style={[styles.commentInputContainer, { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 8 : 0) }]}>
-        {replyingTo && (
-          <View style={styles.replyBanner} testID="reply-banner">
-            <Text style={styles.replyingToText} numberOfLines={1}>Respondendo a {replyingTo.userName ?? 'usuário'}</Text>
-            <TouchableOpacity onPress={() => setReplyingTo(null)} style={styles.cancelReplyBtn} testID="cancel-reply">
-              <Text style={styles.cancelReplyText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        
-        <View style={styles.commentInputRow}>
-          <TextInput
-            style={styles.commentInput}
-            placeholder={replyingTo ? `Respondendo a ${replyingTo.userName ?? 'usuário'}...` : 'Escreva um comentário...'}
-            placeholderTextColor={COLORS.textSecondary}
-            value={newComment}
-            onChangeText={setNewComment}
-            multiline
-            maxLength={500}
-            textAlignVertical="top"
-          />
-          <TouchableOpacity 
-            style={[styles.sendButton, !newComment.trim() && styles.sendButtonDisabled]}
-            onPress={handleSendComment}
-            disabled={!newComment.trim() || isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color={COLORS.accent} />
-            ) : (
-              <Send size={20} color={newComment.trim() ? COLORS.accent : COLORS.textSecondary} />
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+
     </KeyboardAvoidingView>
   );
 }

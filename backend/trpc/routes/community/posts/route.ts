@@ -301,9 +301,32 @@ export const getPostDetailsProcedure = publicProcedure
         }, {});
       }
 
+      // Get like information for current user if authenticated
+      let userLikedComments = new Set<string>();
+      if (isAuthed && ctx.user?.id) {
+        const allCommentIds = [
+          ...(comments || []).map((c: any) => c.id),
+          ...Object.values(repliesByParent).flat().map((r: any) => r.id)
+        ];
+        
+        if (allCommentIds.length > 0) {
+          const { data: likedComments } = await client
+            .from('post_comment_likes')
+            .select('comment_id')
+            .eq('user_id', ctx.user.id)
+            .in('comment_id', allCommentIds);
+          
+          userLikedComments = new Set((likedComments || []).map((l: any) => l.comment_id));
+        }
+      }
+
       const commentsWithReplies = (comments || []).map((c: any) => ({
         ...c,
-        replies: repliesByParent[c.id] ?? []
+        user_liked: userLikedComments.has(c.id),
+        replies: (repliesByParent[c.id] ?? []).map((r: any) => ({
+          ...r,
+          user_liked: userLikedComments.has(r.id)
+        }))
       }));
 
       return {
@@ -414,6 +437,119 @@ export const addPostCommentProcedure = protectedProcedure
     } catch (error) {
       console.error('Error adding comment:', error);
       throw new Error('Failed to add comment');
+    }
+  });
+
+// Delete post comment
+export const deletePostCommentProcedure = protectedProcedure
+  .input(z.object({
+    commentId: z.string().uuid()
+  }))
+  .mutation(async ({ input, ctx }: { input: { commentId: string }; ctx: Context }) => {
+    try {
+      if (!ctx.user?.id) {
+        throw new Error('User ID is required');
+      }
+      
+      // Use authenticated supabase client for RLS
+      const authSupabase = getAuthenticatedSupabase(ctx);
+      
+      // Check if comment exists and belongs to user
+      const { data: comment, error: fetchError } = await authSupabase
+        .from('post_comments')
+        .select('user_id')
+        .eq('id', input.commentId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching comment:', fetchError);
+        if ((fetchError as any)?.code === 'PGRST116') {
+          throw new Error('Comment not found');
+        }
+        throw new Error('Failed to fetch comment');
+      }
+
+      if (!comment) {
+        throw new Error('Comment not found');
+      }
+
+      if (comment.user_id !== ctx.user.id) {
+        throw new Error('You can only delete your own comments');
+      }
+
+      // Delete the comment
+      const { error: deleteError } = await authSupabase
+        .from('post_comments')
+        .delete()
+        .eq('id', input.commentId)
+        .eq('user_id', ctx.user.id);
+
+      if (deleteError) {
+        console.error('Error deleting comment:', deleteError);
+        throw new Error('Failed to delete comment');
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Delete post comment procedure error:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to delete comment');
+    }
+  });
+
+// Toggle post comment like
+export const togglePostCommentLikeProcedure = protectedProcedure
+  .input(z.object({
+    commentId: z.string().uuid()
+  }))
+  .mutation(async ({ input, ctx }: { input: { commentId: string }; ctx: Context }) => {
+    try {
+      if (!ctx.user?.id) {
+        throw new Error('User ID is required');
+      }
+      
+      // Use authenticated supabase client for RLS
+      const authSupabase = getAuthenticatedSupabase(ctx);
+      
+      // Check if user already liked this comment
+      const { data: existingLike, error: checkError } = await authSupabase
+        .from('post_comment_likes')
+        .select('id')
+        .eq('comment_id', input.commentId)
+        .eq('user_id', ctx.user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingLike) {
+        // Unlike the comment
+        const { error: deleteError } = await authSupabase
+          .from('post_comment_likes')
+          .delete()
+          .eq('comment_id', input.commentId)
+          .eq('user_id', ctx.user.id);
+
+        if (deleteError) throw deleteError;
+        return { liked: false };
+      } else {
+        // Like the comment
+        const { error: insertError } = await authSupabase
+          .from('post_comment_likes')
+          .insert({
+            comment_id: input.commentId,
+            user_id: ctx.user.id
+          });
+
+        if (insertError) throw insertError;
+        return { liked: true };
+      }
+    } catch (error) {
+      console.error('Error toggling post comment like:', error);
+      throw new Error('Failed to toggle comment like');
     }
   });
 

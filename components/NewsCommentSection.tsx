@@ -39,9 +39,23 @@ interface Comment {
 
 interface NewsCommentSectionProps {
   articleId: string;
+  type?: 'news';
 }
 
-export default function NewsCommentSection({ articleId }: NewsCommentSectionProps) {
+interface PostCommentSectionProps {
+  postId: string;
+  type: 'post';
+}
+
+interface RankingCommentSectionProps {
+  rankingId: string;
+  type: 'ranking';
+}
+
+type CommentSectionProps = NewsCommentSectionProps | PostCommentSectionProps | RankingCommentSectionProps;
+
+export default function NewsCommentSection(props: CommentSectionProps) {
+  const { type = 'news' } = props;
   const insets = useSafeAreaInsets();
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -55,58 +69,152 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
   const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
 
-  // Queries
-  const commentsQuery = trpc.news.getComments.useQuery({ articleId });
-  const likesQuery = trpc.news.getArticleLikes.useQuery({ articleId });
-  const userLikedQuery = trpc.news.getUserLikedArticle.useQuery({ articleId });
+  // Get the ID based on type
+  const id = type === 'news' ? (props as NewsCommentSectionProps).articleId 
+    : type === 'post' ? (props as PostCommentSectionProps).postId 
+    : (props as RankingCommentSectionProps).rankingId;
 
-  // Mutations
-  const addCommentMutation = trpc.news.addComment.useMutation({
-    onSuccess: () => {
-      console.log('[NewsCommentSection] addComment success');
-      setNewComment('');
-      setIsSubmitting(false);
-      setReplyTo(null);
-      commentsQuery.refetch();
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
-    },
-    onError: (error) => {
-      setIsSubmitting(false);
-      Alert.alert('Erro', 'Não foi possível adicionar o comentário. Tente novamente.');
-      console.error('Error adding comment:', error);
-    }
-  });
+  // Queries based on type
+  const commentsQuery = type === 'news' 
+    ? trpc.news.getComments.useQuery({ articleId: id })
+    : type === 'post'
+    ? trpc.community.getPostDetails.useQuery({ postId: id })
+    : trpc.rankings.getRankingDetails.useQuery({ rankingId: id });
 
-  const toggleLikeMutation = trpc.news.toggleArticleLike.useMutation({
-    onSuccess: () => {
-      likesQuery.refetch();
-      userLikedQuery.refetch();
-    },
-    onError: (error) => {
-      Alert.alert('Erro', 'Não foi possível curtir a notícia. Tente novamente.');
-      console.error('Error toggling like:', error);
-    }
-  });
+  const likesQuery = type === 'news' 
+    ? trpc.news.getArticleLikes.useQuery({ articleId: id })
+    : null;
 
-  const toggleCommentLikeMutation = trpc.news.toggleCommentLike.useMutation({
-    onSuccess: () => {
-      commentsQuery.refetch();
-    },
-    onError: (error) => {
-      Alert.alert('Erro', 'Não foi possível curtir o comentário. Tente novamente.');
-      console.error('Error toggling comment like:', error);
-    }
-  });
+  const userLikedQuery = type === 'news' 
+    ? trpc.news.getUserLikedArticle.useQuery({ articleId: id })
+    : null;
 
-  const deleteCommentMutation = trpc.news.deleteComment.useMutation({
-    onSuccess: () => {
-      commentsQuery.refetch();
-    },
-    onError: (error) => {
-      Alert.alert('Erro', 'Não foi possível deletar o comentário. Tente novamente.');
-      console.error('Error deleting comment:', error);
-    }
-  });
+  // Extract comments from the query result
+  const comments = type === 'news' 
+    ? (commentsQuery.data as Comment[] | undefined) || []
+    : (commentsQuery.data as { comments: Comment[] } | undefined)?.comments || [];
+
+  // Mutations based on type
+  const addCommentMutation = type === 'news'
+    ? trpc.news.addComment.useMutation({
+        onSuccess: () => {
+          console.log('[CommentSection] addComment success');
+          setNewComment('');
+          setIsSubmitting(false);
+          setReplyTo(null);
+          commentsQuery.refetch();
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+        },
+        onError: (error) => {
+          setIsSubmitting(false);
+          Alert.alert('Erro', 'Não foi possível adicionar o comentário. Tente novamente.');
+          console.error('Error adding comment:', error);
+        }
+      })
+    : type === 'post'
+    ? trpc.community.addPostComment.useMutation({
+        onSuccess: () => {
+          console.log('[CommentSection] addComment success');
+          setNewComment('');
+          setIsSubmitting(false);
+          setReplyTo(null);
+          commentsQuery.refetch();
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+        },
+        onError: (error) => {
+          setIsSubmitting(false);
+          Alert.alert('Erro', 'Não foi possível adicionar o comentário. Tente novamente.');
+          console.error('Error adding comment:', error);
+        }
+      })
+    : trpc.rankings.addRankingComment.useMutation({
+        onSuccess: () => {
+          console.log('[CommentSection] addComment success');
+          setNewComment('');
+          setIsSubmitting(false);
+          setReplyTo(null);
+          commentsQuery.refetch();
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+        },
+        onError: (error) => {
+          setIsSubmitting(false);
+          Alert.alert('Erro', 'Não foi possível adicionar o comentário. Tente novamente.');
+          console.error('Error adding comment:', error);
+        }
+      });
+
+  const toggleLikeMutation = type === 'news'
+    ? trpc.news.toggleArticleLike.useMutation({
+        onSuccess: () => {
+          likesQuery?.refetch();
+          userLikedQuery?.refetch();
+        },
+        onError: (error) => {
+          Alert.alert('Erro', 'Não foi possível curtir a notícia. Tente novamente.');
+          console.error('Error toggling like:', error);
+        }
+      })
+    : null;
+
+  const toggleCommentLikeMutation = type === 'news'
+    ? trpc.news.toggleCommentLike.useMutation({
+        onSuccess: () => {
+          commentsQuery.refetch();
+        },
+        onError: (error) => {
+          Alert.alert('Erro', 'Não foi possível curtir o comentário. Tente novamente.');
+          console.error('Error toggling comment like:', error);
+        }
+      })
+    : type === 'post'
+    ? trpc.community.togglePostCommentLike.useMutation({
+        onSuccess: () => {
+          commentsQuery.refetch();
+        },
+        onError: (error) => {
+          Alert.alert('Erro', 'Não foi possível curtir o comentário. Tente novamente.');
+          console.error('Error toggling comment like:', error);
+        }
+      })
+    : trpc.rankings.toggleRankingCommentLike.useMutation({
+        onSuccess: () => {
+          commentsQuery.refetch();
+        },
+        onError: (error) => {
+          Alert.alert('Erro', 'Não foi possível curtir o comentário. Tente novamente.');
+          console.error('Error toggling comment like:', error);
+        }
+      });
+
+  const deleteCommentMutation = type === 'news'
+    ? trpc.news.deleteComment.useMutation({
+        onSuccess: () => {
+          commentsQuery.refetch();
+        },
+        onError: (error) => {
+          Alert.alert('Erro', 'Não foi possível deletar o comentário. Tente novamente.');
+          console.error('Error deleting comment:', error);
+        }
+      })
+    : type === 'post'
+    ? trpc.community.deletePostComment.useMutation({
+        onSuccess: () => {
+          commentsQuery.refetch();
+        },
+        onError: (error) => {
+          Alert.alert('Erro', 'Não foi possível deletar o comentário. Tente novamente.');
+          console.error('Error deleting comment:', error);
+        }
+      })
+    : trpc.rankings.deleteRankingComment.useMutation({
+        onSuccess: () => {
+          commentsQuery.refetch();
+        },
+        onError: (error) => {
+          Alert.alert('Erro', 'Não foi possível deletar o comentário. Tente novamente.');
+          console.error('Error deleting comment:', error);
+        }
+      });
 
   const handleSubmitComment = () => {
     if (!newComment.trim()) return;
@@ -116,11 +224,25 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
     }
 
     setIsSubmitting(true);
-    addCommentMutation.mutate({
-      articleId,
-      content: newComment.trim(),
-      parentCommentId: replyTo?.id,
-    });
+    if (type === 'news') {
+      (addCommentMutation as any).mutate({
+        articleId: id,
+        content: newComment.trim(),
+        parentCommentId: replyTo?.id,
+      });
+    } else if (type === 'post') {
+      (addCommentMutation as any).mutate({
+        postId: id,
+        content: newComment.trim(),
+        parentCommentId: replyTo?.id,
+      });
+    } else {
+      (addCommentMutation as any).mutate({
+        rankingId: id,
+        content: newComment.trim(),
+        parentCommentId: replyTo?.id,
+      });
+    }
   };
 
   const handleReply = (comment: Comment) => {
@@ -132,13 +254,13 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
   };
 
   const handleToggleArticleLike = () => {
-    if (!toggleLikeMutation.isPending) {
-      toggleLikeMutation.mutate({ articleId });
+    if (type === 'news' && toggleLikeMutation && !toggleLikeMutation.isPending) {
+      toggleLikeMutation.mutate({ articleId: id });
     }
   };
 
   const handleToggleCommentLike = (commentId: string) => {
-    if (!toggleCommentLikeMutation.isPending) {
+    if (toggleCommentLikeMutation && !toggleCommentLikeMutation.isPending) {
       toggleCommentLikeMutation.mutate({ commentId });
     }
   };
@@ -153,7 +275,7 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
         },
         (buttonIndex) => {
           if (buttonIndex === 1) {
-            deleteCommentMutation.mutate({ commentId });
+            (deleteCommentMutation as any).mutate({ commentId });
           }
         }
       );
@@ -204,35 +326,39 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
     }
   };
 
-  const renderHeader = () => (
-    <View style={styles.engagementSection}>
-      <TouchableOpacity
-        style={styles.likeButton}
-        onPress={handleToggleArticleLike}
-        disabled={toggleLikeMutation.isPending}
-        testID="article-like"
-      >
-        <Heart 
-          size={24} 
-          color={userLikedQuery.data ? COLORS.accent : COLORS.textSecondary}
-          fill={userLikedQuery.data ? COLORS.accent : 'transparent'}
-        />
-        <Text style={[
-          styles.likeText,
-          userLikedQuery.data ? styles.likeTextActive : null,
-        ]}>
-          {likesQuery.data?.count ?? 0} curtidas
-        </Text>
-      </TouchableOpacity>
-      
-      <View style={styles.commentsHeader}>
-        <MessageCircle size={20} color={COLORS.text} />
-        <Text style={styles.commentsTitle}>
-          {commentsQuery.data?.length ?? 0} comentários
-        </Text>
+  const renderHeader = () => {
+    if (type !== 'news') return null;
+    
+    return (
+      <View style={styles.engagementSection}>
+        <TouchableOpacity
+          style={styles.likeButton}
+          onPress={handleToggleArticleLike}
+          disabled={toggleLikeMutation?.isPending}
+          testID="article-like"
+        >
+          <Heart 
+            size={24} 
+            color={userLikedQuery?.data ? COLORS.accent : COLORS.textSecondary}
+            fill={userLikedQuery?.data ? COLORS.accent : 'transparent'}
+          />
+          <Text style={[
+            styles.likeText,
+            userLikedQuery?.data ? styles.likeTextActive : null,
+          ]}>
+            {likesQuery?.data?.count ?? 0} curtidas
+          </Text>
+        </TouchableOpacity>
+        
+        <View style={styles.commentsHeader}>
+          <MessageCircle size={20} color={COLORS.text} />
+          <Text style={styles.commentsTitle}>
+            {comments.length} comentários
+          </Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderEmptyComments = () => (
     <View style={styles.emptyContainer}>
@@ -244,129 +370,165 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
     </View>
   );
 
-  const renderComment = ({ item }: { item: Comment }) => (
-    <View style={styles.commentItem} testID={`comment-${item.id}`}>
-      <View style={styles.commentHeader}>
-        <View style={styles.commentUserInfo}>
-          {item.avatar_url ? (
-            <Image source={{ uri: item.avatar_url }} style={styles.commentAvatar} />
-          ) : (
-            <View style={styles.commentAvatarPlaceholder}>
-              <Text style={styles.commentAvatarText}>
-                {(item.full_name || item.username || 'U')?.charAt(0).toUpperCase()}
+  const renderComment = ({ item }: { item: any }) => {
+    // Normalize comment data based on type
+    const comment = {
+      id: item.id,
+      content: item.content,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      like_count: item.like_count || 0,
+      is_edited: item.is_edited || false,
+      user_id: item.user_id,
+      username: type === 'news' ? item.username : item.users?.username,
+      full_name: type === 'news' ? item.full_name : item.users?.display_name,
+      avatar_url: type === 'news' ? item.avatar_url : item.users?.profile_image,
+      replies_count: item.replies_count || 0,
+      user_liked: item.user_liked || false,
+      parent_comment_id: item.parent_comment_id,
+      replies: item.replies || []
+    };
+
+    return (
+      <View style={styles.commentItem} testID={`comment-${comment.id}`}>
+        <View style={styles.commentHeader}>
+          <View style={styles.commentUserInfo}>
+            {comment.avatar_url ? (
+              <Image source={{ uri: comment.avatar_url }} style={styles.commentAvatar} />
+            ) : (
+              <View style={styles.commentAvatarPlaceholder}>
+                <Text style={styles.commentAvatarText}>
+                  {(comment.full_name || comment.username || 'U')?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <View style={styles.commentMeta}>
+              <Text style={styles.commentUsername}>
+                {comment.full_name || comment.username || 'Usuário'}
               </Text>
+              <Text style={styles.commentTime}>{formatDate(comment.created_at)}</Text>
             </View>
-          )}
-          <View style={styles.commentMeta}>
-            <Text style={styles.commentUsername}>
-              {item.full_name || item.username || 'Usuário'}
-            </Text>
-            <Text style={styles.commentTime}>{formatDate(item.created_at)}</Text>
           </View>
+          {comment.user_id === user?.id && (
+            <TouchableOpacity 
+              style={styles.commentMenuButton}
+              onPress={() => handleCommentMenu(comment)}
+              testID={`comment-menu-${comment.id}`}
+            >
+              <MoreVertical size={16} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
-        {item.user_id === user?.id && (
-          <TouchableOpacity 
-            style={styles.commentMenuButton}
-            onPress={() => handleCommentMenu(item)}
-            testID={`comment-menu-${item.id}`}
-          >
-            <MoreVertical size={16} color={COLORS.textSecondary} />
-          </TouchableOpacity>
+
+        <Text style={styles.commentText}>{comment.content}</Text>
+        {comment.is_edited && (
+          <Text style={styles.editedLabel}>editado</Text>
         )}
-      </View>
 
-      <Text style={styles.commentText}>{item.content}</Text>
-      {item.is_edited && (
-        <Text style={styles.editedLabel}>editado</Text>
-      )}
+        <View style={styles.commentActions}>
+          <TouchableOpacity
+            style={styles.commentActionButton}
+            onPress={() => handleToggleCommentLike(comment.id)}
+            testID={`like-${comment.id}`}
+          >
+            <Heart 
+              size={16} 
+              color={comment.user_liked ? COLORS.accent : COLORS.textSecondary}
+              fill={comment.user_liked ? COLORS.accent : 'transparent'}
+            />
+            <Text style={[
+              styles.commentActionText,
+              comment.user_liked ? styles.commentActionTextLiked : null,
+            ]}>
+              {comment.like_count > 0 ? comment.like_count : ''}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.commentActionButton} onPress={() => handleReply(comment)} testID={`reply-${comment.id}`}>
+            <MessageCircle size={16} color={COLORS.textSecondary} />
+            <Text style={styles.commentActionText}>Responder</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.commentActions}>
-        <TouchableOpacity
-          style={styles.commentActionButton}
-          onPress={() => handleToggleCommentLike(item.id)}
-          testID={`like-${item.id}`}
-        >
-          <Heart 
-            size={16} 
-            color={item.user_liked ? COLORS.accent : COLORS.textSecondary}
-            fill={item.user_liked ? COLORS.accent : 'transparent'}
-          />
-          <Text style={[
-            styles.commentActionText,
-            item.user_liked ? styles.commentActionTextLiked : null,
-          ]}>
-            {item.like_count > 0 ? item.like_count : ''}
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.commentActionButton} onPress={() => handleReply(item)} testID={`reply-${item.id}`}>
-          <MessageCircle size={16} color={COLORS.textSecondary} />
-          <Text style={styles.commentActionText}>Responder</Text>
-        </TouchableOpacity>
-      </View>
+        {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+          <View style={styles.repliesContainer}>
+            {comment.replies.map((replyItem: any) => {
+              const reply = {
+                id: replyItem.id,
+                content: replyItem.content,
+                created_at: replyItem.created_at,
+                updated_at: replyItem.updated_at,
+                like_count: replyItem.like_count || 0,
+                is_edited: replyItem.is_edited || false,
+                user_id: replyItem.user_id,
+                username: type === 'news' ? replyItem.username : replyItem.users?.username,
+                full_name: type === 'news' ? replyItem.full_name : replyItem.users?.display_name,
+                avatar_url: type === 'news' ? replyItem.avatar_url : replyItem.users?.profile_image,
+                user_liked: replyItem.user_liked || false,
+              };
 
-      {Array.isArray(item.replies) && item.replies.length > 0 && (
-        <View style={styles.repliesContainer}>
-          {item.replies.map((reply) => (
-            <View key={reply.id} style={styles.replyItem} testID={`reply-${reply.id}`}>
-              <View style={styles.commentHeader}>
-                <View style={styles.commentUserInfo}>
-                  {reply.avatar_url ? (
-                    <Image source={{ uri: reply.avatar_url }} style={styles.commentAvatarSmall} />
-                  ) : (
-                    <View style={styles.commentAvatarPlaceholderSmall}>
-                      <Text style={styles.commentAvatarText}>
-                        {(reply.full_name || reply.username || 'U')?.charAt(0).toUpperCase()}
-                      </Text>
+              return (
+                <View key={reply.id} style={styles.replyItem} testID={`reply-${reply.id}`}>
+                  <View style={styles.commentHeader}>
+                    <View style={styles.commentUserInfo}>
+                      {reply.avatar_url ? (
+                        <Image source={{ uri: reply.avatar_url }} style={styles.commentAvatarSmall} />
+                      ) : (
+                        <View style={styles.commentAvatarPlaceholderSmall}>
+                          <Text style={styles.commentAvatarText}>
+                            {(reply.full_name || reply.username || 'U')?.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.commentMeta}>
+                        <Text style={styles.commentUsername}>
+                          {reply.full_name || reply.username || 'Usuário'}
+                        </Text>
+                        <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
+                      </View>
                     </View>
-                  )}
-                  <View style={styles.commentMeta}>
-                    <Text style={styles.commentUsername}>
-                      {reply.full_name || reply.username || 'Usuário'}
-                    </Text>
-                    <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
+                    {reply.user_id === user?.id && (
+                      <TouchableOpacity 
+                        style={styles.commentMenuButton}
+                        onPress={() => handleCommentMenu({ ...reply, replies_count: 0, parent_comment_id: null, replies: [] })}
+                        testID={`comment-menu-${reply.id}`}
+                      >
+                        <MoreVertical size={16} color={COLORS.textSecondary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.commentText}>{reply.content}</Text>
+                  <View style={styles.commentActions}>
+                    <TouchableOpacity
+                      style={styles.commentActionButton}
+                      onPress={() => handleToggleCommentLike(reply.id)}
+                      testID={`like-${reply.id}`}
+                    >
+                      <Heart 
+                        size={16} 
+                        color={reply.user_liked ? COLORS.accent : COLORS.textSecondary}
+                        fill={reply.user_liked ? COLORS.accent : 'transparent'}
+                      />
+                      <Text style={[
+                        styles.commentActionText,
+                        reply.user_liked ? styles.commentActionTextLiked : null,
+                      ]}>
+                        {reply.like_count > 0 ? reply.like_count : ''}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.commentActionButton} onPress={() => handleReply(comment)} testID={`reply-to-${comment.id}`}>
+                      <MessageCircle size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.commentActionText}>Responder</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-                {reply.user_id === user?.id && (
-                  <TouchableOpacity 
-                    style={styles.commentMenuButton}
-                    onPress={() => handleCommentMenu(reply)}
-                    testID={`comment-menu-${reply.id}`}
-                  >
-                    <MoreVertical size={16} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={styles.commentText}>{reply.content}</Text>
-              <View style={styles.commentActions}>
-                <TouchableOpacity
-                  style={styles.commentActionButton}
-                  onPress={() => handleToggleCommentLike(reply.id)}
-                  testID={`like-${reply.id}`}
-                >
-                  <Heart 
-                    size={16} 
-                    color={reply.user_liked ? COLORS.accent : COLORS.textSecondary}
-                    fill={reply.user_liked ? COLORS.accent : 'transparent'}
-                  />
-                  <Text style={[
-                    styles.commentActionText,
-                    reply.user_liked ? styles.commentActionTextLiked : null,
-                  ]}>
-                    {reply.like_count > 0 ? reply.like_count : ''}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.commentActionButton} onPress={() => handleReply(item)} testID={`reply-to-${item.id}`}>
-                  <MessageCircle size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.commentActionText}>Responder</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-  );
+              );
+            })}
+          </View>
+        )}
+      </View>
+    );
+  };
 
 
 
@@ -402,8 +564,8 @@ export default function NewsCommentSection({ articleId }: NewsCommentSectionProp
               <Text style={styles.retryText}>Tentar novamente</Text>
             </TouchableOpacity>
           </View>
-        ) : commentsQuery.data && commentsQuery.data.length > 0 ? (
-          commentsQuery.data.map((item) => (
+        ) : comments && comments.length > 0 ? (
+          comments.map((item: any) => (
             <View key={item.id}>
               {renderComment({ item })}
             </View>
