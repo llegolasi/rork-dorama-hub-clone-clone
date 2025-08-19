@@ -1,7 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Image } from "expo-image";
+import { StyleSheet, Text, TouchableOpacity, View, Platform } from "react-native";
 import { useRouter } from "expo-router";
+import OptimizedImage from './OptimizedImage';
 
 import { COLORS } from "@/constants/colors";
 import { PROFILE_SIZE, TMDB_IMAGE_BASE_URL } from "@/constants/config";
@@ -42,7 +42,7 @@ export default function ActorCard({ actor, size = "medium" }: ActorCardProps) {
       activeOpacity={0.7}
       testID={`actor-card-${actor.id}`}
     >
-      <Image
+      <OptimizedImage
         source={{ 
           uri: actor.profile_path 
             ? `${TMDB_IMAGE_BASE_URL}/${PROFILE_SIZE}${actor.profile_path}` 
@@ -50,7 +50,9 @@ export default function ActorCard({ actor, size = "medium" }: ActorCardProps) {
         }}
         style={[styles.image, getImageStyle()]}
         contentFit="cover"
-        transition={300}
+        priority={Platform.OS === 'android' ? 'low' : 'normal'}
+        cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+        placeholder="https://via.placeholder.com/185x278/1C1C1E/8E8E93?text=Loading"
       />
       
       <View style={styles.infoContainer}>

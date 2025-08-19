@@ -78,8 +78,9 @@ function DramaCard({ drama, size = "medium" }: DramaCardProps) {
         }}
         style={[styles.image, getImageStyle()]}
         contentFit="cover"
-        priority={Platform.OS === 'android' ? 'normal' : 'high'}
-        cachePolicy="memory-disk"
+        priority={Platform.OS === 'android' ? 'low' : 'normal'}
+        cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+        placeholder="https://via.placeholder.com/342x513/1C1C1E/8E8E93?text=Loading"
       />
       
       <View style={styles.infoContainer}>

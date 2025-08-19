@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { 
   ActivityIndicator, 
-  Alert,
   Dimensions, 
   FlatList, 
+  Platform,
   ScrollView, 
   StyleSheet, 
   Text, 
@@ -14,7 +14,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Star, Play, Check } from "lucide-react-native";
+import { ChevronRight, Star, Play } from "lucide-react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COLORS } from "@/constants/colors";
@@ -24,10 +24,10 @@ import ActorCard from "@/components/ActorCard";
 import { ListToggle } from "@/components/lists/ListToggle";
 import ReviewsSection from "@/components/ReviewsSection";
 import ReviewModal from "@/components/ReviewModal";
+import OptimizedImage from "@/components/OptimizedImage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/hooks/useUserStore";
-import CompletionShareModal from "@/components/CompletionShareModal";
 
 
 const { width } = Dimensions.get("window");
@@ -225,7 +225,7 @@ export default function DramaDetailScreen() {
         testID="drama-detail-screen"
       >
       <View style={styles.headerContainer}>
-        <Image
+        <OptimizedImage
           source={{ 
             uri: drama.backdrop_path 
               ? `${TMDB_IMAGE_BASE_URL}/${BACKDROP_SIZE}${drama.backdrop_path}` 
@@ -233,6 +233,9 @@ export default function DramaDetailScreen() {
           }}
           style={styles.backdropImage}
           contentFit="cover"
+          priority={Platform.OS === 'android' ? 'low' : 'high'}
+          cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+          placeholder="https://via.placeholder.com/800x450/1C1C1E/8E8E93?text=Loading"
         />
         
         <LinearGradient
@@ -242,7 +245,7 @@ export default function DramaDetailScreen() {
         
         <View style={styles.heroContent}>
           <View style={styles.posterContainer}>
-            <Image
+            <OptimizedImage
               source={{ 
                 uri: drama.poster_path 
                   ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${drama.poster_path}` 
@@ -250,6 +253,9 @@ export default function DramaDetailScreen() {
               }}
               style={styles.posterImage}
               contentFit="cover"
+              priority={Platform.OS === 'android' ? 'low' : 'normal'}
+              cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+              placeholder="https://via.placeholder.com/342x513/1C1C1E/8E8E93?text=Loading"
             />
           </View>
           
@@ -348,13 +354,16 @@ export default function DramaDetailScreen() {
                   style={styles.seasonCard}
                   onPress={() => console.log('Season selected:', season.season_number)}
                 >
-                  <Image
+                  <OptimizedImage
                     source={{
                       uri: season.poster_path 
                         ? `https://image.tmdb.org/t/p/w300${season.poster_path}`
                         : 'https://via.placeholder.com/150x225/333/fff?text=Season'
                     }}
                     style={styles.seasonPoster}
+                    contentFit="cover"
+                    priority="low"
+                    cachePolicy="disk"
                   />
                   <Text style={styles.seasonTitle} numberOfLines={2}>
                     {season.name}
@@ -390,11 +399,14 @@ export default function DramaDetailScreen() {
                   onPress={() => console.log('Video selected:', video.key)}
                 >
                   <View style={styles.videoThumbnail}>
-                    <Image
+                    <OptimizedImage
                       source={{
                         uri: `https://img.youtube.com/vi/${video.key}/hqdefault.jpg`
                       }}
                       style={styles.videoImage}
+                      contentFit="cover"
+                      priority="low"
+                      cachePolicy="disk"
                     />
                     <View style={styles.playButton}>
                       <Play size={24} color={COLORS.text} fill={COLORS.text} />
@@ -446,12 +458,14 @@ export default function DramaDetailScreen() {
                     testID={`gallery-thumb-${index}`}
                     onPress={() => console.log('Image selected:', image?.file_path)}
                   >
-                    <Image
+                    <OptimizedImage
                       source={{
                         uri: `https://image.tmdb.org/t/p/w500${image?.file_path ?? ''}`
                       }}
                       style={styles.galleryImage}
                       contentFit="cover"
+                      priority="low"
+                      cachePolicy="disk"
                     />
                   </TouchableOpacity>
                 ))}

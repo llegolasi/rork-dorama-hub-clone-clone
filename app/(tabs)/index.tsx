@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View, Platform, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image } from "expo-image";
+import OptimizedImage from '@/components/OptimizedImage';
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -132,7 +132,7 @@ export default function DiscoverScreen() {
             onPress={() => router.push(`/drama/${featuredDrama.id}`)}
             activeOpacity={0.9}
           >
-            <Image
+            <OptimizedImage
               source={{
                 uri: featuredDrama.backdrop_path
                   ? `${TMDB_IMAGE_BASE_URL}/${BACKDROP_SIZE}${featuredDrama.backdrop_path}`
@@ -140,6 +140,9 @@ export default function DiscoverScreen() {
               }}
               style={styles.featuredBackdrop}
               contentFit="cover"
+              priority={Platform.OS === 'android' ? 'low' : 'high'}
+              cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+              placeholder="https://via.placeholder.com/800x450/1C1C1E/8E8E93?text=Loading"
             />
 
             <LinearGradient
@@ -149,7 +152,7 @@ export default function DiscoverScreen() {
 
             <View style={styles.featuredContent}>
               <View style={styles.featuredPosterContainer}>
-                <Image
+                <OptimizedImage
                   source={{
                     uri: featuredDrama.poster_path
                       ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${featuredDrama.poster_path}`
@@ -157,6 +160,9 @@ export default function DiscoverScreen() {
                   }}
                   style={styles.featuredPoster}
                   contentFit="cover"
+                  priority={Platform.OS === 'android' ? 'low' : 'normal'}
+                  cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+                  placeholder="https://via.placeholder.com/342x513/1C1C1E/8E8E93?text=Loading"
                 />
               </View>
 
@@ -287,9 +293,11 @@ export default function DiscoverScreen() {
         showsVerticalScrollIndicator={false}
         testID="discover-screen"
         removeClippedSubviews={Platform.OS === 'android'}
-        maxToRenderPerBatch={Platform.OS === 'android' ? 3 : 10}
-        windowSize={Platform.OS === 'android' ? 5 : 21}
-        initialNumToRender={Platform.OS === 'android' ? 3 : 10}
+        maxToRenderPerBatch={Platform.OS === 'android' ? 2 : 10}
+        windowSize={Platform.OS === 'android' ? 3 : 21}
+        initialNumToRender={Platform.OS === 'android' ? 2 : 10}
+        updateCellsBatchingPeriod={Platform.OS === 'android' ? 150 : 50}
+        legacyImplementation={Platform.OS === 'android'}
         getItemLayout={undefined}
       />
 

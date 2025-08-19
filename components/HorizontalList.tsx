@@ -104,10 +104,12 @@ export default function HorizontalList({
         contentContainerStyle={styles.listContent}
         testID={`horizontal-list-${title.toLowerCase().replace(/\s/g, "-")}`}
         removeClippedSubviews={Platform.OS === 'android'}
-        maxToRenderPerBatch={Platform.OS === 'android' ? 5 : 10}
-        windowSize={Platform.OS === 'android' ? 3 : 21}
-        initialNumToRender={Platform.OS === 'android' ? 3 : 10}
+        maxToRenderPerBatch={Platform.OS === 'android' ? 3 : 10}
+        windowSize={Platform.OS === 'android' ? 2 : 21}
+        initialNumToRender={Platform.OS === 'android' ? 2 : 10}
+        updateCellsBatchingPeriod={Platform.OS === 'android' ? 100 : 50}
         getItemLayout={getItemLayout}
+        legacyImplementation={Platform.OS === 'android'}
       />
     </View>
   );
