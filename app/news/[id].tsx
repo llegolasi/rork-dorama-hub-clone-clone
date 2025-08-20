@@ -22,8 +22,8 @@ export default function NewsDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [webViewHeight, setWebViewHeight] = useState<number>(400);
-  const [contentLoaded, setContentLoaded] = useState<boolean>(false);
   const [heightCalculated, setHeightCalculated] = useState<boolean>(false);
+  const [isContentReady, setIsContentReady] = useState<boolean>(Platform.OS === 'web');
 
   const newsQuery = trpc.news.getPostById.useQuery({
     postId: id!
@@ -228,20 +228,54 @@ export default function NewsDetailScreen() {
           }
         }
         
+        // Wait for all images to load before sending height
+        function waitForImages() {
+          const images = document.querySelectorAll('img');
+          let loadedImages = 0;
+          
+          if (images.length === 0) {
+            sendHeightOnce();
+            return;
+          }
+          
+          images.forEach(img => {
+            if (img.complete) {
+              loadedImages++;
+            } else {
+              img.onload = () => {
+                loadedImages++;
+                if (loadedImages === images.length) {
+                  setTimeout(sendHeightOnce, 200);
+                }
+              };
+              img.onerror = () => {
+                loadedImages++;
+                if (loadedImages === images.length) {
+                  setTimeout(sendHeightOnce, 200);
+                }
+              };
+            }
+          });
+          
+          if (loadedImages === images.length) {
+            setTimeout(sendHeightOnce, 200);
+          }
+        }
+        
         if (document.readyState === 'complete') {
-          setTimeout(sendHeightOnce, 300);
+          setTimeout(waitForImages, 100);
         } else {
           window.addEventListener('load', () => {
-            setTimeout(sendHeightOnce, 300);
+            setTimeout(waitForImages, 100);
           });
         }
         
-        // Fallback for images loading
+        // Fallback timeout
         setTimeout(() => {
           if (!heightSent) {
             sendHeightOnce();
           }
-        }, 1500);
+        }, 2000);
       </script>
     </head>
     <body>
@@ -268,96 +302,100 @@ export default function NewsDetailScreen() {
       />
       
       <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
-        <InstagramStyleComments 
-          articleId={post.id} 
-          renderContent={() => (
-            <View style={styles.contentHeader}>
-              <View style={styles.header}>
-                <View style={styles.authorContainer}>
-                  <View style={styles.authorAvatar}>
-                    <Text style={styles.authorInitial}>📰</Text>
-                  </View>
-                  <View style={styles.authorInfo}>
-                    <Text style={styles.authorName}>Dorama Hub</Text>
-                    <View style={styles.timeContainer}>
-                      <Calendar size={14} color={COLORS.textSecondary} />
-                      <Text style={styles.timeText}>
-                        {formatDate(post.published_at || post.created_at)}
-                      </Text>
+        {/* Show loading state until content is ready */}
+        {!isContentReady ? (
+          <View style={styles.fullScreenLoading}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+            <Text style={styles.loadingText}>Carregando notícia...</Text>
+          </View>
+        ) : (
+          <InstagramStyleComments 
+            articleId={post.id} 
+            renderContent={() => (
+              <View style={styles.contentHeader}>
+                <View style={styles.header}>
+                  <View style={styles.authorContainer}>
+                    <View style={styles.authorAvatar}>
+                      <Text style={styles.authorInitial}>📰</Text>
+                    </View>
+                    <View style={styles.authorInfo}>
+                      <Text style={styles.authorName}>Dorama Hub</Text>
+                      <View style={styles.timeContainer}>
+                        <Calendar size={14} color={COLORS.textSecondary} />
+                        <Text style={styles.timeText}>
+                          {formatDate(post.published_at || post.created_at)}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
-              
-              <Text style={styles.title}>{post.title}</Text>
-              
-              {post.cover_image_url && (
-                <Image 
-                  source={{ uri: post.cover_image_url }}
-                  style={styles.coverImage}
-                  resizeMode="cover"
-                />
-              )}
-              
-              <View style={styles.contentContainer}>
-                {Platform.OS === 'web' ? (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: post.html_content }}
-                    style={{
-                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                      lineHeight: '1.6',
-                      color: COLORS.text,
-                      fontSize: '16px'
-                    }}
+                
+                <Text style={styles.title}>{post.title}</Text>
+                
+                {post.cover_image_url && (
+                  <Image 
+                    source={{ uri: post.cover_image_url }}
+                    style={styles.coverImage}
+                    resizeMode="cover"
                   />
-                ) : (
-                  <View style={styles.webViewContainer}>
-                    {!contentLoaded && (
-                      <View style={styles.webViewLoading}>
-                        <ActivityIndicator size="large" color={COLORS.accent} />
-                        <Text style={styles.loadingText}>Carregando conteúdo...</Text>
-                      </View>
-                    )}
-                    <WebView
-                      source={{ html: htmlContent }}
-                      style={[
-                        styles.webView, 
-                        { 
-                          height: webViewHeight,
-                          opacity: contentLoaded ? 1 : 0
-                        }
-                      ]}
-                      scrollEnabled={false}
-                      showsVerticalScrollIndicator={false}
-                      showsHorizontalScrollIndicator={false}
-                      onMessage={(event) => {
-                        try {
-                          const data = JSON.parse(event.nativeEvent.data);
-                          if (data.type === 'height' && data.height && !heightCalculated) {
-                            const newHeight = Math.max(Math.min(data.height, 2500), 200);
-                            setWebViewHeight(newHeight);
-                            setHeightCalculated(true);
-                            setTimeout(() => {
-                              setContentLoaded(true);
-                            }, 200);
-                          }
-                        } catch (e) {
-                          console.log('WebView message parsing error:', e);
-                        }
-                      }}
-                      javaScriptEnabled={true}
-                      domStorageEnabled={true}
-                      startInLoadingState={false}
-                      mixedContentMode="compatibility"
-                      allowsInlineMediaPlayback={true}
-                      mediaPlaybackRequiresUserAction={false}
-                    />
-                  </View>
                 )}
-              </View>
-              </View>
-            )}
-          />
+                
+                <View style={styles.contentContainer}>
+                  {Platform.OS === 'web' ? (
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: post.html_content }}
+                      style={{
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                        lineHeight: '1.6',
+                        color: COLORS.text,
+                        fontSize: '16px'
+                      }}
+                    />
+                  ) : (
+                    <View style={styles.webViewContainer}>
+                      <WebView
+                        source={{ html: htmlContent }}
+                        style={[
+                          styles.webView, 
+                          { 
+                            height: webViewHeight,
+                            opacity: 1
+                          }
+                        ]}
+                        scrollEnabled={false}
+                        showsVerticalScrollIndicator={false}
+                        showsHorizontalScrollIndicator={false}
+                        onMessage={(event) => {
+                          try {
+                            const data = JSON.parse(event.nativeEvent.data);
+                            if (data.type === 'height' && data.height && !heightCalculated) {
+                              const newHeight = Math.max(Math.min(data.height, 2500), 200);
+                              setWebViewHeight(newHeight);
+                              setHeightCalculated(true);
+
+                              // Mark content as ready after ensuring stability
+                              setTimeout(() => {
+                                setIsContentReady(true);
+                              }, 100);
+                            }
+                          } catch (e) {
+                            console.log('WebView message parsing error:', e);
+                          }
+                        }}
+                        javaScriptEnabled={true}
+                        domStorageEnabled={true}
+                        startInLoadingState={false}
+                        mixedContentMode="compatibility"
+                        allowsInlineMediaPlayback={true}
+                        mediaPlaybackRequiresUserAction={false}
+                      />
+                    </View>
+                  )}
+                </View>
+                </View>
+              )}
+            />
+        )}
       </View>
     </>
   );
