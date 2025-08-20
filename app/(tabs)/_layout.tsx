@@ -96,6 +96,7 @@ export default function TabLayout() {
         name="categories"
         options={{
           href: null,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
