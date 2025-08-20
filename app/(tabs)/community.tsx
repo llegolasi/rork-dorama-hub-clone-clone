@@ -17,6 +17,7 @@ import { Heart, MessageCircle, Trophy, Users, Plus, MoreVertical, TrendingUp, Cl
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
+import { formatTimeAgo } from '@/constants/utils';
 import { trpc, trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -334,7 +335,11 @@ const CommunityScreen = () => {
               />
               <View style={styles.userDetails}>
                 <Text style={styles.userName}>{post.users?.display_name}</Text>
-                <Text style={styles.userHandle}>@{post.users?.username}</Text>
+                <View style={styles.userMetaRow}>
+                  <Text style={styles.userHandle}>@{post.users?.username}</Text>
+                  <Text style={styles.timestampDot}>•</Text>
+                  <Text style={styles.timestamp}>{formatTimeAgo(post.created_at || post.user_rankings?.created_at)}</Text>
+                </View>
               </View>
             </TouchableOpacity>
             {post.user_id === user?.id && (
@@ -359,6 +364,14 @@ const CommunityScreen = () => {
             <View style={styles.statItem}>
               <Trophy size={16} color={COLORS.accent} />
               <Text style={styles.statText}>{items.length > 0 ? `${items.length} itens` : 'Novo'}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Heart size={16} color={COLORS.textSecondary} />
+              <Text style={styles.statText}>{post.likes_count || 0}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <MessageCircle size={16} color={COLORS.textSecondary} />
+              <Text style={styles.statText}>{post.comments_count || 0}</Text>
             </View>
           </View>
 
@@ -390,7 +403,11 @@ const CommunityScreen = () => {
           />
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{post.users?.display_name}</Text>
-            <Text style={styles.userHandle}>@{post.users?.username}</Text>
+            <View style={styles.userMetaRow}>
+              <Text style={styles.userHandle}>@{post.users?.username}</Text>
+              <Text style={styles.timestampDot}>•</Text>
+              <Text style={styles.timestamp}>{formatTimeAgo(post.created_at)}</Text>
+            </View>
           </View>
         </TouchableOpacity>
         {post.user_id === user?.id && (
@@ -810,6 +827,21 @@ const styles = StyleSheet.create({
   userHandle: {
     fontSize: 14,
     color: COLORS.textSecondary,
+  },
+  userMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timestampDot: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  timestamp: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   engagementStats: {
     flexDirection: 'row',
