@@ -22,7 +22,7 @@ export default function NewsDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [webViewHeight, setWebViewHeight] = useState<number>(400);
-  const [heightStabilized, setHeightStabilized] = useState<boolean>(false);
+  const [isWebViewLoaded, setIsWebViewLoaded] = useState<boolean>(false);
 
   const newsQuery = trpc.news.getPostById.useQuery({
     postId: id!
@@ -202,11 +202,10 @@ export default function NewsDetailScreen() {
         }
       </style>
       <script>
-        let hasUpdated = false;
-        let finalHeight = 0;
+        let heightSent = false;
         
-        function calculateAndSendHeight() {
-          if (hasUpdated) return;
+        function sendHeight() {
+          if (heightSent) return;
           
           const height = Math.max(
             document.body.scrollHeight,
@@ -215,29 +214,23 @@ export default function NewsDetailScreen() {
             document.documentElement.offsetHeight
           );
           
-          if (height > 200 && height < 4000) {
-            finalHeight = height + 40;
-            hasUpdated = true;
+          if (height > 100) {
+            heightSent = true;
             window.ReactNativeWebView?.postMessage(JSON.stringify({ 
               type: 'height', 
-              height: finalHeight
+              height: height + 20
             }));
           }
         }
         
-        // Wait for everything to load completely
-        window.addEventListener('load', () => {
-          setTimeout(() => {
-            calculateAndSendHeight();
-          }, 1000);
-        });
-        
-        // Fallback for images that might load later
-        setTimeout(() => {
-          if (!hasUpdated) {
-            calculateAndSendHeight();
-          }
-        }, 2000);
+        // Send height once everything is loaded
+        if (document.readyState === 'complete') {
+          setTimeout(sendHeight, 100);
+        } else {
+          window.addEventListener('load', () => {
+            setTimeout(sendHeight, 100);
+          });
+        }
       </script>
     </head>
     <body>
@@ -316,10 +309,10 @@ export default function NewsDetailScreen() {
                     onMessage={(event) => {
                       try {
                         const data = JSON.parse(event.nativeEvent.data);
-                        if (data.type === 'height' && data.height && !heightStabilized) {
-                          const newHeight = Math.max(Math.min(data.height, 3000), 200);
+                        if (data.type === 'height' && data.height && !isWebViewLoaded) {
+                          const newHeight = Math.max(Math.min(data.height, 2500), 200);
                           setWebViewHeight(newHeight);
-                          setHeightStabilized(true);
+                          setIsWebViewLoaded(true);
                         }
                       } catch (e) {
                         console.log('WebView message parsing error:', e);
@@ -327,7 +320,7 @@ export default function NewsDetailScreen() {
                     }}
                     javaScriptEnabled={true}
                     domStorageEnabled={true}
-                    startInLoadingState={true}
+                    startInLoadingState={false}
                     mixedContentMode="compatibility"
                     allowsInlineMediaPlayback={true}
                     mediaPlaybackRequiresUserAction={false}
