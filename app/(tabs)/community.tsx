@@ -9,9 +9,11 @@ import {
   RefreshControl,
   ActivityIndicator,
   Platform,
+  Alert,
+  ActionSheetIOS,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Heart, MessageCircle, Trophy, Users, Plus } from 'lucide-react-native';
+import { Heart, MessageCircle, Trophy, Users, Plus, MoreVertical } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
@@ -40,6 +42,26 @@ const CommunityScreen = () => {
     },
     onError: (error: any) => {
       console.error('Error toggling post like:', error);
+    }
+  });
+
+  const deletePostMutation = trpc.community.deletePost.useMutation({
+    onSuccess: () => {
+      refetchPosts();
+    },
+    onError: (error: any) => {
+      console.error('Error deleting post:', error);
+      Alert.alert('Erro', 'Não foi possível deletar a publicação. Tente novamente.');
+    }
+  });
+
+  const deleteRankingMutation = trpc.rankings.deleteRanking.useMutation({
+    onSuccess: () => {
+      refetchPosts();
+    },
+    onError: (error: any) => {
+      console.error('Error deleting ranking:', error);
+      Alert.alert('Erro', 'Não foi possível deletar o ranking. Tente novamente.');
     }
   });
 
@@ -86,6 +108,66 @@ const CommunityScreen = () => {
 
   const handleDramaPress = (dramaId: number) => {
     router.push(`/drama/${dramaId}`);
+  };
+
+  const handleDeletePost = (postId: string) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancelar', 'Deletar publicação'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            deletePostMutation.mutate({ postId });
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        'Deletar publicação',
+        'Tem certeza que deseja deletar esta publicação?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Deletar',
+            style: 'destructive',
+            onPress: () => deletePostMutation.mutate({ postId })
+          }
+        ]
+      );
+    }
+  };
+
+  const handleDeleteRanking = (rankingId: string) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancelar', 'Deletar ranking'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            deleteRankingMutation.mutate({ rankingId });
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        'Deletar ranking',
+        'Tem certeza que deseja deletar este ranking?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Deletar',
+            style: 'destructive',
+            onPress: () => deleteRankingMutation.mutate({ rankingId })
+          }
+        ]
+      );
+    }
   };
 
   const renderTabButton = (tab: TabType, title: string, icon: React.ReactNode) => (
@@ -157,6 +239,15 @@ const CommunityScreen = () => {
                 <Text style={styles.userHandle}>@{post.users?.username}</Text>
               </View>
             </TouchableOpacity>
+            {post.user_id === user?.id && (
+              <TouchableOpacity 
+                style={styles.menuButton}
+                onPress={() => handleDeleteRanking(post.user_rankings?.id || post.ranking_id || post.id)}
+                testID={`ranking-menu-${post.id}`}
+              >
+                <MoreVertical size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
 
           <Text style={styles.rankingTitle}>{post.user_rankings?.title || 'Ranking'}</Text>
@@ -203,6 +294,15 @@ const CommunityScreen = () => {
             <Text style={styles.userHandle}>@{post.users?.username}</Text>
           </View>
         </TouchableOpacity>
+        {post.user_id === user?.id && (
+          <TouchableOpacity 
+            style={styles.menuButton}
+            onPress={() => handleDeletePost(post.id)}
+            testID={`post-menu-${post.id}`}
+          >
+            <MoreVertical size={20} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <Text style={styles.publicationContent}>{post.content}</Text>
@@ -450,9 +550,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  publicationHeader: {
-    marginBottom: 12,
-  },
+
   publicationContent: {
     fontSize: 16,
     color: COLORS.text,
@@ -510,6 +608,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  publicationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  menuButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   userInfo: {
     flexDirection: 'row',

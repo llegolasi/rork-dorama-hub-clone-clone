@@ -5,9 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
+  Alert,
+  ActionSheetIOS,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Heart, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, Heart, MessageCircle, MoreVertical } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/colors';
 
@@ -36,6 +39,16 @@ export default function RankingCommentsScreen() {
     }
   });
 
+  const deleteRankingMutation = trpc.rankings.deleteRanking.useMutation({
+    onSuccess: () => {
+      router.back();
+    },
+    onError: (error: any) => {
+      console.error('Error deleting ranking:', error);
+      Alert.alert('Erro', 'Não foi possível deletar o ranking. Tente novamente.');
+    }
+  });
+
 
   
   const ranking = rankingData?.ranking;
@@ -52,6 +65,36 @@ export default function RankingCommentsScreen() {
       });
     } catch (error) {
       console.error('Error liking ranking:', error);
+    }
+  };
+
+  const handleDeleteRanking = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancelar', 'Deletar ranking'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            deleteRankingMutation.mutate({ rankingId: id! });
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        'Deletar ranking',
+        'Tem certeza que deseja deletar este ranking?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Deletar',
+            style: 'destructive',
+            onPress: () => deleteRankingMutation.mutate({ rankingId: id! })
+          }
+        ]
+      );
     }
   };
 
@@ -114,6 +157,15 @@ export default function RankingCommentsScreen() {
                       </View>
                     </View>
                   </View>
+                  {ranking.user_id === user?.id && (
+                    <TouchableOpacity 
+                      style={styles.menuButton}
+                      onPress={handleDeleteRanking}
+                      testID={`ranking-menu-${ranking.id}`}
+                    >
+                      <MoreVertical size={20} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
                 
                 <View style={styles.rankingList}>
@@ -301,6 +353,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  menuButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   userAvatar: {
     width: 40,

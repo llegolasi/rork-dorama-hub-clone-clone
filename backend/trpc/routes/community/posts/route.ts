@@ -591,6 +591,65 @@ export const getNewsPostsProcedure = publicProcedure
     }
   });
 
+// Delete community post
+export const deletePostProcedure = protectedProcedure
+  .input(z.object({
+    postId: z.string().uuid()
+  }))
+  .mutation(async ({ input, ctx }: { input: { postId: string }; ctx: Context }) => {
+    try {
+      if (!ctx.user?.id) {
+        throw new Error('User ID is required');
+      }
+      
+      // Use authenticated supabase client for RLS
+      const authSupabase = getAuthenticatedSupabase(ctx);
+      
+      // Check if post exists and belongs to user
+      const { data: post, error: fetchError } = await authSupabase
+        .from('community_posts')
+        .select('user_id')
+        .eq('id', input.postId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching post:', fetchError);
+        if ((fetchError as any)?.code === 'PGRST116') {
+          throw new Error('Post not found');
+        }
+        throw new Error('Failed to fetch post');
+      }
+
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
+      if (post.user_id !== ctx.user.id) {
+        throw new Error('You can only delete your own posts');
+      }
+
+      // Delete the post
+      const { error: deleteError } = await authSupabase
+        .from('community_posts')
+        .delete()
+        .eq('id', input.postId)
+        .eq('user_id', ctx.user.id);
+
+      if (deleteError) {
+        console.error('Error deleting post:', deleteError);
+        throw new Error('Failed to delete post');
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Delete post procedure error:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to delete post');
+    }
+  });
+
 // Get single news post by ID
 export const getNewsPostByIdProcedure = publicProcedure
   .input(z.object({

@@ -376,3 +376,55 @@ export const toggleRankingCommentLikeProcedure = protectedProcedure
       throw new Error('Failed to toggle comment like');
     }
   });
+
+// Delete ranking
+export const deleteRankingProcedure = protectedProcedure
+  .input(z.object({
+    rankingId: z.string().uuid()
+  }))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      // Check if ranking exists and belongs to user
+      const { data: ranking, error: fetchError } = await ctx.supabase
+        .from('user_rankings')
+        .select('user_id')
+        .eq('id', input.rankingId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching ranking:', fetchError);
+        if ((fetchError as any)?.code === 'PGRST116') {
+          throw new Error('Ranking not found');
+        }
+        throw new Error('Failed to fetch ranking');
+      }
+
+      if (!ranking) {
+        throw new Error('Ranking not found');
+      }
+
+      if (ranking.user_id !== ctx.user.id) {
+        throw new Error('You can only delete your own rankings');
+      }
+
+      // Delete the ranking (this will cascade delete related items and posts)
+      const { error: deleteError } = await ctx.supabase
+        .from('user_rankings')
+        .delete()
+        .eq('id', input.rankingId)
+        .eq('user_id', ctx.user.id);
+
+      if (deleteError) {
+        console.error('Error deleting ranking:', deleteError);
+        throw new Error('Failed to delete ranking');
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Delete ranking procedure error:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to delete ranking');
+    }
+  });

@@ -6,9 +6,12 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
+  Platform,
+  Alert,
+  ActionSheetIOS,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Heart, MessageCircle } from 'lucide-react-native';
+import { Heart, MessageCircle, MoreVertical } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
 
@@ -34,6 +37,16 @@ const PostDetailScreen = () => {
     },
     onError: (error: any) => {
       console.error('Error toggling like:', error);
+    }
+  });
+
+  const deletePostMutation = trpc.community.deletePost.useMutation({
+    onSuccess: () => {
+      router.back();
+    },
+    onError: (error: any) => {
+      console.error('Error deleting post:', error);
+      Alert.alert('Erro', 'Não foi possível deletar a publicação. Tente novamente.');
     }
   });
 
@@ -69,6 +82,36 @@ const PostDetailScreen = () => {
 
   const handleDramaPress = (dramaId: number) => {
     router.push(`/drama/${dramaId}`);
+  };
+
+  const handleDeletePost = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancelar', 'Deletar publicação'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            deletePostMutation.mutate({ postId: id! });
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        'Deletar publicação',
+        'Tem certeza que deseja deletar esta publicação?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Deletar',
+            style: 'destructive',
+            onPress: () => deletePostMutation.mutate({ postId: id! })
+          }
+        ]
+      );
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -121,7 +164,18 @@ const PostDetailScreen = () => {
                       <Text style={styles.userHandle}>@{post.users?.username}</Text>
                     </View>
                   </TouchableOpacity>
-                  <Text style={styles.postTime}>{formatDate(post.created_at)}</Text>
+                  <View style={styles.postHeaderRight}>
+                    <Text style={styles.postTime}>{formatDate(post.created_at)}</Text>
+                    {post.user_id === user?.id && (
+                      <TouchableOpacity 
+                        style={styles.menuButton}
+                        onPress={handleDeletePost}
+                        testID={`post-menu-${post.id}`}
+                      >
+                        <MoreVertical size={20} color={COLORS.textSecondary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
 
                 <Text style={styles.postContent}>{post.content}</Text>
@@ -224,6 +278,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  postHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  menuButton: {
+    padding: 4,
   },
   userInfo: {
     flexDirection: 'row',
