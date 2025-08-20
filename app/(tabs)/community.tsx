@@ -503,7 +503,12 @@ const CommunityScreen = () => {
           const postType = item.post_type || (item.user_rankings ? 'ranking' : 'discussion');
           const timestamp = item.created_at || item.user_rankings?.created_at || Date.now();
           
-          return `${activeTab}-${postType}-${baseId}-${timestamp}`;
+          // Convert timestamp to a safe string format
+          const safeTimestamp = typeof timestamp === 'string' 
+            ? timestamp.replace(/[^a-zA-Z0-9]/g, '_') 
+            : String(timestamp);
+          
+          return `${activeTab}-${postType}-${baseId}-${safeTimestamp}-${index}`;
         }}
         renderItem={({ item }) => {
           if (activeTab === 'rankings' && item.post_type === 'ranking') {
