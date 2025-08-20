@@ -22,7 +22,8 @@ export default function NewsDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [webViewHeight, setWebViewHeight] = useState<number>(400);
-  const [isWebViewLoaded, setIsWebViewLoaded] = useState<boolean>(false);
+  const [contentLoaded, setContentLoaded] = useState<boolean>(false);
+  const [heightCalculated, setHeightCalculated] = useState<boolean>(false);
 
   const newsQuery = trpc.news.getPostById.useQuery({
     postId: id!
@@ -219,13 +220,28 @@ export default function NewsDetailScreen() {
         }
         
         // Send height once everything is loaded
+        let heightSent = false;
+        function sendHeightOnce() {
+          if (!heightSent) {
+            sendHeight();
+            heightSent = true;
+          }
+        }
+        
         if (document.readyState === 'complete') {
-          setTimeout(sendHeight, 100);
+          setTimeout(sendHeightOnce, 300);
         } else {
           window.addEventListener('load', () => {
-            setTimeout(sendHeight, 100);
+            setTimeout(sendHeightOnce, 300);
           });
         }
+        
+        // Fallback for images loading
+        setTimeout(() => {
+          if (!heightSent) {
+            sendHeightOnce();
+          }
+        }, 1500);
       </script>
     </head>
     <body>
@@ -295,33 +311,48 @@ export default function NewsDetailScreen() {
                     }}
                   />
                 ) : (
-                  <WebView
-                    source={{ html: htmlContent }}
-                    style={[styles.webView, { height: webViewHeight }]}
-                    scrollEnabled={false}
-                    showsVerticalScrollIndicator={false}
-                    showsHorizontalScrollIndicator={false}
-                    onMessage={(event) => {
-                      try {
-                        const data = JSON.parse(event.nativeEvent.data);
-                        if (data.type === 'height' && data.height) {
-                          const newHeight = Math.max(Math.min(data.height, 2500), 200);
-                          setWebViewHeight(newHeight);
-                          if (!isWebViewLoaded) {
-                            setIsWebViewLoaded(true);
-                          }
+                  <View style={styles.webViewContainer}>
+                    {!contentLoaded && (
+                      <View style={styles.webViewLoading}>
+                        <ActivityIndicator size="large" color={COLORS.accent} />
+                        <Text style={styles.loadingText}>Carregando conteúdo...</Text>
+                      </View>
+                    )}
+                    <WebView
+                      source={{ html: htmlContent }}
+                      style={[
+                        styles.webView, 
+                        { 
+                          height: webViewHeight,
+                          opacity: contentLoaded ? 1 : 0
                         }
-                      } catch (e) {
-                        console.log('WebView message parsing error:', e);
-                      }
-                    }}
-                    javaScriptEnabled={true}
-                    domStorageEnabled={true}
-                    startInLoadingState={false}
-                    mixedContentMode="compatibility"
-                    allowsInlineMediaPlayback={true}
-                    mediaPlaybackRequiresUserAction={false}
-                  />
+                      ]}
+                      scrollEnabled={false}
+                      showsVerticalScrollIndicator={false}
+                      showsHorizontalScrollIndicator={false}
+                      onMessage={(event) => {
+                        try {
+                          const data = JSON.parse(event.nativeEvent.data);
+                          if (data.type === 'height' && data.height && !heightCalculated) {
+                            const newHeight = Math.max(Math.min(data.height, 2500), 200);
+                            setWebViewHeight(newHeight);
+                            setHeightCalculated(true);
+                            setTimeout(() => {
+                              setContentLoaded(true);
+                            }, 200);
+                          }
+                        } catch (e) {
+                          console.log('WebView message parsing error:', e);
+                        }
+                      }}
+                      javaScriptEnabled={true}
+                      domStorageEnabled={true}
+                      startInLoadingState={false}
+                      mixedContentMode="compatibility"
+                      allowsInlineMediaPlayback={true}
+                      mediaPlaybackRequiresUserAction={false}
+                    />
+                  </View>
                 )}
               </View>
               </View>
@@ -399,6 +430,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     minHeight: 400,
   },
+  webViewContainer: {
+    position: 'relative',
+    minHeight: 400,
+  },
   webView: {
     backgroundColor: 'transparent',
     minHeight: 200,
@@ -413,6 +448,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.background,
+    zIndex: 1,
   },
   loadingContainer: {
     flex: 1,
