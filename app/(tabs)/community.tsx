@@ -472,7 +472,7 @@ const CommunityScreen = () => {
           if (item.user_rankings?.id) {
             return `${activeTab}-ranking-${item.user_rankings.id}`;
           }
-          return `${activeTab}-${index}-${Date.now()}`;
+          return `${activeTab}-fallback-${index}-${item.created_at || Date.now()}`;
         }}
         renderItem={({ item }) => {
           if (activeTab === 'rankings' && item.post_type === 'ranking') {
