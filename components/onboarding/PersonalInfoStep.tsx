@@ -20,7 +20,7 @@ interface PersonalInfoStepProps {
 }
 
 export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) {
-  const [selectedGender, setSelectedGender] = useState<GenderOption | null>(null);
+  const [selectedGender, setSelectedGender] = useState<GenderOption | undefined>(undefined);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -74,7 +74,7 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
   };
 
   const canProceed = (): boolean => {
-    return selectedGender !== null && birthDate !== null;
+    return selectedGender !== undefined && birthDate !== null;
   };
 
   const handleContinue = async () => {
@@ -127,7 +127,7 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
               }))}
               placeholder={{
                 label: 'Selecione seu gênero...',
-                value: null,
+                value: undefined,
                 color: COLORS.textSecondary
               }}
               style={{
