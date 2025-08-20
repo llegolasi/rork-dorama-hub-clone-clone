@@ -10,11 +10,11 @@ import {
   Alert,
   Image,
   ActionSheetIOS,
-  FlatList,
+  ScrollView,
   Keyboard,
 } from 'react-native';
 
-import { Heart, MessageCircle, MoreVertical, X } from 'lucide-react-native';
+import { Heart, MessageCircle, MoreVertical, X, Send } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trpc } from '@/lib/trpc';
@@ -42,22 +42,25 @@ interface Comment {
 interface NewsCommentSectionProps {
   articleId: string;
   type?: 'news';
+  renderContent?: () => React.ReactNode;
 }
 
 interface PostCommentSectionProps {
   postId: string;
   type: 'post';
+  renderContent?: () => React.ReactNode;
 }
 
 interface RankingCommentSectionProps {
   rankingId: string;
   type: 'ranking';
+  renderContent?: () => React.ReactNode;
 }
 
 type CommentSectionProps = NewsCommentSectionProps | PostCommentSectionProps | RankingCommentSectionProps;
 
 export default function InstagramStyleComments(props: CommentSectionProps) {
-  const { type = 'news' } = props;
+  const { type = 'news', renderContent } = props;
   const insets = useSafeAreaInsets();
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -66,7 +69,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
-  const flatListRef = useRef<FlatList | null>(null);
+  const scrollRef = useRef<ScrollView | null>(null);
 
   // Get the ID based on type
   const id = type === 'news' ? (props as NewsCommentSectionProps).articleId 
@@ -124,7 +127,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           setIsSubmitting(false);
           setReplyTo(null);
           commentsQuery.refetch();
-          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         },
         onError: (error) => {
           setIsSubmitting(false);
@@ -140,7 +143,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           setIsSubmitting(false);
           setReplyTo(null);
           commentsQuery.refetch();
-          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         },
         onError: (error) => {
           setIsSubmitting(false);
@@ -155,7 +158,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           setIsSubmitting(false);
           setReplyTo(null);
           commentsQuery.refetch();
-          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         },
         onError: (error) => {
           setIsSubmitting(false);
@@ -554,21 +557,27 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
     return baseHeight + replyBannerHeight + safeAreaBottom;
   }, [replyTo, insets.bottom]);
 
-  const flatListContentInset = useMemo(() => {
+  const scrollContentInset = useMemo(() => {
     return {
-      bottom: inputContainerHeight + (Platform.OS === 'android' ? 40 : 20)
+      paddingBottom: inputContainerHeight + 20
     };
   }, [inputContainerHeight]);
 
   return (
     <View style={styles.container}>
-      <FlatList
-        ref={flatListRef}
-        data={comments}
-        renderItem={renderComment}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={commentsQuery.isLoading ? (
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollContainer}
+        contentContainerStyle={scrollContentInset}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
+        {renderContent && renderContent()}
+        
+        {renderHeader()}
+        
+        {commentsQuery.isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.accent} />
             <Text style={styles.loadingText}>Carregando comentários...</Text>
@@ -583,19 +592,23 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
               <Text style={styles.retryText}>Tentar novamente</Text>
             </TouchableOpacity>
           </View>
-        ) : renderEmptyComments()}
-        contentContainerStyle={flatListContentInset}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-      />
+        ) : comments && comments.length > 0 ? (
+          comments.map((item: any) => (
+            <View key={item.id}>
+              {renderComment({ item })}
+            </View>
+          ))
+        ) : (
+          renderEmptyComments()
+        )}
+      </ScrollView>
       
       {/* Fixed Input Container */}
       <View 
         style={[
           styles.fixedInputContainer,
           {
-            bottom: keyboardHeight > 0 ? keyboardHeight - insets.bottom : 0,
+            bottom: 0,
             paddingBottom: keyboardHeight > 0 ? 8 : insets.bottom + 8,
           }
         ]}
@@ -645,9 +658,9 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
               testID="submit-comment"
             >
               {isSubmitting ? (
-                <ActivityIndicator size="small" color={COLORS.accent} />
+                <ActivityIndicator size="small" color={COLORS.text} />
               ) : (
-                <Text style={styles.submitButtonText}>Publicar</Text>
+                <Send size={18} color={COLORS.accent} />
               )}
             </TouchableOpacity>
           )}
@@ -661,6 +674,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  scrollContainer: {
+    flex: 1,
   },
   engagementSection: {
     paddingVertical: 16,
@@ -874,8 +890,12 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   submitButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   submitButtonText: {
     color: COLORS.accent,

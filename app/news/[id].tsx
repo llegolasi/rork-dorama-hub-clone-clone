@@ -275,83 +275,86 @@ export default function NewsDetailScreen() {
       />
       
       <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
-        <View style={styles.contentHeader}>
-          <View style={styles.header}>
-            <View style={styles.authorContainer}>
-              <View style={styles.authorAvatar}>
-                <Text style={styles.authorInitial}>📰</Text>
-              </View>
-              <View style={styles.authorInfo}>
-                <Text style={styles.authorName}>Dorama Hub</Text>
-                <View style={styles.timeContainer}>
-                  <Calendar size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.timeText}>
-                    {formatDate(post.published_at || post.created_at)}
-                  </Text>
+        <InstagramStyleComments 
+          articleId={post.id} 
+          renderContent={() => (
+            <View style={styles.contentHeader}>
+              <View style={styles.header}>
+                <View style={styles.authorContainer}>
+                  <View style={styles.authorAvatar}>
+                    <Text style={styles.authorInitial}>📰</Text>
+                  </View>
+                  <View style={styles.authorInfo}>
+                    <Text style={styles.authorName}>Dorama Hub</Text>
+                    <View style={styles.timeContainer}>
+                      <Calendar size={14} color={COLORS.textSecondary} />
+                      <Text style={styles.timeText}>
+                        {formatDate(post.published_at || post.created_at)}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </View>
-            </View>
-          </View>
-          
-          <Text style={styles.title}>{post.title}</Text>
-          
-          {post.cover_image_url && (
-            <Image 
-              source={{ uri: post.cover_image_url }}
-              style={styles.coverImage}
-              resizeMode="cover"
-            />
-          )}
-          
-          <View style={styles.contentContainer}>
-            {Platform.OS === 'web' ? (
-              <div 
-                dangerouslySetInnerHTML={{ __html: post.html_content }}
-                style={{
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                  lineHeight: '1.6',
-                  color: COLORS.text,
-                  fontSize: '16px'
-                }}
-              />
-            ) : (
-              <WebView
-                source={{ html: htmlContent }}
-                style={[styles.webView, { height: webViewHeight }]}
-                scrollEnabled={false}
-                showsVerticalScrollIndicator={false}
-                showsHorizontalScrollIndicator={false}
-                onMessage={(event) => {
-                  try {
-                    const data = JSON.parse(event.nativeEvent.data);
-                    if (data.type === 'height' && data.height) {
-                      const newHeight = Math.max(Math.min(data.height, 3000), 200); // Cap between 200-3000px
-                      // Only update if height changed significantly and is reasonable
-                      if (Math.abs(newHeight - webViewHeight) > 20 && newHeight !== webViewHeight) {
-                        setWebViewHeight(newHeight);
+              
+              <Text style={styles.title}>{post.title}</Text>
+              
+              {post.cover_image_url && (
+                <Image 
+                  source={{ uri: post.cover_image_url }}
+                  style={styles.coverImage}
+                  resizeMode="cover"
+                />
+              )}
+              
+              <View style={styles.contentContainer}>
+                {Platform.OS === 'web' ? (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: post.html_content }}
+                    style={{
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                      lineHeight: '1.6',
+                      color: COLORS.text,
+                      fontSize: '16px'
+                    }}
+                  />
+                ) : (
+                  <WebView
+                    source={{ html: htmlContent }}
+                    style={[styles.webView, { height: webViewHeight }]}
+                    scrollEnabled={false}
+                    showsVerticalScrollIndicator={false}
+                    showsHorizontalScrollIndicator={false}
+                    onMessage={(event) => {
+                      try {
+                        const data = JSON.parse(event.nativeEvent.data);
+                        if (data.type === 'height' && data.height) {
+                          const newHeight = Math.max(Math.min(data.height, 3000), 200); // Cap between 200-3000px
+                          // Only update if height changed significantly and is reasonable
+                          if (Math.abs(newHeight - webViewHeight) > 20 && newHeight !== webViewHeight) {
+                            setWebViewHeight(newHeight);
+                          }
+                        }
+                      } catch (e) {
+                        console.log('WebView message parsing error:', e);
                       }
-                    }
-                  } catch (e) {
-                    console.log('WebView message parsing error:', e);
-                  }
-                }}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={true}
-                mixedContentMode="compatibility"
-                allowsInlineMediaPlayback={true}
-                mediaPlaybackRequiresUserAction={false}
-                renderLoading={() => (
-                  <View style={styles.webViewLoading}>
-                    <ActivityIndicator size="small" color={COLORS.accent} />
-                  </View>
+                    }}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    startInLoadingState={true}
+                    mixedContentMode="compatibility"
+                    allowsInlineMediaPlayback={true}
+                    mediaPlaybackRequiresUserAction={false}
+                    renderLoading={() => (
+                      <View style={styles.webViewLoading}>
+                        <ActivityIndicator size="small" color={COLORS.accent} />
+                      </View>
+                    )}
+                  />
                 )}
-              />
-            )}
-          </View>
-        </View>
-        
-        <InstagramStyleComments articleId={post.id} />
+              </View>
+            </View>
+          )}
+        />
       </View>
     </>
   );
@@ -363,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   contentHeader: {
-    flex: 0,
+    paddingBottom: 20,
   },
   header: {
     paddingHorizontal: 20,
