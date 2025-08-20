@@ -465,7 +465,15 @@ const CommunityScreen = () => {
 
       <FlatList
         data={posts}
-        keyExtractor={(item, index) => item.id ? String(item.id) : `post-${index}`}
+        keyExtractor={(item, index) => {
+          if (item.id) {
+            return `${activeTab}-${item.post_type || 'unknown'}-${item.id}`;
+          }
+          if (item.user_rankings?.id) {
+            return `${activeTab}-ranking-${item.user_rankings.id}`;
+          }
+          return `${activeTab}-${index}-${Date.now()}`;
+        }}
         renderItem={({ item }) => {
           if (activeTab === 'rankings' && item.post_type === 'ranking') {
             return renderRankingCard(item);
