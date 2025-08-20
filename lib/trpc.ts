@@ -23,9 +23,26 @@ export const trpcClient = trpc.createClient({
       transformer: superjson,
       headers: async () => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Session error:', error);
+            return {
+              'Content-Type': 'application/json',
+            };
+          }
+          
+          if (!session?.access_token) {
+            console.log('No valid session found for tRPC request. Session:', session);
+            return {
+              'Content-Type': 'application/json',
+            };
+          }
+          
+          console.log('Using session token for tRPC request:', session.access_token.substring(0, 20) + '...')
+          
           return {
-            authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
+            authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           };
         } catch (error) {

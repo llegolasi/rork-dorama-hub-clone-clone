@@ -19,7 +19,13 @@ export default function UserStatsDisplay({ userId, isOwnProfile = false }: UserS
     { 
       enabled: !!userId && userId !== '' && userId.length > 0 && userId !== 'undefined',
       refetchOnMount: true,
-      retry: 2,
+      retry: (failureCount, error) => {
+        // Don't retry on authentication errors
+        if (error?.message?.includes('UNAUTHORIZED') || error?.message?.includes('401')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
       retryDelay: 1000
     }
   );

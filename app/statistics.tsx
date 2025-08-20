@@ -49,7 +49,13 @@ export default function StatisticsScreen() {
     {
       enabled: !!user?.id && user.id !== '' && user.id.length > 0,
       refetchOnMount: true,
-      retry: 2,
+      retry: (failureCount, error) => {
+        // Don't retry on authentication errors
+        if (error?.message?.includes('UNAUTHORIZED') || error?.message?.includes('401')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
       retryDelay: 1000,
     }
   );
