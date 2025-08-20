@@ -276,7 +276,6 @@ const CommunityScreen = () => {
     return (
       <View style={styles.cardContainer}>
         <TouchableOpacity
-          key={post.id}
           style={styles.rankingCard}
           onPress={() => handleRankingPress(post)}
           testID={`ranking-card-${post.id}`}
@@ -360,7 +359,6 @@ const CommunityScreen = () => {
   const renderPublicationCard = (post: any) => (
     <View style={styles.cardContainer}>
       <TouchableOpacity
-        key={post.id}
         style={styles.publicationCard}
         onPress={() => handlePublicationPress(post)}
       >
