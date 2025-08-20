@@ -22,6 +22,7 @@ export default function NewsDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [webViewHeight, setWebViewHeight] = useState<number>(400);
+  const [heightStabilized, setHeightStabilized] = useState<boolean>(false);
 
   const newsQuery = trpc.news.getPostById.useQuery({
     postId: id!
@@ -201,17 +202,11 @@ export default function NewsDetailScreen() {
         }
       </style>
       <script>
-        let lastHeight = 0;
-        let heightUpdateCount = 0;
-        const maxUpdates = 3;
-        let isUpdating = false;
+        let hasUpdated = false;
+        let finalHeight = 0;
         
-        function updateHeight() {
-          if (heightUpdateCount >= maxUpdates || isUpdating) {
-            return;
-          }
-          
-          isUpdating = true;
+        function calculateAndSendHeight() {
+          if (hasUpdated) return;
           
           const height = Math.max(
             document.body.scrollHeight,
@@ -220,35 +215,29 @@ export default function NewsDetailScreen() {
             document.documentElement.offsetHeight
           );
           
-          // Only update if height changed significantly (more than 20px) and is reasonable
-          if (Math.abs(height - lastHeight) > 20 && height > 100 && height < 5000) {
-            lastHeight = height;
-            heightUpdateCount++;
+          if (height > 200 && height < 4000) {
+            finalHeight = height + 40;
+            hasUpdated = true;
             window.ReactNativeWebView?.postMessage(JSON.stringify({ 
               type: 'height', 
-              height: Math.min(height + 40, 3000) // Cap at 3000px
+              height: finalHeight
             }));
           }
-          
-          setTimeout(() => {
-            isUpdating = false;
-          }, 500);
         }
         
-        // Single update after everything is loaded
+        // Wait for everything to load completely
         window.addEventListener('load', () => {
-          setTimeout(updateHeight, 500);
+          setTimeout(() => {
+            calculateAndSendHeight();
+          }, 1000);
         });
         
-        // Update height after images load (with debounce)
-        let imageLoadTimeout;
-        const images = document.querySelectorAll('img');
-        images.forEach(img => {
-          img.addEventListener('load', () => {
-            clearTimeout(imageLoadTimeout);
-            imageLoadTimeout = setTimeout(updateHeight, 300);
-          });
-        });
+        // Fallback for images that might load later
+        setTimeout(() => {
+          if (!hasUpdated) {
+            calculateAndSendHeight();
+          }
+        }, 2000);
       </script>
     </head>
     <body>
@@ -327,12 +316,10 @@ export default function NewsDetailScreen() {
                     onMessage={(event) => {
                       try {
                         const data = JSON.parse(event.nativeEvent.data);
-                        if (data.type === 'height' && data.height) {
-                          const newHeight = Math.max(Math.min(data.height, 3000), 200); // Cap between 200-3000px
-                          // Only update if height changed significantly and is reasonable
-                          if (Math.abs(newHeight - webViewHeight) > 20 && newHeight !== webViewHeight) {
-                            setWebViewHeight(newHeight);
-                          }
+                        if (data.type === 'height' && data.height && !heightStabilized) {
+                          const newHeight = Math.max(Math.min(data.height, 3000), 200);
+                          setWebViewHeight(newHeight);
+                          setHeightStabilized(true);
                         }
                       } catch (e) {
                         console.log('WebView message parsing error:', e);
