@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, KeyboardAvoidingView, Platform, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { ONBOARDING_STEPS, OnboardingStep } from '@/constants/onboarding';
@@ -12,7 +12,6 @@ import PreferencesStep from '@/components/onboarding/PreferencesStep';
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(ONBOARDING_STEPS.LOGIN);
-  const insets = useSafeAreaInsets();
 
   const handleStepComplete = (step: OnboardingStep) => {
     switch (step) {
@@ -67,25 +66,19 @@ export default function OnboardingScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.backgroundContainer, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
-        <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['bottom'] : []}>
-          <KeyboardAvoidingView 
-            style={styles.keyboardView}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          >
-            {renderStep()}
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView 
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {renderStep()}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background
-  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background

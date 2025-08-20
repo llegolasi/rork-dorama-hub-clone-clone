@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View, Platform, Modal, Pressable } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import OptimizedImage from '@/components/OptimizedImage';
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -271,14 +271,13 @@ export default function DiscoverScreen() {
   }, [router, featuredDrama, newsQuery.data, handleRefresh, handleAddToList, setShowAddModal]);
 
   return (
-    <View style={[styles.backgroundContainer, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
-      <SafeAreaView style={styles.safeContainer} edges={Platform.OS === 'ios' ? ['top', 'bottom'] : ['bottom']}>
-        <FlatList
-          style={styles.container}
-          contentContainerStyle={[
-            styles.content, 
-            { paddingTop: Platform.OS === 'ios' ? 16 : 16 }
-          ]}
+    <>
+      <FlatList
+        style={styles.container}
+        contentContainerStyle={[
+          styles.content, 
+          { paddingTop: Platform.OS === 'ios' ? insets.top + 16 : 16 }
+        ]}
         data={sections}
         keyExtractor={(s) => s.id}
         renderItem={renderSection}
@@ -333,20 +332,12 @@ export default function DiscoverScreen() {
             </View>
           </View>
         </Pressable>
-        </Modal>
-      </SafeAreaView>
-    </View>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  safeContainer: {
-    flex: 1,
-  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

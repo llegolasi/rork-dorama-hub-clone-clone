@@ -152,14 +152,6 @@ export const [AuthContext, useAuth] = createContextHook(() => {
   useEffect(() => {
     const loadAuthData = async () => {
       try {
-        // Always check for stored user first for persistence
-        const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-          console.log('Loaded user from storage:', parsedUser.username);
-        }
-        
         if (hasValidSupabaseConfig) {
           // Check for existing Supabase session
           const { data: { session } } = await supabase.auth.getSession();
@@ -184,12 +176,13 @@ export const [AuthContext, useAuth] = createContextHook(() => {
                 createdAt: profile.created_at
               };
               setUser(authUser);
-              // Update stored user with latest data
-              await AsyncStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(authUser));
             }
-          } else if (!storedUser) {
-            // No session and no stored user
-            setUser(null);
+          }
+        } else {
+          // Development mode - check for stored user
+          const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
           }
         }
         

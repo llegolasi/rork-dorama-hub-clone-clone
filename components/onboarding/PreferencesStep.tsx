@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,13 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
-  Dimensions,
-  Platform
+  Dimensions
 } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { DRAMA_GENRES } from '@/constants/onboarding';
+import { DRAMA_GENRES, getFilteredDramas } from '@/constants/onboarding';
 import { useAuth } from '@/hooks/useAuth';
-import OptimizedImage from '@/components/OptimizedImage';
 
 interface PreferencesStepProps {
   onComplete: () => void;
@@ -24,120 +22,13 @@ interface PreferencesStepProps {
 const { width } = Dimensions.get('window');
 const posterWidth = (width - 72) / 3; // 3 columns with padding
 
-interface Drama {
-  id: number;
-  name: string;
-  poster_path: string;
-  vote_average: number;
-  first_air_date: string;
-}
-
 export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [lovedDramas, setLovedDramas] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [dramasLoading, setDramasLoading] = useState<boolean>(true);
-  const [topRatedDramas, setTopRatedDramas] = useState<Drama[]>([]);
   
   const { completeOnboarding } = useAuth();
-
-  // Fetch top-rated K-dramas from TMDB
-  useEffect(() => {
-    const fetchTopRatedDramas = async () => {
-      try {
-        setDramasLoading(true);
-        const response = await fetch(
-          'https://api.themoviedb.org/3/discover/tv?api_key=YOUR_TMDB_API_KEY&with_origin_country=KR&sort_by=vote_average.desc&vote_count.gte=100&page=1'
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          const dramas: Drama[] = data.results
-            .filter((drama: any) => drama.poster_path && drama.vote_average > 7.0)
-            .slice(0, 15)
-            .map((drama: any) => ({
-              id: drama.id,
-              name: drama.name,
-              poster_path: drama.poster_path,
-              vote_average: drama.vote_average,
-              first_air_date: drama.first_air_date
-            }));
-          setTopRatedDramas(dramas);
-        } else {
-          // Fallback to static data if API fails
-          const fallbackDramas: Drama[] = [
-            {
-              id: 124364,
-              name: 'Squid Game',
-              poster_path: '/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
-              vote_average: 8.0,
-              first_air_date: '2021-09-17'
-            },
-            {
-              id: 69050,
-              name: 'Crash Landing on You',
-              poster_path: '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
-              vote_average: 8.7,
-              first_air_date: '2019-12-14'
-            },
-            {
-              id: 83097,
-              name: 'Kingdom',
-              poster_path: '/qXbqzMRhXgp4W6HZHZVVYhKqgVF.jpg',
-              vote_average: 8.3,
-              first_air_date: '2019-01-25'
-            },
-            {
-              id: 70593,
-              name: 'Reply 1988',
-              poster_path: '/lbB1VcWJp1vlb7Ew9GVYKZKa2Xj.jpg',
-              vote_average: 9.0,
-              first_air_date: '2015-11-06'
-            },
-            {
-              id: 61889,
-              name: 'Goblin',
-              poster_path: '/qT4YIlKpOjOKxKoI6QOONx7FIZE.jpg',
-              vote_average: 8.6,
-              first_air_date: '2016-12-02'
-            },
-            {
-              id: 85271,
-              name: 'Hospital Playlist',
-              poster_path: '/1tKwjkKU2cWqbQzL8kYYNQpBbWX.jpg',
-              vote_average: 8.8,
-              first_air_date: '2020-03-12'
-            }
-          ];
-          setTopRatedDramas(fallbackDramas);
-        }
-      } catch (error) {
-        console.error('Error fetching dramas:', error);
-        // Use fallback data on error
-        const fallbackDramas: Drama[] = [
-          {
-            id: 124364,
-            name: 'Squid Game',
-            poster_path: '/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
-            vote_average: 8.0,
-            first_air_date: '2021-09-17'
-          },
-          {
-            id: 69050,
-            name: 'Crash Landing on You',
-            poster_path: '/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
-            vote_average: 8.7,
-            first_air_date: '2019-12-14'
-          }
-        ];
-        setTopRatedDramas(fallbackDramas);
-      } finally {
-        setDramasLoading(false);
-      }
-    };
-
-    fetchTopRatedDramas();
-  }, []);
+  const filteredDramas = getFilteredDramas();
 
   const toggleGenre = (genreId: string) => {
     setSelectedGenres(prev => {
@@ -260,47 +151,28 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
           <Text style={styles.sectionSubtitle}>
             Toque nos doramas que você já assistiu e gostou
           </Text>
-          
-          {dramasLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={COLORS.accent} />
-              <Text style={styles.loadingText}>Carregando doramas populares...</Text>
-            </View>
-          ) : (
-            <View style={styles.dramaGrid}>
-              {topRatedDramas.map((drama, index) => {
-                const isSelected = lovedDramas.includes(drama.id);
-                return (
-                  <TouchableOpacity
-                    key={`drama-${drama.id}-${index}`}
-                    style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
-                    onPress={() => toggleDrama(drama.id)}
-                  >
-                    {Platform.OS === 'android' ? (
-                      <OptimizedImage 
-                        source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} 
-                        style={styles.dramaPoster}
-                      />
-                    ) : (
-                      <Image 
-                        source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} 
-                        style={styles.dramaPoster}
-                        resizeMode="cover"
-                      />
-                    )}
-                    {isSelected && (
-                      <View style={styles.selectedOverlay}>
-                        <Check size={24} color={COLORS.text} />
-                      </View>
-                    )}
-                    <Text style={styles.dramaTitle} numberOfLines={2}>
-                      {drama.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+          <View style={styles.dramaGrid}>
+            {filteredDramas.map((drama, index) => {
+              const isSelected = lovedDramas.includes(drama.id);
+              return (
+                <TouchableOpacity
+                  key={`drama-${drama.id}-${index}`}
+                  style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
+                  onPress={() => toggleDrama(drama.id)}
+                >
+                  <Image source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} style={styles.dramaPoster} />
+                  {isSelected && (
+                    <View style={styles.selectedOverlay}>
+                      <Check size={24} color={COLORS.text} />
+                    </View>
+                  )}
+                  <Text style={styles.dramaTitle} numberOfLines={2}>
+                    {drama.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.buttonContainer}>
@@ -432,17 +304,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
     lineHeight: 16,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
   },
   buttonContainer: {
     gap: 12,
