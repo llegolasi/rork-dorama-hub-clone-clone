@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,11 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Heart, MessageCircle } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,7 +20,6 @@ const PostDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
 
   // Fetch post details
   const { data: postData, isLoading, refetch } = trpc.community.getPostDetails.useQuery(
@@ -85,16 +82,8 @@ const PostDetailScreen = () => {
     return `${Math.floor(diffInHours / 24)}d atrás`;
   };
 
-  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
-
-
-
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior="padding"
-      keyboardVerticalOffset={keyboardOffset}
-    >
+    <View style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Publicação',
@@ -211,9 +200,7 @@ const PostDetailScreen = () => {
           <Text style={styles.errorText}>Publicação não encontrada</Text>
         </View>
       )}
-
-
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

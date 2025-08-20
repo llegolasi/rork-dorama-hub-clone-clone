@@ -1,17 +1,15 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { ArrowLeft, Heart, MessageCircle } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,7 +19,6 @@ import InstagramStyleComments from '@/components/InstagramStyleComments';
 export default function RankingCommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
 
   // Fetch ranking details
   const { data: rankingData, isLoading, refetch } = trpc.rankings.getRankingDetails.useQuery(
@@ -62,14 +59,8 @@ export default function RankingCommentsScreen() {
 
 
 
-  const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
-
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior="padding"
-      keyboardVerticalOffset={keyboardOffset}
-    >
+    <View style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Comentários',
@@ -162,9 +153,7 @@ export default function RankingCommentsScreen() {
           <Text style={styles.errorText}>Ranking não encontrado</Text>
         </View>
       )}
-      
-
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
