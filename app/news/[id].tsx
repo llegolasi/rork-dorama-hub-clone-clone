@@ -23,6 +23,7 @@ export default function NewsDetailScreen() {
   const insets = useSafeAreaInsets();
   const [webViewHeight, setWebViewHeight] = useState<number>(400);
   const [isWebViewLoaded, setIsWebViewLoaded] = useState<boolean>(false);
+  const [isContentReady, setIsContentReady] = useState<boolean>(Platform.OS === 'web');
 
   const newsQuery = trpc.news.getPostById.useQuery({
     postId: id!
@@ -220,15 +221,22 @@ export default function NewsDetailScreen() {
               type: 'height', 
               height: height + 20
             }));
+            
+            // Signal that content is ready after height is set
+            setTimeout(() => {
+              window.ReactNativeWebView?.postMessage(JSON.stringify({ 
+                type: 'ready'
+              }));
+            }, 200);
           }
         }
         
         // Send height once everything is loaded
         if (document.readyState === 'complete') {
-          setTimeout(sendHeight, 100);
+          setTimeout(sendHeight, 300);
         } else {
           window.addEventListener('load', () => {
-            setTimeout(sendHeight, 100);
+            setTimeout(sendHeight, 300);
           });
         }
       </script>
@@ -257,10 +265,16 @@ export default function NewsDetailScreen() {
       />
       
       <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
-        <InstagramStyleComments 
-          articleId={post.id} 
-          renderContent={() => (
-            <View style={styles.contentHeader}>
+        {!isContentReady ? (
+          <View style={styles.fullScreenLoading}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+            <Text style={styles.loadingText}>Carregando notícia...</Text>
+          </View>
+        ) : (
+          <InstagramStyleComments 
+            articleId={post.id} 
+            renderContent={() => (
+              <View style={styles.contentHeader}>
               <View style={styles.header}>
                 <View style={styles.authorContainer}>
                   <View style={styles.authorAvatar}>
@@ -313,6 +327,10 @@ export default function NewsDetailScreen() {
                           const newHeight = Math.max(Math.min(data.height, 2500), 200);
                           setWebViewHeight(newHeight);
                           setIsWebViewLoaded(true);
+                        } else if (data.type === 'ready') {
+                          setTimeout(() => {
+                            setIsContentReady(true);
+                          }, 100);
                         }
                       } catch (e) {
                         console.log('WebView message parsing error:', e);
@@ -332,9 +350,10 @@ export default function NewsDetailScreen() {
                   />
                 )}
               </View>
-            </View>
-          )}
-        />
+              </View>
+            )}
+          />
+        )}
       </View>
     </>
   );
@@ -452,5 +471,11 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  fullScreenLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
   },
 });
