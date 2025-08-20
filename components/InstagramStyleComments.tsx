@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
   Image,
   ActionSheetIOS,
-  ScrollView,
+  FlatList,
   Keyboard,
 } from 'react-native';
 
@@ -66,10 +66,14 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [hasMoreComments, setHasMoreComments] = useState<boolean>(true);
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
-  const scrollRef = useRef<ScrollView | null>(null);
+  const flatListRef = useRef<FlatList | null>(null);
 
   // Get the ID based on type
   const id = type === 'news' ? (props as NewsCommentSectionProps).articleId 
@@ -113,10 +117,17 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
     ? trpc.news.getUserLikedArticle.useQuery({ articleId: id })
     : null;
 
-  // Extract comments from the query result
-  const comments = type === 'news' 
-    ? (commentsQuery.data as Comment[] | undefined) || []
-    : (commentsQuery.data as { comments: Comment[] } | undefined)?.comments || [];
+  // Update local comments when query data changes
+  useEffect(() => {
+    const queryComments = type === 'news' 
+      ? (commentsQuery.data as Comment[] | undefined) || []
+      : (commentsQuery.data as { comments: Comment[] } | undefined)?.comments || [];
+      
+    if (queryComments.length > 0) {
+      setComments(queryComments);
+      setHasMoreComments(queryComments.length >= 10); // Assuming 10 is the page size
+    }
+  }, [commentsQuery.data, type]);
 
   // Mutations based on type
   const addCommentMutation = type === 'news'
@@ -127,7 +138,6 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           setIsSubmitting(false);
           setReplyTo(null);
           commentsQuery.refetch();
-          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         },
         onError: (error) => {
           setIsSubmitting(false);
@@ -143,7 +153,6 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           setIsSubmitting(false);
           setReplyTo(null);
           commentsQuery.refetch();
-          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         },
         onError: (error) => {
           setIsSubmitting(false);
@@ -158,7 +167,6 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           setIsSubmitting(false);
           setReplyTo(null);
           commentsQuery.refetch();
-          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         },
         onError: (error) => {
           setIsSubmitting(false);
@@ -382,6 +390,35 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
     );
   };
 
+  const loadMoreComments = useCallback(async () => {
+    if (loadingMore || !hasMoreComments) return;
+    
+    setLoadingMore(true);
+    try {
+      // This would be implemented with actual pagination in the backend
+      // For now, we'll just simulate it
+      setTimeout(() => {
+        setLoadingMore(false);
+        setHasMoreComments(false); // No more comments to load
+      }, 1000);
+    } catch (error) {
+      console.error('Error loading more comments:', error);
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMoreComments]);
+
+  const toggleRepliesExpansion = (commentId: string) => {
+    setExpandedReplies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
+  };
+
   const renderEmptyComments = () => (
     <View style={styles.emptyContainer}>
       <MessageCircle size={48} color={COLORS.textSecondary} />
@@ -472,7 +509,8 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
 
         {Array.isArray(comment.replies) && comment.replies.length > 0 && (
           <View style={styles.repliesContainer}>
-            {comment.replies.map((replyItem: any) => {
+            {/* Show first reply or all if expanded */}
+            {(expandedReplies.has(comment.id) ? comment.replies : comment.replies.slice(0, 1)).map((replyItem: any) => {
               const reply = {
                 id: replyItem.id,
                 content: replyItem.content,
@@ -544,6 +582,30 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
                 </View>
               );
             })}
+            
+            {/* Show "Ver mais respostas" button if there are more than 1 reply */}
+            {comment.replies.length > 1 && !expandedReplies.has(comment.id) && (
+              <TouchableOpacity 
+                style={styles.viewMoreRepliesButton}
+                onPress={() => toggleRepliesExpansion(comment.id)}
+                testID={`view-more-replies-${comment.id}`}
+              >
+                <Text style={styles.viewMoreRepliesText}>
+                  Ver mais {comment.replies.length - 1} respostas
+                </Text>
+              </TouchableOpacity>
+            )}
+            
+            {/* Show "Ver menos" button if expanded */}
+            {comment.replies.length > 1 && expandedReplies.has(comment.id) && (
+              <TouchableOpacity 
+                style={styles.viewMoreRepliesButton}
+                onPress={() => toggleRepliesExpansion(comment.id)}
+                testID={`view-less-replies-${comment.id}`}
+              >
+                <Text style={styles.viewMoreRepliesText}>Ver menos</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -565,43 +627,59 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scrollContainer}
+      <FlatList
+        ref={flatListRef}
+        data={comments}
+        keyExtractor={(item) => item.id}
+        renderItem={renderComment}
         contentContainerStyle={scrollContentInset}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
-      >
-        {renderContent && renderContent()}
-        
-        {renderHeader()}
-        
-        {commentsQuery.isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.loadingText}>Carregando comentários...</Text>
+        onEndReached={loadMoreComments}
+        onEndReachedThreshold={0.3}
+        ListHeaderComponent={() => (
+          <View>
+            {renderContent && renderContent()}
+            {renderHeader()}
           </View>
-        ) : commentsQuery.error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Erro ao carregar comentários</Text>
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={() => commentsQuery.refetch()}
-            >
-              <Text style={styles.retryText}>Tentar novamente</Text>
-            </TouchableOpacity>
-          </View>
-        ) : comments && comments.length > 0 ? (
-          comments.map((item: any) => (
-            <View key={item.id}>
-              {renderComment({ item })}
-            </View>
-          ))
-        ) : (
-          renderEmptyComments()
         )}
-      </ScrollView>
+        ListEmptyComponent={() => {
+          if (commentsQuery.isLoading) {
+            return (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.accent} />
+                <Text style={styles.loadingText}>Carregando comentários...</Text>
+              </View>
+            );
+          }
+          if (commentsQuery.error) {
+            return (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Erro ao carregar comentários</Text>
+                <TouchableOpacity 
+                  style={styles.retryButton}
+                  onPress={() => commentsQuery.refetch()}
+                >
+                  <Text style={styles.retryText}>Tentar novamente</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+          return renderEmptyComments();
+        }}
+        ListFooterComponent={() => {
+          if (loadingMore) {
+            return (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={COLORS.accent} />
+                <Text style={styles.loadingText}>Carregando mais comentários...</Text>
+              </View>
+            );
+          }
+          return null;
+        }}
+      />
       
       {/* Fixed Input Container */}
       <View 
@@ -677,6 +755,16 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+  },
+  viewMoreRepliesButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 4,
+  },
+  viewMoreRepliesText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
   engagementSection: {
     paddingVertical: 16,

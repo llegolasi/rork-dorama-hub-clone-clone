@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Image,
   StyleSheet,
@@ -13,32 +13,82 @@ import {
   ActionSheetIOS,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Heart, MessageCircle, Trophy, Users, Plus, MoreVertical } from 'lucide-react-native';
+import { Heart, MessageCircle, Trophy, Users, Plus, MoreVertical, TrendingUp, Clock } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
-import { trpc } from '@/lib/trpc';
+import { trpc, trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 
 type TabType = 'rankings' | 'publications';
+type SortType = 'recent' | 'popular';
 
 const CommunityScreen = () => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabType>('rankings');
+  const [sortBy, setSortBy] = useState<SortType>('recent');
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
 
-  // Fetch community posts
-  const { data: communityPosts, isLoading: postsLoading, refetch: refetchPosts } = trpc.community.getPosts.useQuery({
+  // Fetch community posts with pagination
+  const fetchPosts = useCallback(async (offset: number = 0, isRefresh: boolean = false) => {
+    try {
+      const response = await trpcClient.community.getPosts.query({
+        type: activeTab === 'rankings' ? 'rankings' : 'discussions',
+        limit: 10,
+        offset,
+        sortBy
+      });
+      
+      if (isRefresh) {
+        setPosts(response);
+        setHasMore(response.length === 10);
+      } else {
+        setPosts(prev => [...prev, ...response]);
+        setHasMore(response.length === 10);
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
+  }, [activeTab, sortBy]);
+
+  // Initial load
+  const { isLoading: postsLoading } = trpc.community.getPosts.useQuery({
     type: activeTab === 'rankings' ? 'rankings' : 'discussions',
-    limit: 20,
-    offset: 0
+    limit: 10,
+    offset: 0,
+    sortBy
   });
+
+  // Handle initial data
+  React.useEffect(() => {
+    if (postsLoading) return;
+    
+    const loadInitialData = async () => {
+      try {
+        const data = await trpcClient.community.getPosts.query({
+          type: activeTab === 'rankings' ? 'rankings' : 'discussions',
+          limit: 10,
+          offset: 0,
+          sortBy
+        });
+        setPosts(data);
+        setHasMore(data.length === 10);
+      } catch (error) {
+        console.error('Error loading initial posts:', error);
+      }
+    };
+    
+    loadInitialData();
+  }, [activeTab, sortBy, postsLoading]);
 
   // Mutations
   const togglePostLikeMutation = trpc.community.togglePostLike.useMutation({
     onSuccess: () => {
-      refetchPosts();
+      fetchPosts(0, true);
     },
     onError: (error: any) => {
       console.error('Error toggling post like:', error);
@@ -47,7 +97,7 @@ const CommunityScreen = () => {
 
   const deletePostMutation = trpc.community.deletePost.useMutation({
     onSuccess: () => {
-      refetchPosts();
+      fetchPosts(0, true);
     },
     onError: (error: any) => {
       console.error('Error deleting post:', error);
@@ -57,7 +107,7 @@ const CommunityScreen = () => {
 
   const deleteRankingMutation = trpc.rankings.deleteRanking.useMutation({
     onSuccess: () => {
-      refetchPosts();
+      fetchPosts(0, true);
     },
     onError: (error: any) => {
       console.error('Error deleting ranking:', error);
@@ -68,13 +118,33 @@ const CommunityScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await refetchPosts();
+      await fetchPosts(0, true);
     } catch (error) {
       console.error('Error refreshing posts:', error);
     } finally {
       setRefreshing(false);
     }
   };
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    try {
+      await fetchPosts(posts.length, false);
+    } catch (error) {
+      console.error('Error loading more posts:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Reset posts when tab or sort changes
+  React.useEffect(() => {
+    setPosts([]);
+    setHasMore(true);
+    fetchPosts(0, true);
+  }, [activeTab, sortBy, fetchPosts]);
 
   const handleRankingPress = (post: any) => {
     const rankingId = post?.user_rankings?.id || post?.ranking_id || post?.id;
@@ -183,6 +253,19 @@ const CommunityScreen = () => {
     </TouchableOpacity>
   );
 
+  const renderSortButton = (sort: SortType, title: string, icon: React.ReactNode) => (
+    <TouchableOpacity
+      style={[styles.sortButton, sortBy === sort && styles.activeSortButton]}
+      onPress={() => setSortBy(sort)}
+      testID={`sort-${sort}`}
+    >
+      <View style={styles.sortIcon} accessibilityElementsHidden>{icon}</View>
+      <Text style={[styles.sortText, sortBy === sort && styles.activeSortText]}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const renderRankingCard = (post: any) => {
     if (!post.user_rankings) return null;
 
@@ -191,12 +274,13 @@ const CommunityScreen = () => {
     const topItems = items.slice(0, 3);
 
     return (
-      <TouchableOpacity
-        key={post.id}
-        style={styles.rankingCard}
-        onPress={() => handleRankingPress(post)}
-        testID={`ranking-card-${post.id}`}
-      >
+      <View style={styles.cardContainer}>
+        <TouchableOpacity
+          key={post.id}
+          style={styles.rankingCard}
+          onPress={() => handleRankingPress(post)}
+          testID={`ranking-card-${post.id}`}
+        >
         <View style={styles.rankingBanner}>
           {topItems.length > 0 ? (
             <View style={styles.bannerRow}>
@@ -268,16 +352,18 @@ const CommunityScreen = () => {
             <Text style={styles.actionButtonText}>Ver Ranking e Comentar</Text>
           </View>
         </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     );
   };
 
   const renderPublicationCard = (post: any) => (
-    <TouchableOpacity
-      key={post.id}
-      style={styles.publicationCard}
-      onPress={() => handlePublicationPress(post)}
-    >
+    <View style={styles.cardContainer}>
+      <TouchableOpacity
+        key={post.id}
+        style={styles.publicationCard}
+        onPress={() => handlePublicationPress(post)}
+      >
       <View style={styles.publicationHeader}>
         <TouchableOpacity 
           style={styles.userInfo}
@@ -342,7 +428,8 @@ const CommunityScreen = () => {
           <Text style={styles.statText}>{post.comments_count || 0}</Text>
         </View>
       </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -364,53 +451,80 @@ const CommunityScreen = () => {
           <Users size={18} color={activeTab === 'publications' ? COLORS.accent : COLORS.textSecondary} />
         )}
       </View>
+      
+      <View style={styles.sortContainer}>
+        {renderSortButton(
+          'recent',
+          'Recentes',
+          <Clock size={16} color={sortBy === 'recent' ? COLORS.accent : COLORS.textSecondary} />
+        )}
+        {renderSortButton(
+          'popular',
+          'Populares',
+          <TrendingUp size={16} color={sortBy === 'popular' ? COLORS.accent : COLORS.textSecondary} />
+        )}
+      </View>
 
-      <ScrollView
-        style={styles.content}
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          if (activeTab === 'rankings' && item.post_type === 'ranking') {
+            return renderRankingCard(item);
+          } else if (activeTab === 'publications' && item.post_type === 'discussion') {
+            return renderPublicationCard(item);
+          }
+          return null;
+        }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.3}
         showsVerticalScrollIndicator={false}
-      >
-        {postsLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.loadingText}>Carregando...</Text>
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={() => (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {activeTab === 'rankings' ? 'Rankings da Comunidade' : 'Discussões da Comunidade'}
+            </Text>
+            <Text style={styles.sectionSubtitle}>
+              {activeTab === 'rankings' 
+                ? 'Descubra os melhores K-dramas através dos rankings dos usuários'
+                : 'Participe das conversas sobre seus doramas favoritos'
+              }
+            </Text>
           </View>
-        ) : (
-          <>
-            {activeTab === 'rankings' && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Rankings da Comunidade</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Descubra os melhores K-dramas através dos rankings dos usuários
-                </Text>
-                {communityPosts?.filter((post: any) => post.post_type === 'ranking').map((post: any) => renderRankingCard(post))}
-                {(!communityPosts || communityPosts.filter((post: any) => post.post_type === 'ranking').length === 0) && (
-                  <View style={styles.emptyState}>
-                    <Text style={styles.emptyText}>Nenhum ranking encontrado</Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {activeTab === 'publications' && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Discussões da Comunidade</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Participe das conversas sobre seus doramas favoritos
-                </Text>
-                {communityPosts?.filter((post: any) => post.post_type === 'discussion').map((post: any) => renderPublicationCard(post))}
-                {(!communityPosts || communityPosts.filter((post: any) => post.post_type === 'discussion').length === 0) && (
-                  <View style={styles.emptyState}>
-                    <Text style={styles.emptyText}>Nenhuma discussão encontrada</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </>
         )}
-      </ScrollView>
+        ListEmptyComponent={() => {
+          if (postsLoading) {
+            return (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.accent} />
+                <Text style={styles.loadingText}>Carregando...</Text>
+              </View>
+            );
+          }
+          return (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                {activeTab === 'rankings' ? 'Nenhum ranking encontrado' : 'Nenhuma discussão encontrada'}
+              </Text>
+            </View>
+          );
+        }}
+        ListFooterComponent={() => {
+          if (loadingMore) {
+            return (
+              <View style={styles.loadingMoreContainer}>
+                <ActivityIndicator size="small" color={COLORS.accent} />
+                <Text style={styles.loadingMoreText}>Carregando mais...</Text>
+              </View>
+            );
+          }
+          return null;
+        }}
+      />
       
       {(activeTab === 'publications') ? (
         <TouchableOpacity style={styles.fab} onPress={handleCreatePost}>
@@ -446,6 +560,38 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 12,
   },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 8,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    gap: 4,
+  },
+  activeSortButton: {
+    backgroundColor: COLORS.accent + '20',
+  },
+  sortText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  sortIcon: {
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeSortText: {
+    color: COLORS.accent,
+  },
   tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -472,8 +618,11 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: COLORS.accent,
   },
-  content: {
-    flex: 1,
+  listContent: {
+    paddingBottom: 100,
+  },
+  cardContainer: {
+    paddingHorizontal: 16,
   },
   section: {
     padding: 16,
@@ -761,6 +910,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  loadingMoreContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 8,
   },
 });
 

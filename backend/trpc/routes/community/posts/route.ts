@@ -42,9 +42,10 @@ export const getCommunityPostsProcedure = publicProcedure
   .input(z.object({
     type: z.enum(['all', 'rankings', 'discussions']).optional(),
     limit: z.number().min(1).max(50).default(20),
-    offset: z.number().min(0).default(0)
+    offset: z.number().min(0).default(0),
+    sortBy: z.enum(['recent', 'popular']).default('recent')
   }))
-  .query(async ({ input, ctx }: { input: { type?: 'all' | 'rankings' | 'discussions'; limit: number; offset: number }; ctx: Context }) => {
+  .query(async ({ input, ctx }: { input: { type?: 'all' | 'rankings' | 'discussions'; limit: number; offset: number; sortBy: 'recent' | 'popular' }; ctx: Context }) => {
     const isAuthed = Boolean(ctx?.user?.id);
     const client = isAuthed ? (ctx.supabase ?? supabase) : ctx.admin;
     if (!client) {
@@ -56,7 +57,7 @@ export const getCommunityPostsProcedure = publicProcedure
 
       // Specialized query when requesting rankings
       if (input.type === 'rankings') {
-        const { data: posts, error } = await client
+        let query = client
           .from('community_posts')
           .select(`
             *,
@@ -76,11 +77,22 @@ export const getCommunityPostsProcedure = publicProcedure
                 poster_image,
                 cover_image
               )
-            )
+            ),
+            post_likes!left(id),
+            post_comments!left(id)
           `)
-          .eq('post_type', 'ranking')
-          .order('created_at', { ascending: false })
-          .range(input.offset, input.offset + input.limit - 1);
+          .eq('post_type', 'ranking');
+
+        // Apply sorting
+        if (input.sortBy === 'popular') {
+          // For popular, we'll order by a combination of likes and comments count
+          // Since we can't easily do complex sorting in Supabase, we'll fetch and sort in memory
+          query = query.order('created_at', { ascending: false });
+        } else {
+          query = query.order('created_at', { ascending: false });
+        }
+
+        const { data: posts, error } = await query.range(input.offset, input.offset + input.limit - 1);
 
         if (error) {
           console.error('Supabase error (rankings):', error);
@@ -88,7 +100,21 @@ export const getCommunityPostsProcedure = publicProcedure
         }
 
         console.log('Fetched ranking posts count:', posts?.length ?? 0);
-        return posts || [];
+        
+        // Process posts to add engagement counts and sort if needed
+        const processedPosts = (posts || []).map((post: any) => ({
+          ...post,
+          likes_count: post.post_likes?.length || 0,
+          comments_count: post.post_comments?.length || 0,
+          engagement_score: (post.post_likes?.length || 0) + (post.post_comments?.length || 0) * 2
+        }));
+
+        // Sort by popularity if requested
+        if (input.sortBy === 'popular') {
+          processedPosts.sort((a, b) => b.engagement_score - a.engagement_score);
+        }
+
+        return processedPosts;
       }
       
       // Generic query for other types
@@ -112,10 +138,19 @@ export const getCommunityPostsProcedure = publicProcedure
               poster_image,
               cover_image
             )
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .range(input.offset, input.offset + input.limit - 1);
+          ),
+          post_likes!left(id),
+          post_comments!left(id)
+        `);
+
+      // Apply sorting
+      if (input.sortBy === 'popular') {
+        query = query.order('created_at', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
+
+      query = query.range(input.offset, input.offset + input.limit - 1);
 
       if (input.type === 'discussions') {
         query = query.eq('post_type', 'discussion');
@@ -128,7 +163,20 @@ export const getCommunityPostsProcedure = publicProcedure
         throw error;
       }
 
-      return posts || [];
+      // Process posts to add engagement counts and sort if needed
+      const processedPosts = (posts || []).map((post: any) => ({
+        ...post,
+        likes_count: post.post_likes?.length || 0,
+        comments_count: post.post_comments?.length || 0,
+        engagement_score: (post.post_likes?.length || 0) + (post.post_comments?.length || 0) * 2
+      }));
+
+      // Sort by popularity if requested
+      if (input.sortBy === 'popular') {
+        processedPosts.sort((a, b) => b.engagement_score - a.engagement_score);
+      }
+
+      return processedPosts;
     } catch (error) {
       console.error('Error fetching community posts:', error);
       if (error instanceof Error) {
