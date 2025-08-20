@@ -20,7 +20,7 @@ interface PersonalInfoStepProps {
 }
 
 export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) {
-  const [selectedGender, setSelectedGender] = useState<GenderOption | undefined>(undefined);
+  const [selectedGender, setSelectedGender] = useState<string>('');
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -74,11 +74,11 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
   };
 
   const canProceed = (): boolean => {
-    return selectedGender !== undefined && birthDate !== null;
+    return selectedGender !== '' && birthDate !== null;
   };
 
   const handleContinue = async () => {
-    if (!canProceed() || !selectedGender) {
+    if (!canProceed() || selectedGender === '') {
       Alert.alert('Dados incompletos', 'Por favor, selecione seu gênero e data de nascimento.');
       return;
     }
@@ -88,7 +88,7 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
     try {
       // Update onboarding data with personal info
       updateOnboardingData({
-        gender: selectedGender,
+        gender: selectedGender as GenderOption,
         birthDate: birthDate!.toISOString(),
         age: calculateAge(birthDate!)
       });
@@ -119,7 +119,10 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
           
           <View style={styles.pickerContainer}>
             <RNPickerSelect
-              onValueChange={(value) => setSelectedGender(value)}
+              onValueChange={(value) => {
+                console.log('Gender selected:', value);
+                setSelectedGender(value || '');
+              }}
               items={GENDER_OPTIONS.map(option => ({
                 label: `${option.emoji} ${option.label}`,
                 value: option.id,
@@ -148,8 +151,9 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
                 value: null,
                 color: COLORS.textSecondary,
               }}
-              value={selectedGender || undefined}
+              value={selectedGender}
               useNativeAndroidPickerStyle={false}
+              doneText="Confirmar"
               Icon={() => {
                 return <ChevronDown size={20} color={COLORS.textSecondary} />;
               }}
