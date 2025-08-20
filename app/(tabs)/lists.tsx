@@ -57,7 +57,7 @@ export default function ListsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? insets.top + 16 : 16 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Minhas Listas</Text>

@@ -276,7 +276,7 @@ export default function DiscoverScreen() {
         style={styles.container}
         contentContainerStyle={[
           styles.content, 
-          { paddingTop: Platform.OS === 'ios' ? insets.top + 16 : 16 }
+          { paddingTop: insets.top + 16 }
         ]}
         data={sections}
         keyExtractor={(s) => s.id}

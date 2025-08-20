@@ -73,7 +73,7 @@ export default function CategoriesScreen() {
   };
   
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? insets.top + 16 : 16 }]} testID="categories-screen">
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]} testID="categories-screen">
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Categorias</Text>

@@ -164,7 +164,7 @@ export default function SearchScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? insets.top + 16 : 16 }]} testID="search-screen">
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]} testID="search-screen">
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Pesquisar</Text>
