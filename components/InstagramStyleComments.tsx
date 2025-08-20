@@ -608,7 +608,8 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
         style={[
           styles.fixedInputContainer,
           {
-            bottom: keyboardHeight > 0 ? 0 : insets.bottom,
+            bottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom,
+            paddingBottom: 8,
           }
         ]}
       >
@@ -830,7 +831,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 8,
-    paddingBottom: 8,
   },
   replyBanner: {
     flexDirection: 'row',
