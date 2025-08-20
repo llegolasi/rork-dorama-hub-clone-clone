@@ -20,7 +20,7 @@ interface PersonalInfoStepProps {
 }
 
 export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) {
-  const [selectedGender, setSelectedGender] = useState<GenderOption | null>(null);
+  const [selectedGender, setSelectedGender] = useState<GenderOption | undefined>(undefined);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -74,11 +74,11 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
   };
 
   const canProceed = (): boolean => {
-    return selectedGender !== null && birthDate !== null;
+    return selectedGender !== undefined && birthDate !== null;
   };
 
   const handleContinue = async () => {
-    if (!canProceed()) {
+    if (!canProceed() || !selectedGender) {
       Alert.alert('Dados incompletos', 'Por favor, selecione seu gênero e data de nascimento.');
       return;
     }
@@ -88,7 +88,7 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
     try {
       // Update onboarding data with personal info
       updateOnboardingData({
-        gender: selectedGender!,
+        gender: selectedGender,
         birthDate: birthDate!.toISOString(),
         age: calculateAge(birthDate!)
       });
@@ -148,7 +148,7 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
                 value: null,
                 color: COLORS.textSecondary,
               }}
-              value={selectedGender}
+              value={selectedGender || undefined}
               useNativeAndroidPickerStyle={false}
               Icon={() => {
                 return <ChevronDown size={20} color={COLORS.textSecondary} />;
