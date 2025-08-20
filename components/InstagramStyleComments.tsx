@@ -556,7 +556,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
 
   const flatListContentInset = useMemo(() => {
     return {
-      bottom: inputContainerHeight + (Platform.OS === 'android' ? 20 : 0)
+      bottom: inputContainerHeight + (Platform.OS === 'android' ? 40 : 20)
     };
   }, [inputContainerHeight]);
 
@@ -596,7 +596,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           styles.fixedInputContainer,
           {
             bottom: keyboardHeight > 0 ? keyboardHeight - insets.bottom : 0,
-            paddingBottom: keyboardHeight > 0 ? 0 : insets.bottom,
+            paddingBottom: keyboardHeight > 0 ? 8 : insets.bottom + 8,
           }
         ]}
       >

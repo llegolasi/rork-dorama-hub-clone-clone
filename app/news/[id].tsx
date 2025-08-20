@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   contentHeader: {
-    maxHeight: '70%',
+    flex: 0,
   },
   header: {
     paddingHorizontal: 20,

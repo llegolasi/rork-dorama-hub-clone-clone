@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   contentHeader: {
-    maxHeight: '70%',
     padding: 16,
   },
   commentsSection: {
