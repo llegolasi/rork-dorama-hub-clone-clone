@@ -608,8 +608,8 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
         style={[
           styles.fixedInputContainer,
           {
-            bottom: 0,
-            paddingBottom: keyboardHeight > 0 ? 8 : insets.bottom + 8,
+            bottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom,
+            paddingBottom: 8,
           }
         ]}
       >
