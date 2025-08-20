@@ -465,7 +465,7 @@ const CommunityScreen = () => {
 
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item.id ? String(item.id) : `post-${index}`}
         renderItem={({ item }) => {
           if (activeTab === 'rankings' && item.post_type === 'ranking') {
             return renderRankingCard(item);
