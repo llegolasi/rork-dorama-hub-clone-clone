@@ -59,38 +59,26 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
     setIsCheckingUsername(false);
   };
 
-  const validateUsername = (username: string): boolean => {
-    // Username must be 3-30 characters, only letters, numbers, and underscores
-    // No spaces or special characters except underscore
-    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
-    return usernameRegex.test(username);
-  };
-
   const handleUsernameChange = (text: string) => {
-    // Remove any invalid characters as user types
-    const cleanedText = text.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-    setUsername(cleanedText);
+    setUsername(text);
     setUsernameAvailable(null);
     
-    // Only check availability if username is valid format
-    if (validateUsername(cleanedText)) {
-      // Debounce username check
-      const timeoutId = setTimeout(() => {
-        checkUsername(cleanedText);
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
-    }
+    // Debounce username check
+    const timeoutId = setTimeout(() => {
+      checkUsername(text);
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
   };
 
   const canProceed = (): boolean => {
     if (!hasValidSupabaseConfig) {
       // Development mode - relaxed validation
-      return validateUsername(username) && email.length > 0 && password.length >= 6;
+      return username.length >= 3 && email.length > 0 && password.length >= 6;
     }
     
     return (
-      validateUsername(username) &&
+      username.length >= 3 &&
       usernameAvailable === true &&
       validateEmail(email) &&
       validatePassword(password)
@@ -178,7 +166,6 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
               onChangeText={handleUsernameChange}
               autoCapitalize="none"
               autoCorrect={false}
-              maxLength={30}
             />
             {isCheckingUsername && (
               <ActivityIndicator size="small" color={COLORS.accent} style={styles.inputIcon} />
@@ -194,12 +181,7 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
               </View>
             )}
           </View>
-          {username && !validateUsername(username) && (
-            <Text style={styles.errorText}>
-              Nome de usuário deve ter 3-30 caracteres, apenas letras, números e _
-            </Text>
-          )}
-          {validateUsername(username) && usernameAvailable === false && (
+          {usernameAvailable === false && (
             <Text style={styles.errorText}>Este nome de usuário não está disponível</Text>
           )}
         </View>

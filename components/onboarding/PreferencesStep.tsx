@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Image,
   ActivityIndicator,
-  Dimensions,
-  Platform
+  Dimensions
 } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { DRAMA_GENRES, getFilteredDramas, getTopRatedDramasForOnboarding } from '@/constants/onboarding';
+import { DRAMA_GENRES, getFilteredDramas } from '@/constants/onboarding';
 import { useAuth } from '@/hooks/useAuth';
-import OptimizedImage from '@/components/OptimizedImage';
 
 interface PreferencesStepProps {
   onComplete: () => void;
@@ -27,47 +26,9 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [lovedDramas, setLovedDramas] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [dramasLoading, setDramasLoading] = useState<boolean>(true);
-  const [availableDramas, setAvailableDramas] = useState<any[]>([]);
   
   const { completeOnboarding } = useAuth();
-
-  // Load dramas from TMDB API with Android optimization
-  useEffect(() => {
-    const loadDramas = async () => {
-      setDramasLoading(true);
-      try {
-        const dramas = await getTopRatedDramasForOnboarding();
-        
-        // On Android, limit to fewer dramas for better performance
-        const limitedDramas = Platform.OS === 'android' 
-          ? dramas.slice(0, 12) // Only 12 dramas on Android
-          : dramas.slice(0, 18); // 18 on iOS
-          
-        setAvailableDramas(limitedDramas);
-      } catch (error) {
-        console.error('Error loading dramas for onboarding:', error);
-        // Fallback to static dramas
-        const fallbackDramas = getFilteredDramas();
-        const limitedFallback = Platform.OS === 'android' 
-          ? fallbackDramas.slice(0, 12)
-          : fallbackDramas.slice(0, 18);
-        setAvailableDramas(limitedFallback);
-      } finally {
-        setDramasLoading(false);
-      }
-    };
-
-    // Delay loading on Android to prevent blocking
-    if (Platform.OS === 'android') {
-      const timer = setTimeout(() => {
-        loadDramas();
-      }, 300);
-      return () => clearTimeout(timer);
-    } else {
-      loadDramas();
-    }
-  }, []);
+  const filteredDramas = getFilteredDramas();
 
   const toggleGenre = (genreId: string) => {
     setSelectedGenres(prev => {
@@ -190,42 +151,28 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
           <Text style={styles.sectionSubtitle}>
             Toque nos doramas que você já assistiu e gostou
           </Text>
-          
-          {dramasLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={COLORS.accent} />
-              <Text style={styles.loadingText}>Carregando doramas populares...</Text>
-            </View>
-          ) : (
-            <View style={styles.dramaGrid}>
-              {availableDramas.map((drama, index) => {
-                const isSelected = lovedDramas.includes(drama.id);
-                return (
-                  <TouchableOpacity
-                    key={`drama-${drama.id}-${index}`}
-                    style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
-                    onPress={() => toggleDrama(drama.id)}
-                  >
-                    <OptimizedImage 
-                      source={{ uri: `https://image.tmdb.org/t/p/w342${drama.poster_path}` }} 
-                      style={styles.dramaPoster}
-                      contentFit="cover"
-                      priority={Platform.OS === 'android' ? 'low' : 'normal'}
-                      cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
-                    />
-                    {isSelected && (
-                      <View style={styles.selectedOverlay}>
-                        <Check size={24} color={COLORS.text} />
-                      </View>
-                    )}
-                    <Text style={styles.dramaTitle} numberOfLines={2}>
-                      {drama.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+          <View style={styles.dramaGrid}>
+            {filteredDramas.map((drama, index) => {
+              const isSelected = lovedDramas.includes(drama.id);
+              return (
+                <TouchableOpacity
+                  key={`drama-${drama.id}-${index}`}
+                  style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
+                  onPress={() => toggleDrama(drama.id)}
+                >
+                  <Image source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} style={styles.dramaPoster} />
+                  {isSelected && (
+                    <View style={styles.selectedOverlay}>
+                      <Check size={24} color={COLORS.text} />
+                    </View>
+                  )}
+                  <Text style={styles.dramaTitle} numberOfLines={2}>
+                    {drama.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.buttonContainer}>
@@ -383,17 +330,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   skipButtonText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    gap: 12,
-  },
-  loadingText: {
     color: COLORS.textSecondary,
     fontSize: 14,
     textAlign: 'center',

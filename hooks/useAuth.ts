@@ -148,106 +148,48 @@ export const [AuthContext, useAuth] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>({});
 
-  // Load auth data on mount with Android optimizations
+  // Load auth data on mount
   useEffect(() => {
     const loadAuthData = async () => {
       try {
-        // On Android, prioritize cached data first for faster startup
-        if (Platform.OS === 'android') {
-          // Load cached user data immediately
-          const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
-          if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            console.log('Android: Loaded cached user immediately:', parsedUser.username);
-            setIsLoading(false); // Set loading to false immediately with cached data
-          }
-          
-          // Load onboarding data from cache
-          const storedOnboarding = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_DATA);
-          if (storedOnboarding) {
-            setOnboardingData(JSON.parse(storedOnboarding));
-          }
-        }
-        
         if (hasValidSupabaseConfig) {
-          // Check for existing Supabase session (with timeout for Android)
-          const sessionPromise = supabase.auth.getSession();
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Session timeout')), Platform.OS === 'android' ? 8000 : 15000)
-          );
-          
-          let sessionResult;
-          try {
-            sessionResult = await Promise.race([sessionPromise, timeoutPromise]) as any;
-          } catch (timeoutError) {
-            console.warn('Session check timed out, using cached data');
-            if (Platform.OS === 'ios') {
-              setIsLoading(false);
-            }
-            return;
-          }
-          
-          const { data: { session }, error } = sessionResult;
+          // Check for existing Supabase session
+          const { data: { session } } = await supabase.auth.getSession();
           
           if (session?.user) {
-            // Get user profile from database (with timeout)
-            const profilePromise = supabase
+            // Get user profile from database
+            const { data: profile } = await supabase
               .from('users')
               .select('*')
               .eq('id', session.user.id)
               .single();
               
-            const profileTimeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Profile timeout')), Platform.OS === 'android' ? 6000 : 10000)
-            );
-            
-            try {
-              const { data: profile } = await Promise.race([profilePromise, profileTimeoutPromise]) as any;
-              
-              if (profile) {
-                const authUser: AuthUser = {
-                  id: profile.id,
-                  username: profile.username,
-                  email: session.user.email || '',
-                  displayName: profile.display_name,
-                  bio: profile.bio,
-                  profileImage: profile.profile_image,
-                  isOnboardingComplete: profile.is_onboarding_complete,
-                  createdAt: profile.created_at
-                };
-                setUser(authUser);
-                // Persist user data to AsyncStorage for offline access
-                await AsyncStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(authUser));
-              }
-            } catch (profileError) {
-              console.warn('Profile fetch timed out or failed, keeping cached user');
-            }
-          } else if (Platform.OS === 'ios') {
-            // No active session, check AsyncStorage for persisted user (iOS only, Android already loaded)
-            const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
-            if (storedUser) {
-              const parsedUser = JSON.parse(storedUser);
-              setUser(parsedUser);
-              console.log('iOS: Loaded persisted user from storage:', parsedUser.username);
+            if (profile) {
+              const authUser: AuthUser = {
+                id: profile.id,
+                username: profile.username,
+                email: session.user.email || '',
+                displayName: profile.display_name,
+                bio: profile.bio,
+                profileImage: profile.profile_image,
+                isOnboardingComplete: profile.is_onboarding_complete,
+                createdAt: profile.created_at
+              };
+              setUser(authUser);
             }
           }
         } else {
-          // Development mode - check for stored user (iOS only, Android already loaded)
-          if (Platform.OS === 'ios') {
-            const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
-            if (storedUser) {
-              setUser(JSON.parse(storedUser));
-            }
+          // Development mode - check for stored user
+          const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
           }
         }
         
-        // Load onboarding data from AsyncStorage (iOS only, Android already loaded)
-        if (Platform.OS === 'ios') {
-          const storedOnboarding = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_DATA);
-          if (storedOnboarding) {
-            setOnboardingData(JSON.parse(storedOnboarding));
-          }
+        // Load onboarding data from AsyncStorage
+        const storedOnboarding = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_DATA);
+        if (storedOnboarding) {
+          setOnboardingData(JSON.parse(storedOnboarding));
         }
         
         setIsLoading(false);
@@ -257,15 +199,7 @@ export const [AuthContext, useAuth] = createContextHook(() => {
       }
     };
 
-    // Delay auth loading on Android to prevent blocking UI
-    if (Platform.OS === 'android') {
-      const timer = setTimeout(() => {
-        loadAuthData();
-      }, 100);
-      return () => clearTimeout(timer);
-    } else {
-      loadAuthData();
-    }
+    loadAuthData();
     
     // Listen for auth changes only if Supabase is configured
     let subscription: any;

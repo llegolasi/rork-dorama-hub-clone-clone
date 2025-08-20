@@ -42,17 +42,10 @@ export default function ProfileScreen() {
   });
   
   // Fetch user stats for counts
-  const { data: userStats, refetch: refetchStats, error: statsError } = trpc.users.getStats.useQuery({
+  const { data: userStats, refetch: refetchStats } = trpc.users.getStats.useQuery({
     userId: userProfile?.id
   }, {
-    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0,
-    retry: (failureCount, error) => {
-      // Don't retry on authentication errors
-      if (error?.message?.includes('UNAUTHORIZED') || error?.message?.includes('401')) {
-        return false;
-      }
-      return failureCount < 3;
-    }
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
   });
   
   // Auto-refresh user profile when screen is focused

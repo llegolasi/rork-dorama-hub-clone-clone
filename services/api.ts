@@ -1,4 +1,3 @@
-import { Platform } from "react-native";
 import { TMDB_API_KEY, TMDB_BASE_URL } from "@/constants/config";
 import { ActorCredits, ActorDetails } from "@/types/actor";
 import { Drama, DramaCredits, DramaDetails, DramaResponse, DramaImages, DramaVideos, SeasonDetails } from "@/types/drama";
@@ -49,39 +48,6 @@ const mockDramas: Drama[] = [
   }
 ];
 
-// Android-optimized fetch function
-const createOptimizedFetch = (url: string, options: RequestInit = {}) => {
-  const optimizedOptions: RequestInit = {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${TMDB_API_KEY}`,
-      'Content-Type': 'application/json',
-      ...(Platform.OS === 'android' && {
-        'Cache-Control': 'max-age=300',
-        'Accept-Encoding': 'gzip, deflate'
-      }),
-      ...options.headers
-    },
-    ...(Platform.OS === 'android' && {
-      cache: 'default' as RequestCache,
-      priority: 'low' as RequestPriority
-    })
-  };
-  
-  // Add timeout for Android
-  if (Platform.OS === 'android') {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
-    
-    return fetch(url, {
-      ...optimizedOptions,
-      signal: controller.signal
-    }).finally(() => clearTimeout(timeoutId));
-  }
-  
-  return fetch(url, optimizedOptions);
-};
-
 // Helper to filter Korean dramas only
 const filterKoreanDramas = (dramas: Drama[]): Drama[] => {
   if (!dramas || !Array.isArray(dramas)) {
@@ -110,8 +76,14 @@ export const getTrendingDramas = async (): Promise<Drama[]> => {
   try {
     console.log('Fetching trending dramas (primary: trending/day)...');
 
-    const trendingRes = await createOptimizedFetch(
-      `${TMDB_BASE_URL}/trending/tv/day?language=pt-BR`
+    const trendingRes = await fetch(
+      `${TMDB_BASE_URL}/trending/tv/day?language=pt-BR`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
     );
 
     let trendingResults: Drama[] = [];
@@ -130,8 +102,18 @@ export const getTrendingDramas = async (): Promise<Drama[]> => {
       console.log('Backfilling trending with discover endpoints...');
 
       const [discoverOriginRes, discoverLangRes] = await Promise.all([
-        createOptimizedFetch(`${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=1`),
-        createOptimizedFetch(`${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_original_language=ko&sort_by=popularity.desc&page=1`)
+        fetch(`${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=1`, {
+          headers: {
+            'Authorization': `Bearer ${TMDB_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_original_language=ko&sort_by=popularity.desc&page=1`, {
+          headers: {
+            'Authorization': `Bearer ${TMDB_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        })
       ]);
 
       if (discoverOriginRes.ok) {
@@ -174,8 +156,14 @@ export const getTrendingDramas = async (): Promise<Drama[]> => {
 export const getPopularDramas = async (): Promise<Drama[]> => {
   try {
     console.log('Fetching popular dramas...');
-    const response = await createOptimizedFetch(
-      `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc`
+    const response = await fetch(
+      `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
     );
     
     if (!response.ok) {
@@ -204,38 +192,26 @@ export const getPopularDramas = async (): Promise<Drama[]> => {
   }
 };
 
-// Get drama details by ID with retry logic and Android optimizations
+// Get drama details by ID with retry logic
 export const getDramaDetails = async (id: number, retryCount: number = 0): Promise<DramaDetails> => {
-  const maxRetries = Platform.OS === 'android' ? 3 : 2; // More retries on Android
+  const maxRetries = 2;
   
   try {
     console.log(`getDramaDetails called with ID: ${id} (attempt ${retryCount + 1})`);
     
-    // Create AbortController with platform-specific timeout
+    // Create AbortController with generous timeout
     const controller = new AbortController();
-    const timeout = Platform.OS === 'android' ? 20000 : 15000; // Longer timeout on Android
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
-    // Android-specific fetch optimizations
-    const fetchOptions: RequestInit = {
-      headers: {
-        'Authorization': `Bearer ${TMDB_API_KEY}`,
-        'Content-Type': 'application/json',
-        ...(Platform.OS === 'android' && {
-          'Cache-Control': 'max-age=300', // 5 minute cache on Android
-          'Accept-Encoding': 'gzip, deflate'
-        })
-      },
-      signal: controller.signal,
-      ...(Platform.OS === 'android' && {
-        cache: 'default' as RequestCache,
-        priority: 'low' as RequestPriority
-      })
-    };
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
     const response = await fetch(
       `${TMDB_BASE_URL}/tv/${id}?language=pt-BR`,
-      fetchOptions
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      }
     );
     
     clearTimeout(timeoutId);
@@ -258,14 +234,10 @@ export const getDramaDetails = async (id: number, retryCount: number = 0): Promi
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn(`Request timeout for drama ${id} (attempt ${retryCount + 1})`);
       
-      // Retry with exponential backoff if we haven't exceeded max retries
+      // Retry without timeout if we haven't exceeded max retries
       if (retryCount < maxRetries) {
-        const delay = Platform.OS === 'android' 
-          ? 2000 * Math.pow(2, retryCount) // Exponential backoff on Android
-          : 1000 * (retryCount + 1); // Linear backoff on iOS
-        
-        console.log(`Retrying drama ${id} after ${delay}ms delay...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        console.log(`Retrying drama ${id} without timeout...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
         return getDramaDetails(id, retryCount + 1);
       }
     }

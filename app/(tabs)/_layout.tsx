@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import React, { useEffect } from "react";
 import { Home, Search, User, Bookmark, Users, Heart } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import { ActivityIndicator, View, Platform } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,8 +42,6 @@ export default function TabLayout() {
         },
         headerStyle: {
           backgroundColor: COLORS.background,
-          // Add extra padding for Android to avoid status bar overlap
-          ...(Platform.OS === 'android' && { paddingTop: 24, height: 88 })
         },
         headerTintColor: COLORS.text,
         headerTitleStyle: {

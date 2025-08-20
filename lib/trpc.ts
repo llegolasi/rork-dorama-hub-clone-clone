@@ -3,7 +3,6 @@ import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import { supabase } from "@/lib/supabase";
-import { Platform } from "react-native";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -24,26 +23,9 @@ export const trpcClient = trpc.createClient({
       transformer: superjson,
       headers: async () => {
         try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error('Session error:', error);
-            return {
-              'Content-Type': 'application/json',
-            };
-          }
-          
-          if (!session?.access_token) {
-            console.log('No valid session found for tRPC request. Session:', session);
-            return {
-              'Content-Type': 'application/json',
-            };
-          }
-          
-          console.log('Using session token for tRPC request:', session.access_token.substring(0, 20) + '...')
-          
+          const { data: { session } } = await supabase.auth.getSession();
           return {
-            authorization: `Bearer ${session.access_token}`,
+            authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
             'Content-Type': 'application/json',
           };
         } catch (error) {
@@ -55,18 +37,8 @@ export const trpcClient = trpc.createClient({
       },
       fetch: async (url, options) => {
         console.log('tRPC request:', url, options);
-        
-        // Android-specific optimizations
-        const optimizedOptions = {
-          ...options,
-          // Add timeout for Android to prevent hanging requests
-          ...(Platform.OS === 'android' && {
-            signal: AbortSignal.timeout(15000) // 15 second timeout
-          })
-        };
-        
         try {
-          const response = await fetch(url, optimizedOptions);
+          const response = await fetch(url, options);
           console.log('tRPC response status:', response.status);
           
           if (!response.ok) {
@@ -78,24 +50,6 @@ export const trpcClient = trpc.createClient({
           return response;
         } catch (error) {
           console.error('tRPC fetch error:', error);
-          
-          // Android-specific retry logic for timeout errors
-          if (Platform.OS === 'android' && error instanceof Error && error.name === 'TimeoutError') {
-            console.log('Android timeout detected, retrying with longer timeout...');
-            try {
-              const retryOptions = {
-                ...options,
-                signal: AbortSignal.timeout(25000) // 25 second timeout for retry
-              };
-              const retryResponse = await fetch(url, retryOptions);
-              if (retryResponse.ok) {
-                return retryResponse;
-              }
-            } catch (retryError) {
-              console.error('Android retry also failed:', retryError);
-            }
-          }
-          
           throw error;
         }
       },

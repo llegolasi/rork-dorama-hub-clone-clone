@@ -4,7 +4,6 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
-import { Platform, InteractionManager } from "react-native";
 
 import { UserContext } from "@/hooks/useUserStore";
 import { AuthContext, useAuth } from "@/hooks/useAuth";
@@ -13,29 +12,7 @@ import { trpc, trpcClient } from "@/lib/trpc";
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-// Android-optimized query client configuration
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: Platform.OS === 'android' ? 10 * 60 * 1000 : 5 * 60 * 1000, // Longer stale time on Android
-      gcTime: Platform.OS === 'android' ? 15 * 60 * 1000 : 10 * 60 * 1000, // Longer garbage collection time on Android
-      retry: Platform.OS === 'android' ? 1 : 2, // Fewer retries on Android to prevent blocking
-      retryDelay: (attemptIndex) => Platform.OS === 'android' 
-        ? Math.min(1000 * 2 ** attemptIndex, 5000) // Exponential backoff on Android
-        : Math.min(1000 * 2 ** attemptIndex, 3000),
-      refetchOnWindowFocus: false, // Disable on mobile
-      refetchOnReconnect: Platform.OS === 'android' ? 'always' : true,
-      networkMode: Platform.OS === 'android' ? 'offlineFirst' : 'online',
-    },
-    mutations: {
-      retry: Platform.OS === 'android' ? 1 : 2,
-      retryDelay: (attemptIndex) => Platform.OS === 'android'
-        ? Math.min(2000 * 2 ** attemptIndex, 8000)
-        : Math.min(1000 * 2 ** attemptIndex, 5000),
-      networkMode: Platform.OS === 'android' ? 'offlineFirst' : 'online',
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { user, isLoading, needsOnboarding } = useAuth();
@@ -63,15 +40,13 @@ function RootLayoutNav() {
     <Stack 
       screenOptions={{ 
         headerStyle: { 
-          backgroundColor: "#121212",
-          // Add extra height for Android to avoid status bar overlap
-          ...(Platform.OS === 'android' && { paddingTop: 24 })
+          backgroundColor: "#121212" 
         },
         headerTintColor: "#FFFFFF",
         headerBackTitle: "Back",
         contentStyle: {
           backgroundColor: "#121212",
-        },
+        }
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -107,16 +82,7 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
-    // Delay splash screen hiding on Android to ensure smooth startup
-    if (Platform.OS === 'android') {
-      InteractionManager.runAfterInteractions(() => {
-        setTimeout(() => {
-          SplashScreen.hideAsync();
-        }, 200);
-      });
-    } else {
-      SplashScreen.hideAsync();
-    }
+    SplashScreen.hideAsync();
   }, []);
 
   return (

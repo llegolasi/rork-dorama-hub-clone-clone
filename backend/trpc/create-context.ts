@@ -13,8 +13,6 @@ const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 // Context creation function
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
   const authHeader = opts.req.headers.get('authorization');
-  console.log('tRPC context creation - Auth header:', authHeader ? authHeader.substring(0, 20) + '...' : 'None');
-  
   let user: {
     id: string;
     username: string | null;
@@ -52,12 +50,7 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
             profileImage: profile.profile_image ?? null,
             isOnboardingComplete: profile.is_onboarding_complete ?? null,
           };
-          console.log('tRPC context - User authenticated:', user.username, user.id);
-        } else {
-          console.log('tRPC context - No profile found for authenticated user:', authUser.id);
         }
-      } else {
-        console.log('tRPC context - Auth error or no user:', error?.message || 'No user');
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -84,10 +77,7 @@ export const publicProcedure = t.procedure;
 
 // Protected procedure that requires authentication
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  console.log('Protected procedure - User check:', ctx.user ? `${ctx.user.username} (${ctx.user.id})` : 'No user');
-  
   if (!ctx.user) {
-    console.log('Protected procedure - Throwing UNAUTHORIZED error');
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'You must be logged in to access this resource'
