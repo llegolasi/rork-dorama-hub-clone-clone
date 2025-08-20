@@ -26,12 +26,16 @@ type SortType = 'recent' | 'popular';
 const CommunityScreen = () => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabType>('rankings');
-  const [sortBy, setSortBy] = useState<SortType>('recent');
+  const [rankingsSortBy, setRankingsSortBy] = useState<SortType>('recent');
+  const [publicationsSortBy, setPublicationsSortBy] = useState<SortType>('recent');
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
+
+  // Get current sort based on active tab
+  const currentSort = activeTab === 'rankings' ? rankingsSortBy : publicationsSortBy;
 
   // Fetch community posts with pagination
   const fetchPosts = useCallback(async (offset: number = 0, isRefresh: boolean = false) => {
@@ -40,7 +44,7 @@ const CommunityScreen = () => {
         type: activeTab === 'rankings' ? 'rankings' : 'discussions',
         limit: 10,
         offset,
-        sortBy
+        sortBy: currentSort
       });
       
       if (isRefresh) {
@@ -53,14 +57,14 @@ const CommunityScreen = () => {
     } catch (error) {
       console.error('Error fetching posts:', error);
     }
-  }, [activeTab, sortBy]);
+  }, [activeTab, currentSort]);
 
   // Initial load
   const { isLoading: postsLoading } = trpc.community.getPosts.useQuery({
     type: activeTab === 'rankings' ? 'rankings' : 'discussions',
     limit: 10,
     offset: 0,
-    sortBy
+    sortBy: currentSort
   });
 
   // Handle initial data
@@ -73,7 +77,7 @@ const CommunityScreen = () => {
           type: activeTab === 'rankings' ? 'rankings' : 'discussions',
           limit: 10,
           offset: 0,
-          sortBy
+          sortBy: currentSort
         });
         setPosts(data);
         setHasMore(data.length === 10);
@@ -83,7 +87,7 @@ const CommunityScreen = () => {
     };
     
     loadInitialData();
-  }, [activeTab, sortBy, postsLoading]);
+  }, [activeTab, currentSort, postsLoading]);
 
   // Mutations
   const togglePostLikeMutation = trpc.community.togglePostLike.useMutation({
@@ -144,7 +148,7 @@ const CommunityScreen = () => {
     setPosts([]);
     setHasMore(true);
     fetchPosts(0, true);
-  }, [activeTab, sortBy, fetchPosts]);
+  }, [activeTab, currentSort, fetchPosts]);
 
   const handleRankingPress = (post: any) => {
     const rankingId = post?.user_rankings?.id || post?.ranking_id || post?.id;
@@ -253,18 +257,29 @@ const CommunityScreen = () => {
     </TouchableOpacity>
   );
 
-  const renderSortButton = (sort: SortType, title: string, icon: React.ReactNode) => (
-    <TouchableOpacity
-      style={[styles.sortButton, sortBy === sort && styles.activeSortButton]}
-      onPress={() => setSortBy(sort)}
-      testID={`sort-${sort}`}
-    >
-      <View style={styles.sortIcon} accessibilityElementsHidden>{icon}</View>
-      <Text style={[styles.sortText, sortBy === sort && styles.activeSortText]}>
-        {title}
-      </Text>
-    </TouchableOpacity>
-  );
+  const renderSortButton = (sort: SortType, title: string, icon: React.ReactNode) => {
+    const isActive = currentSort === sort;
+    const handlePress = () => {
+      if (activeTab === 'rankings') {
+        setRankingsSortBy(sort);
+      } else {
+        setPublicationsSortBy(sort);
+      }
+    };
+    
+    return (
+      <TouchableOpacity
+        style={[styles.sortButton, isActive && styles.activeSortButton]}
+        onPress={handlePress}
+        testID={`sort-${sort}`}
+      >
+        <View style={styles.sortIcon} accessibilityElementsHidden>{icon}</View>
+        <Text style={[styles.sortText, isActive && styles.activeSortText]}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderRankingCard = (post: any) => {
     if (!post.user_rankings) return null;
@@ -454,25 +469,24 @@ const CommunityScreen = () => {
         {renderSortButton(
           'recent',
           'Recentes',
-          <Clock size={16} color={sortBy === 'recent' ? COLORS.accent : COLORS.textSecondary} />
+          <Clock size={16} color={currentSort === 'recent' ? COLORS.accent : COLORS.textSecondary} />
         )}
         {renderSortButton(
           'popular',
           'Populares',
-          <TrendingUp size={16} color={sortBy === 'popular' ? COLORS.accent : COLORS.textSecondary} />
+          <TrendingUp size={16} color={currentSort === 'popular' ? COLORS.accent : COLORS.textSecondary} />
         )}
       </View>
 
       <FlatList
         data={posts}
         keyExtractor={(item, index) => {
-          if (item.id) {
-            return `${activeTab}-${item.post_type || 'unknown'}-${item.id}`;
-          }
-          if (item.user_rankings?.id) {
-            return `${activeTab}-ranking-${item.user_rankings.id}`;
-          }
-          return `${activeTab}-fallback-${index}-${item.created_at || Date.now()}`;
+          // Create a unique key based on available data
+          const baseId = item.id || item.user_rankings?.id || `fallback-${index}`;
+          const postType = item.post_type || (item.user_rankings ? 'ranking' : 'discussion');
+          const timestamp = item.created_at || item.user_rankings?.created_at || Date.now();
+          
+          return `${activeTab}-${postType}-${baseId}-${timestamp}`;
         }}
         renderItem={({ item }) => {
           if (activeTab === 'rankings' && item.post_type === 'ranking') {
