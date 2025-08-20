@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   ActivityIndicator,
   Platform,
   Dimensions,
@@ -15,8 +14,7 @@ import { Calendar } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { WebView } from 'react-native-webview';
-import NewsCommentSection from '@/components/NewsCommentSection';
-import AdBanner from '@/components/ads/AdBanner';
+import InstagramStyleComments from '@/components/InstagramStyleComments';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -277,11 +275,7 @@ export default function NewsDetailScreen() {
       />
       
       <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.contentHeader}>
           <View style={styles.header}>
             <View style={styles.authorContainer}>
               <View style={styles.authorAvatar}>
@@ -355,15 +349,9 @@ export default function NewsDetailScreen() {
               />
             )}
           </View>
-          
-          <NewsCommentSection articleId={post.id} />
-
-          <AdBanner
-            adUnitId="ca-app-pub-3940256099942544/6300978111"
-            size="BANNER"
-            placement="news-detail-below-comments"
-          />
-        </ScrollView>
+        </View>
+        
+        <InstagramStyleComments articleId={post.id} />
       </View>
     </>
   );
@@ -374,11 +362,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 32,
+  contentHeader: {
+    maxHeight: '70%',
   },
   header: {
     paddingHorizontal: 20,

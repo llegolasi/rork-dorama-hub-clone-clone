@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
   ActivityIndicator,
@@ -16,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
-import NewsCommentSection from '@/components/NewsCommentSection';
+import InstagramStyleComments from '@/components/InstagramStyleComments';
 
 
 export default function RankingCommentsScreen() {
@@ -64,7 +63,6 @@ export default function RankingCommentsScreen() {
 
 
   const keyboardOffset = useMemo(() => insets.bottom, [insets.bottom]);
-  const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
 
   return (
     <KeyboardAvoidingView 
@@ -91,77 +89,73 @@ export default function RankingCommentsScreen() {
           <Text style={styles.loadingText}>Carregando...</Text>
         </View>
       ) : ranking ? (
-        <ScrollView
-          style={styles.content}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
-        >
-          {/* Ranking Section */}
-          <View style={styles.rankingSection}>
-            <View style={styles.rankingHeader}>
-              <Image
-                source={{ uri: ranking.users?.profile_image || 'https://via.placeholder.com/40x40/333/fff?text=U' }}
-                style={styles.userAvatar}
-                contentFit="cover"
-              />
-              <View style={styles.rankingHeaderInfo}>
-                <Text style={styles.rankingTitle}>{ranking.title}</Text>
-                <Text style={styles.rankingAuthor}>por @{ranking.users?.username}</Text>
-                <View style={styles.rankingStats}>
-                  <TouchableOpacity 
-                    style={styles.statItem}
-                    onPress={() => handleLike('')}
-                  >
-                    <Heart 
-                      size={16} 
-                      color={ranking.is_liked ? COLORS.accent : COLORS.textSecondary}
-                      fill={ranking.is_liked ? COLORS.accent : 'transparent'}
-                    />
-                    <Text style={styles.statText}>{ranking.likes_count || 0}</Text>
-                  </TouchableOpacity>
-                  <View style={styles.statItem}>
-                    <MessageCircle size={16} color={COLORS.textSecondary} />
-                    <Text style={styles.statText}>{comments.length}</Text>
+        <>
+          <View style={styles.contentHeader}>
+            {/* Ranking Section */}
+            <View style={styles.rankingSection}>
+              <View style={styles.rankingHeader}>
+                <Image
+                  source={{ uri: ranking.users?.profile_image || 'https://via.placeholder.com/40x40/333/fff?text=U' }}
+                  style={styles.userAvatar}
+                  contentFit="cover"
+                />
+                <View style={styles.rankingHeaderInfo}>
+                  <Text style={styles.rankingTitle}>{ranking.title}</Text>
+                  <Text style={styles.rankingAuthor}>por @{ranking.users?.username}</Text>
+                  <View style={styles.rankingStats}>
+                    <TouchableOpacity 
+                      style={styles.statItem}
+                      onPress={() => handleLike('')}
+                    >
+                      <Heart 
+                        size={16} 
+                        color={ranking.is_liked ? COLORS.accent : COLORS.textSecondary}
+                        fill={ranking.is_liked ? COLORS.accent : 'transparent'}
+                      />
+                      <Text style={styles.statText}>{ranking.likes_count || 0}</Text>
+                    </TouchableOpacity>
+                    <View style={styles.statItem}>
+                      <MessageCircle size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.statText}>{comments.length}</Text>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-            
-            <View style={styles.rankingList}>
-              {ranking.ranking_items?.map((item: any, index: number) => (
-                <TouchableOpacity
-                  key={item.drama_id}
-                  style={styles.rankingItem}
-                  onPress={() => router.push(`/drama/${item.drama_id}`)}
-                >
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>{item.rank_position}</Text>
-                  </View>
-                  <Image
-                    source={{
-                      uri: item.poster_image || item.cover_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama',
-                    }}
-                    style={styles.rankingPoster}
-                    contentFit="cover"
-                  />
-                  <View style={styles.rankingInfo}>
-                    <Text style={styles.rankingDramaTitle} numberOfLines={2}>
-                      {item.drama_title ?? `Drama #${item.rank_position}`}
-                    </Text>
-                    {!!item.drama_year && (
-                      <Text style={styles.rankingYear}>{item.drama_year}</Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
+              
+              <View style={styles.rankingList}>
+                {ranking.ranking_items?.map((item: any, index: number) => (
+                  <TouchableOpacity
+                    key={item.drama_id}
+                    style={styles.rankingItem}
+                    onPress={() => router.push(`/drama/${item.drama_id}`)}
+                  >
+                    <View style={styles.rankBadge}>
+                      <Text style={styles.rankText}>{item.rank_position}</Text>
+                    </View>
+                    <Image
+                      source={{
+                        uri: item.poster_image || item.cover_image || 'https://via.placeholder.com/200x300/333/fff?text=Drama',
+                      }}
+                      style={styles.rankingPoster}
+                      contentFit="cover"
+                    />
+                    <View style={styles.rankingInfo}>
+                      <Text style={styles.rankingDramaTitle} numberOfLines={2}>
+                        {item.drama_title ?? `Drama #${item.rank_position}`}
+                      </Text>
+                      {!!item.drama_year && (
+                        <Text style={styles.rankingYear}>{item.drama_year}</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           </View>
           
           {/* Comments Section */}
-          <NewsCommentSection rankingId={id!} type="ranking" />
-        </ScrollView>
+          <InstagramStyleComments rankingId={id!} type="ranking" />
+        </>
       ) : (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Ranking não encontrado</Text>
@@ -178,10 +172,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
+  contentHeader: {
+    maxHeight: '70%',
     padding: 16,
   },
   commentsSection: {
