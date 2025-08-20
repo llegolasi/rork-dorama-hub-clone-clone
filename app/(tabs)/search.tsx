@@ -94,7 +94,7 @@ export default function SearchScreen() {
             <View style={styles.quickAccessGrid}>
               <TouchableOpacity 
                 style={styles.quickAccessCard}
-                onPress={() => router.push('/categories/trending')}
+                onPress={() => router.push('/trending')}
               >
                 <View style={styles.quickAccessIcon}>
                   <Flame size={24} color={COLORS.accent} />
@@ -105,7 +105,7 @@ export default function SearchScreen() {
               
               <TouchableOpacity 
                 style={styles.quickAccessCard}
-                onPress={() => router.push('/categories/top-rated')}
+                onPress={() => router.push('/popular')}
               >
                 <View style={styles.quickAccessIcon}>
                   <Star size={24} color={COLORS.accent} />
