@@ -40,6 +40,12 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
     return password.length >= 8 && /[A-Z]/.test(password) && /\d/.test(password);
   };
 
+  const validateUsername = (username: string): boolean => {
+    // Only allow letters, numbers, and underscores (like TikTok/Instagram)
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    return username.length >= 3 && username.length <= 30 && usernameRegex.test(username);
+  };
+
   const checkUsername = async (username: string) => {
     if (username.length < 3) {
       setUsernameAvailable(null);
@@ -60,12 +66,16 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
   };
 
   const handleUsernameChange = (text: string) => {
-    setUsername(text);
+    // Remove spaces and convert to lowercase
+    const cleanText = text.replace(/\s/g, '').toLowerCase();
+    setUsername(cleanText);
     setUsernameAvailable(null);
     
     // Debounce username check
     const timeoutId = setTimeout(() => {
-      checkUsername(text);
+      if (validateUsername(cleanText)) {
+        checkUsername(cleanText);
+      }
     }, 500);
     
     return () => clearTimeout(timeoutId);
@@ -78,7 +88,7 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
     }
     
     return (
-      username.length >= 3 &&
+      validateUsername(username) &&
       usernameAvailable === true &&
       validateEmail(email) &&
       validatePassword(password)
@@ -181,7 +191,12 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
               </View>
             )}
           </View>
-          {usernameAvailable === false && (
+          {username && !validateUsername(username) && (
+            <Text style={styles.errorText}>
+              Nome de usuário deve ter 3-30 caracteres e conter apenas letras, números e _
+            </Text>
+          )}
+          {validateUsername(username) && usernameAvailable === false && (
             <Text style={styles.errorText}>Este nome de usuário não está disponível</Text>
           )}
         </View>
