@@ -5,15 +5,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { DRAMA_GENRES, getFilteredDramas, getTopRatedDramasForOnboarding } from '@/constants/onboarding';
 import { useAuth } from '@/hooks/useAuth';
+import OptimizedImage from '@/components/OptimizedImage';
 
 interface PreferencesStepProps {
   onComplete: () => void;
@@ -31,23 +32,41 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
   
   const { completeOnboarding } = useAuth();
 
-  // Load dramas from TMDB API
+  // Load dramas from TMDB API with Android optimization
   useEffect(() => {
     const loadDramas = async () => {
       setDramasLoading(true);
       try {
         const dramas = await getTopRatedDramasForOnboarding();
-        setAvailableDramas(dramas);
+        
+        // On Android, limit to fewer dramas for better performance
+        const limitedDramas = Platform.OS === 'android' 
+          ? dramas.slice(0, 12) // Only 12 dramas on Android
+          : dramas.slice(0, 18); // 18 on iOS
+          
+        setAvailableDramas(limitedDramas);
       } catch (error) {
         console.error('Error loading dramas for onboarding:', error);
         // Fallback to static dramas
-        setAvailableDramas(getFilteredDramas());
+        const fallbackDramas = getFilteredDramas();
+        const limitedFallback = Platform.OS === 'android' 
+          ? fallbackDramas.slice(0, 12)
+          : fallbackDramas.slice(0, 18);
+        setAvailableDramas(limitedFallback);
       } finally {
         setDramasLoading(false);
       }
     };
 
-    loadDramas();
+    // Delay loading on Android to prevent blocking
+    if (Platform.OS === 'android') {
+      const timer = setTimeout(() => {
+        loadDramas();
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      loadDramas();
+    }
   }, []);
 
   const toggleGenre = (genreId: string) => {
@@ -187,7 +206,13 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
                     style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
                     onPress={() => toggleDrama(drama.id)}
                   >
-                    <Image source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} style={styles.dramaPoster} />
+                    <OptimizedImage 
+                      source={{ uri: `https://image.tmdb.org/t/p/w342${drama.poster_path}` }} 
+                      style={styles.dramaPoster}
+                      contentFit="cover"
+                      priority={Platform.OS === 'android' ? 'low' : 'normal'}
+                      cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+                    />
                     {isSelected && (
                       <View style={styles.selectedOverlay}>
                         <Check size={24} color={COLORS.text} />

@@ -6,11 +6,13 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
-  Alert
+  Alert,
+  Modal,
+  FlatList
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import RNPickerSelect from 'react-native-picker-select';
-import { Calendar, User, ChevronDown } from 'lucide-react-native';
+import { Calendar, User, ChevronDown, Check } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { GENDER_OPTIONS, GenderOption } from '@/constants/onboarding';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +25,7 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
   const [selectedGender, setSelectedGender] = useState<string>('');
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [showGenderModal, setShowGenderModal] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const { updateOnboardingData } = useAuth();
@@ -77,6 +80,16 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
     return selectedGender !== '' && birthDate !== null;
   };
 
+  const handleGenderSelect = (genderId: string) => {
+    setSelectedGender(genderId);
+    setShowGenderModal(false);
+  };
+
+  const getSelectedGenderLabel = () => {
+    const selected = GENDER_OPTIONS.find(option => option.id === selectedGender);
+    return selected ? `${selected.emoji} ${selected.label}` : 'Selecione seu gênero';
+  };
+
   const handleContinue = async () => {
     if (!canProceed() || selectedGender === '') {
       Alert.alert('Dados incompletos', 'Por favor, selecione seu gênero e data de nascimento.');
@@ -117,48 +130,62 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
             <Text style={styles.sectionTitle}>Gênero</Text>
           </View>
           
-          <View style={styles.pickerContainer}>
-            <RNPickerSelect
-              onValueChange={(value) => {
-                console.log('Gender selected:', value);
-                setSelectedGender(value || '');
-              }}
-              items={GENDER_OPTIONS.map(option => ({
-                label: `${option.emoji} ${option.label}`,
-                value: option.id,
-                key: option.id
-              }))}
-              style={{
-                inputIOS: {
-                  ...styles.pickerInput,
-                  color: selectedGender ? COLORS.text : COLORS.textSecondary,
-                },
-                inputAndroid: {
-                  ...styles.pickerInput,
-                  color: selectedGender ? COLORS.text : COLORS.textSecondary,
-                },
-                placeholder: {
+          {Platform.OS === 'ios' ? (
+            <TouchableOpacity
+              style={[
+                styles.customPickerButton,
+                selectedGender && styles.customPickerButtonSelected
+              ]}
+              onPress={() => setShowGenderModal(true)}
+            >
+              <Text style={[
+                styles.customPickerText,
+                selectedGender && styles.customPickerTextSelected
+              ]}>
+                {getSelectedGenderLabel()}
+              </Text>
+              <ChevronDown size={20} color={selectedGender ? COLORS.accent : COLORS.textSecondary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.pickerContainer}>
+              <RNPickerSelect
+                onValueChange={(value) => {
+                  console.log('Gender selected:', value);
+                  setSelectedGender(value || '');
+                }}
+                items={GENDER_OPTIONS.map(option => ({
+                  label: `${option.emoji} ${option.label}`,
+                  value: option.id,
+                  key: option.id
+                }))}
+                style={{
+                  inputAndroid: {
+                    ...styles.pickerInput,
+                    color: selectedGender ? COLORS.text : COLORS.textSecondary,
+                  },
+                  placeholder: {
+                    color: COLORS.textSecondary,
+                    fontSize: 16,
+                  },
+                  iconContainer: {
+                    top: 20,
+                    right: 16,
+                  },
+                }}
+                placeholder={{
+                  label: 'Selecione seu gênero',
+                  value: '',
                   color: COLORS.textSecondary,
-                  fontSize: 16,
-                },
-                iconContainer: {
-                  top: 20,
-                  right: 16,
-                },
-              }}
-              placeholder={{
-                label: 'Selecione seu gênero',
-                value: null,
-                color: COLORS.textSecondary,
-              }}
-              value={selectedGender}
-              useNativeAndroidPickerStyle={false}
-              doneText="Confirmar"
-              Icon={() => {
-                return <ChevronDown size={20} color={COLORS.textSecondary} />;
-              }}
-            />
-          </View>
+                }}
+                value={selectedGender}
+                useNativeAndroidPickerStyle={false}
+                doneText="Confirmar"
+                Icon={() => {
+                  return <ChevronDown size={20} color={COLORS.textSecondary} />;
+                }}
+              />
+            </View>
+          )}
         </View>
 
         {/* Birth Date Selection */}
@@ -225,6 +252,58 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
           </Text>
         </View>
       </View>
+      
+      {/* Custom Gender Modal for iOS */}
+      <Modal
+        visible={showGenderModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowGenderModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowGenderModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Selecione seu gênero</Text>
+            </View>
+            
+            <FlatList
+              data={GENDER_OPTIONS}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.modalOption,
+                    selectedGender === item.id && styles.modalOptionSelected
+                  ]}
+                  onPress={() => handleGenderSelect(item.id)}
+                >
+                  <Text style={styles.modalOptionEmoji}>{item.emoji}</Text>
+                  <Text style={[
+                    styles.modalOptionText,
+                    selectedGender === item.id && styles.modalOptionTextSelected
+                  ]}>
+                    {item.label}
+                  </Text>
+                  {selectedGender === item.id && (
+                    <Check size={20} color={COLORS.accent} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+            
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowGenderModal(false)}
+            >
+              <Text style={styles.modalCloseText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -340,5 +419,84 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  customPickerButton: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  customPickerButtonSelected: {
+    borderColor: COLORS.accent,
+    backgroundColor: COLORS.accent + '10',
+  },
+  customPickerText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  customPickerTextSelected: {
+    color: COLORS.text,
+    fontWeight: '500' as const,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    gap: 12,
+  },
+  modalOptionSelected: {
+    backgroundColor: COLORS.accent + '15',
+  },
+  modalOptionEmoji: {
+    fontSize: 20,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: COLORS.text,
+    flex: 1,
+  },
+  modalOptionTextSelected: {
+    color: COLORS.accent,
+    fontWeight: '600' as const,
+  },
+  modalCloseButton: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 16,
+    color: COLORS.accent,
+    fontWeight: '600' as const,
   },
 });
