@@ -131,6 +131,42 @@ export const getFilteredDramas = () => {
   );
 };
 
+// Get top rated K-dramas from TMDB for onboarding
+export const getTopRatedDramasForOnboarding = async () => {
+  try {
+    const { getTopRatedDramas } = await import('@/services/api');
+    const response = await getTopRatedDramas(1);
+    
+    // Filter and format for onboarding
+    const topRatedDramas = response.results
+      .filter(drama => 
+        drama.poster_path && 
+        drama.poster_path.trim() !== '' && 
+        drama.vote_average > 7.0
+      )
+      .slice(0, 15) // Limit to 15 dramas
+      .map(drama => ({
+        id: drama.id,
+        name: drama.name,
+        poster_path: drama.poster_path,
+        year: drama.first_air_date ? new Date(drama.first_air_date).getFullYear().toString() : '2023',
+        rating: drama.vote_average
+      }));
+    
+    // If we don't have enough from API, supplement with static data
+    if (topRatedDramas.length < 10) {
+      const staticDramas = getFilteredDramas().slice(0, 15 - topRatedDramas.length);
+      return [...topRatedDramas, ...staticDramas];
+    }
+    
+    return topRatedDramas;
+  } catch (error) {
+    console.error('Error fetching top rated dramas for onboarding:', error);
+    // Fallback to static data
+    return getFilteredDramas();
+  }
+};
+
 export const ONBOARDING_STEPS = {
   LOGIN: 'login',
   CREDENTIALS: 'credentials',

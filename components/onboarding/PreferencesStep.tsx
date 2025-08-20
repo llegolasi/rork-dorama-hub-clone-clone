@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 import { Check } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { DRAMA_GENRES, getFilteredDramas } from '@/constants/onboarding';
+import { DRAMA_GENRES, getFilteredDramas, getTopRatedDramasForOnboarding } from '@/constants/onboarding';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PreferencesStepProps {
@@ -26,9 +26,29 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [lovedDramas, setLovedDramas] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [dramasLoading, setDramasLoading] = useState<boolean>(true);
+  const [availableDramas, setAvailableDramas] = useState<any[]>([]);
   
   const { completeOnboarding } = useAuth();
-  const filteredDramas = getFilteredDramas();
+
+  // Load dramas from TMDB API
+  useEffect(() => {
+    const loadDramas = async () => {
+      setDramasLoading(true);
+      try {
+        const dramas = await getTopRatedDramasForOnboarding();
+        setAvailableDramas(dramas);
+      } catch (error) {
+        console.error('Error loading dramas for onboarding:', error);
+        // Fallback to static dramas
+        setAvailableDramas(getFilteredDramas());
+      } finally {
+        setDramasLoading(false);
+      }
+    };
+
+    loadDramas();
+  }, []);
 
   const toggleGenre = (genreId: string) => {
     setSelectedGenres(prev => {
@@ -151,28 +171,36 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
           <Text style={styles.sectionSubtitle}>
             Toque nos doramas que você já assistiu e gostou
           </Text>
-          <View style={styles.dramaGrid}>
-            {filteredDramas.map((drama, index) => {
-              const isSelected = lovedDramas.includes(drama.id);
-              return (
-                <TouchableOpacity
-                  key={`drama-${drama.id}-${index}`}
-                  style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
-                  onPress={() => toggleDrama(drama.id)}
-                >
-                  <Image source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} style={styles.dramaPoster} />
-                  {isSelected && (
-                    <View style={styles.selectedOverlay}>
-                      <Check size={24} color={COLORS.text} />
-                    </View>
-                  )}
-                  <Text style={styles.dramaTitle} numberOfLines={2}>
-                    {drama.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          
+          {dramasLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.accent} />
+              <Text style={styles.loadingText}>Carregando doramas populares...</Text>
+            </View>
+          ) : (
+            <View style={styles.dramaGrid}>
+              {availableDramas.map((drama, index) => {
+                const isSelected = lovedDramas.includes(drama.id);
+                return (
+                  <TouchableOpacity
+                    key={`drama-${drama.id}-${index}`}
+                    style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
+                    onPress={() => toggleDrama(drama.id)}
+                  >
+                    <Image source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} style={styles.dramaPoster} />
+                    {isSelected && (
+                      <View style={styles.selectedOverlay}>
+                        <Check size={24} color={COLORS.text} />
+                      </View>
+                    )}
+                    <Text style={styles.dramaTitle} numberOfLines={2}>
+                      {drama.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         <View style={styles.buttonContainer}>
@@ -330,6 +358,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   skipButtonText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  loadingText: {
     color: COLORS.textSecondary,
     fontSize: 14,
     textAlign: 'center',

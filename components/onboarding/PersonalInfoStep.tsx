@@ -9,7 +9,8 @@ import {
   Alert
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar, User } from 'lucide-react-native';
+import RNPickerSelect from 'react-native-picker-select';
+import { Calendar, User, ChevronDown } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { GENDER_OPTIONS, GenderOption } from '@/constants/onboarding';
 import { useAuth } from '@/hooks/useAuth';
@@ -116,25 +117,43 @@ export default function PersonalInfoStep({ onComplete }: PersonalInfoStepProps) 
             <Text style={styles.sectionTitle}>Gênero</Text>
           </View>
           
-          <View style={styles.genderGrid}>
-            {GENDER_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.genderOption,
-                  selectedGender === option.id && styles.genderOptionSelected
-                ]}
-                onPress={() => setSelectedGender(option.id)}
-              >
-                <Text style={styles.genderEmoji}>{option.emoji}</Text>
-                <Text style={[
-                  styles.genderLabel,
-                  selectedGender === option.id && styles.genderLabelSelected
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.pickerContainer}>
+            <RNPickerSelect
+              onValueChange={(value) => setSelectedGender(value)}
+              items={GENDER_OPTIONS.map(option => ({
+                label: `${option.emoji} ${option.label}`,
+                value: option.id,
+                key: option.id
+              }))}
+              style={{
+                inputIOS: {
+                  ...styles.pickerInput,
+                  color: selectedGender ? COLORS.text : COLORS.textSecondary,
+                },
+                inputAndroid: {
+                  ...styles.pickerInput,
+                  color: selectedGender ? COLORS.text : COLORS.textSecondary,
+                },
+                placeholder: {
+                  color: COLORS.textSecondary,
+                  fontSize: 16,
+                },
+                iconContainer: {
+                  top: 20,
+                  right: 16,
+                },
+              }}
+              placeholder={{
+                label: 'Selecione seu gênero',
+                value: null,
+                color: COLORS.textSecondary,
+              }}
+              value={selectedGender}
+              useNativeAndroidPickerStyle={false}
+              Icon={() => {
+                return <ChevronDown size={20} color={COLORS.textSecondary} />;
+              }}
+            />
           </View>
         </View>
 
@@ -243,38 +262,19 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: COLORS.text,
   },
-  genderGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  genderOption: {
-    flex: 1,
-    minWidth: '45%',
+  pickerContainer: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: COLORS.border,
-    padding: 16,
-    alignItems: 'center',
-    gap: 8,
   },
-  genderOptionSelected: {
-    borderColor: COLORS.accent,
-    backgroundColor: COLORS.accent + '10',
-  },
-  genderEmoji: {
-    fontSize: 24,
-  },
-  genderLabel: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  genderLabelSelected: {
-    color: COLORS.accent,
-    fontWeight: '600' as const,
+  pickerInput: {
+    fontSize: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingRight: 50,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
   },
   dateButton: {
     backgroundColor: COLORS.card,

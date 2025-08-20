@@ -176,6 +176,16 @@ export const [AuthContext, useAuth] = createContextHook(() => {
                 createdAt: profile.created_at
               };
               setUser(authUser);
+              // Persist user data to AsyncStorage for offline access
+              await AsyncStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(authUser));
+            }
+          } else {
+            // No active session, check AsyncStorage for persisted user
+            const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_USER);
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              setUser(parsedUser);
+              console.log('Loaded persisted user from storage:', parsedUser.username);
             }
           }
         } else {

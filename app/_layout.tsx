@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
+import { Platform } from "react-native";
 
 import { UserContext } from "@/hooks/useUserStore";
 import { AuthContext, useAuth } from "@/hooks/useAuth";
@@ -40,13 +41,15 @@ function RootLayoutNav() {
     <Stack 
       screenOptions={{ 
         headerStyle: { 
-          backgroundColor: "#121212" 
+          backgroundColor: "#121212",
+          // Add extra height for Android to avoid status bar overlap
+          ...(Platform.OS === 'android' && { paddingTop: 24 })
         },
         headerTintColor: "#FFFFFF",
         headerBackTitle: "Back",
         contentStyle: {
           backgroundColor: "#121212",
-        }
+        },
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
