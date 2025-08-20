@@ -131,21 +131,29 @@ export const getFilteredDramas = () => {
   );
 };
 
-// Get top rated K-dramas from TMDB for onboarding
+// Get top rated K-dramas from TMDB for onboarding with Android optimizations
 export const getTopRatedDramasForOnboarding = async () => {
   try {
+    // Dynamic import to avoid blocking startup
     const { getTopRatedDramas } = await import('@/services/api');
-    const response = await getTopRatedDramas(1);
+    
+    // Add timeout for Android to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), 8000)
+    );
+    
+    const apiPromise = getTopRatedDramas(1);
+    const response = await Promise.race([apiPromise, timeoutPromise]) as any;
     
     // Filter and format for onboarding
     const topRatedDramas = response.results
-      .filter(drama => 
+      .filter((drama: any) => 
         drama.poster_path && 
         drama.poster_path.trim() !== '' && 
         drama.vote_average > 7.0
       )
       .slice(0, 15) // Limit to 15 dramas
-      .map(drama => ({
+      .map((drama: any) => ({
         id: drama.id,
         name: drama.name,
         poster_path: drama.poster_path,
