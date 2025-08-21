@@ -313,21 +313,31 @@ const CoverPhotoModal: React.FC<CoverPhotoModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   modalContainer: {
     backgroundColor: COLORS.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
-    minHeight: '60%',
+    borderRadius: 20,
+    width: '100%',
+    maxHeight: '95%',
+    minHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -340,7 +350,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   searchContainer: {
-    padding: 16,
+    padding: 20,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -358,7 +368,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -382,15 +393,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    padding: 16,
+    marginBottom: 16,
     alignItems: 'center',
   },
   dramaPoster: {
-    width: 60,
-    height: 90,
+    width: 70,
+    height: 105,
     borderRadius: 8,
-    marginRight: 12,
+    marginRight: 16,
   },
   dramaInfo: {
     flex: 1,
@@ -406,7 +417,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   selectedDramaHeader: {
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -428,11 +439,11 @@ const styles = StyleSheet.create({
   },
   imageItem: {
     width: '48%',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   coverImage: {
     width: '100%',
-    height: 120,
+    height: 160,
     borderRadius: 12,
   },
   premiumContent: {
