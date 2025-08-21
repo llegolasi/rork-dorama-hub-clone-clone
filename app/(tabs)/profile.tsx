@@ -43,15 +43,17 @@ export default function ProfileScreen() {
     enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
   });
   
-  // Fetch user stats for counts
+  // Fetch user stats for counts - only if user is authenticated
   const { data: userStats, refetch: refetchStats } = trpc.users.getStats.useQuery({
     userId: userProfile?.id
   }, {
     enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
   });
   
-  // Check premium status
-  const { data: premiumStatus } = trpc.users.checkPremiumStatus.useQuery();
+  // Check premium status - only if user is authenticated
+  const { data: premiumStatus } = trpc.users.checkPremiumStatus.useQuery(undefined, {
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
+  });
   
   // Update profile cover mutation
   const updateCoverMutation = trpc.users.updateProfileCover.useMutation({

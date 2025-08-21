@@ -355,7 +355,7 @@ export const getFollowingWithDetailsProcedure = protectedProcedure
 // Get user statistics with detailed analytics
 export const getUserStatsProcedure = protectedProcedure
   .input(z.object({
-    userId: z.string().uuid().optional(),
+    userId: z.string().optional(),
     timeFilter: z.enum(['week', 'month', 'quarter', 'year', 'all']).default('month')
   }).transform((data) => {
     if (!data.userId || data.userId.trim() === '' || data.userId === 'undefined') {
@@ -366,6 +366,44 @@ export const getUserStatsProcedure = protectedProcedure
   .query(async ({ input, ctx }) => {
     try {
       const targetUserId = input.userId || ctx.user.id;
+      
+      // Development mode - return mock stats
+      if (ctx.isDevelopmentMode) {
+        return {
+          user_id: targetUserId,
+          total_watch_time_minutes: 2340,
+          total_episodes_watched: 156,
+          dramas_completed: 12,
+          dramas_watching: 3,
+          dramas_in_watchlist: 8,
+          average_drama_runtime: 195,
+          completion_rate: 75,
+          average_episodes_per_day: 1.2,
+          most_active_hour: 20,
+          time_data: [
+            { label: 'Seg', value: 120, color: '#6366f1' },
+            { label: 'Ter', value: 90, color: '#6366f1' },
+            { label: 'Qua', value: 150, color: '#6366f1' },
+            { label: 'Qui', value: 180, color: '#6366f1' },
+            { label: 'Sex', value: 200, color: '#6366f1' },
+            { label: 'Sáb', value: 240, color: '#6366f1' },
+            { label: 'Dom', value: 160, color: '#6366f1' }
+          ],
+          genre_data: [
+            { label: 'Romance', value: 35, color: '#FF6B9D' },
+            { label: 'Drama', value: 25, color: '#96CEB4' },
+            { label: 'Comédia', value: 20, color: '#45B7D1' },
+            { label: 'Thriller', value: 15, color: '#4ECDC4' },
+            { label: 'Histórico', value: 5, color: '#FFEAA7' }
+          ],
+          recent_completions: [
+            { drama_id: 1, completed_at: new Date().toISOString() },
+            { drama_id: 2, completed_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }
+          ],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
       
       // Get basic stats from user_drama_lists
       const { data: watchingDramas } = await ctx.supabase
@@ -786,12 +824,41 @@ export const updateUserStatsProcedure = protectedProcedure
 // Get user's completed dramas with details
 export const getUserCompletedDramasProcedure = publicProcedure
   .input(z.object({
-    userId: z.string().uuid(),
+    userId: z.string(),
     limit: z.number().min(1).max(50).default(20),
     offset: z.number().min(0).default(0)
   }))
   .query(async ({ input, ctx }) => {
     try {
+      // Development mode - return mock completed dramas
+      if (ctx.isDevelopmentMode) {
+        return [
+          {
+            id: 1,
+            name: 'Crash Landing on You',
+            poster_path: '/t6jVlbPBwJlBMOtGXMJjAJQMppz.jpg',
+            first_air_date: '2019-12-14',
+            rating: 9,
+            completed_at: new Date().toISOString()
+          },
+          {
+            id: 2,
+            name: 'Goblin',
+            poster_path: '/x2BHx02VoVmKMHcSOab9NkJf88X.jpg',
+            first_air_date: '2016-12-02',
+            rating: 8,
+            completed_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 3,
+            name: 'Descendants of the Sun',
+            poster_path: '/lKkThflmJFONZXoI7xFdQbh4dFE.jpg',
+            first_air_date: '2016-02-24',
+            rating: 7,
+            completed_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+          }
+        ].slice(input.offset, input.offset + input.limit);
+      }
       const { data: completedDramas, error } = await ctx.supabase
         .from('user_drama_lists')
         .select(`*`)
@@ -898,6 +965,15 @@ export const updateUserProfileCoverProcedure = protectedProcedure
   }))
   .mutation(async ({ input, ctx }) => {
     try {
+      // Development mode - return mock success
+      if (ctx.isDevelopmentMode) {
+        return {
+          id: ctx.user.id,
+          user_profile_cover: input.coverImageUrl,
+          updated_at: new Date().toISOString()
+        };
+      }
+
       // Check if user has premium subscription
       const { data: subscription } = await ctx.supabase
         .from('user_subscriptions')
@@ -933,6 +1009,22 @@ export const updateUserProfileCoverProcedure = protectedProcedure
 export const checkUserPremiumStatusProcedure = protectedProcedure
   .query(async ({ ctx }) => {
     try {
+      // Development mode - return mock premium status
+      if (ctx.isDevelopmentMode) {
+        return {
+          isPremium: true, // Mock premium for development
+          subscription: {
+            id: 'dev_subscription',
+            user_id: ctx.user.id,
+            plan_id: 'premium_monthly',
+            status: 'active',
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        };
+      }
+
       const { data: subscription } = await ctx.supabase
         .from('user_subscriptions')
         .select('*')

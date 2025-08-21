@@ -3,12 +3,19 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://demo.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'demo-key';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'demo-key';
+
+// Check if we have valid Supabase configuration
+const hasValidSupabaseConfig = 
+  process.env.EXPO_PUBLIC_SUPABASE_URL && 
+  process.env.EXPO_PUBLIC_SUPABASE_URL !== 'your_supabase_project_url' &&
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY && 
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY !== 'your_supabase_anon_key';
 
 // Admin client (service role) only for verifying tokens and privileged reads, not for RLS-bypassed writes
-const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+const adminClient = hasValidSupabaseConfig ? createClient(supabaseUrl, supabaseServiceKey) : null;
 
 // Context creation function
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
@@ -21,35 +28,48 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
     profileImage: string | null;
     isOnboardingComplete: boolean | null;
   } | null = null;
-  let requestClient: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+  let requestClient: SupabaseClient = hasValidSupabaseConfig ? createClient(supabaseUrl, supabaseAnonKey) : createClient('https://demo.supabase.co', 'demo-key');
 
-  if (authHeader?.startsWith('Bearer ')) {
+  // Development mode - create a mock user for testing
+  if (!hasValidSupabaseConfig) {
+    console.log('Running in development mode - using mock authentication');
+    user = {
+      id: 'dev_demo_user',
+      username: 'demo_user',
+      email: 'demo@example.com',
+      displayName: 'Demo User',
+      profileImage: null,
+      isOnboardingComplete: true,
+    };
+  } else if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
 
     try {
-      const { data: { user: authUser }, error } = await adminClient.auth.getUser(token);
+      if (adminClient) {
+        const { data: { user: authUser }, error } = await adminClient.auth.getUser(token);
 
-      if (!error && authUser) {
-        // Create a per-request client that carries the user's JWT so RLS policies see auth.uid()
-        requestClient = createClient(supabaseUrl, supabaseAnonKey, {
-          global: { headers: { Authorization: `Bearer ${token}` } },
-        });
+        if (!error && authUser) {
+          // Create a per-request client that carries the user's JWT so RLS policies see auth.uid()
+          requestClient = createClient(supabaseUrl, supabaseAnonKey, {
+            global: { headers: { Authorization: `Bearer ${token}` } },
+          });
 
-        const { data: profile } = await requestClient
-          .from('users')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
+          const { data: profile } = await requestClient
+            .from('users')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
 
-        if (profile) {
-          user = {
-            id: profile.id,
-            username: profile.username ?? null,
-            email: authUser.email ?? '',
-            displayName: profile.display_name ?? null,
-            profileImage: profile.profile_image ?? null,
-            isOnboardingComplete: profile.is_onboarding_complete ?? null,
-          };
+          if (profile) {
+            user = {
+              id: profile.id,
+              username: profile.username ?? null,
+              email: authUser.email ?? '',
+              displayName: profile.display_name ?? null,
+              profileImage: profile.profile_image ?? null,
+              isOnboardingComplete: profile.is_onboarding_complete ?? null,
+            };
+          }
         }
       }
     } catch (error) {
@@ -62,6 +82,7 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
     user,
     supabase: requestClient,
     admin: adminClient,
+    isDevelopmentMode: !hasValidSupabaseConfig,
   };
 };
 

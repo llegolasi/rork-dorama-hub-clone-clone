@@ -46,6 +46,72 @@ export const getCommunityPostsProcedure = publicProcedure
     sortBy: z.enum(['recent', 'popular']).default('recent')
   }))
   .query(async ({ input, ctx }: { input: { type?: 'all' | 'rankings' | 'discussions'; limit: number; offset: number; sortBy: 'recent' | 'popular' }; ctx: Context }) => {
+    // Development mode - return mock posts
+    if (ctx.isDevelopmentMode) {
+      const mockPosts = [
+        {
+          id: 'mock_post_1',
+          user_id: 'dev_demo_user',
+          post_type: 'ranking',
+          content: 'Meu ranking dos melhores K-dramas de romance!',
+          mentioned_drama_id: null,
+          ranking_id: 'mock_ranking_1',
+          likes_count: 15,
+          comments_count: 8,
+          is_pinned: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          users: {
+            username: 'demo_user',
+            display_name: 'Demo User',
+            profile_image: null
+          },
+          user_rankings: {
+            id: 'mock_ranking_1',
+            title: 'Top 10 K-dramas de Romance',
+            description: 'Minha lista pessoal dos melhores doramas românticos',
+            ranking_items: [
+              {
+                drama_id: 1,
+                rank_position: 1,
+                drama_title: 'Crash Landing on You',
+                poster_image: '/t6jVlbPBwJlBMOtGXMJjAJQMppz.jpg',
+                cover_image: null
+              },
+              {
+                drama_id: 2,
+                rank_position: 2,
+                drama_title: 'Goblin',
+                poster_image: '/x2BHx02VoVmKMHcSOab9NkJf88X.jpg',
+                cover_image: null
+              }
+            ]
+          }
+        },
+        {
+          id: 'mock_post_2',
+          user_id: 'dev_demo_user',
+          post_type: 'discussion',
+          content: 'Acabei de assistir Squid Game e estou impressionado! Que série incrível.',
+          mentioned_drama_id: 87739,
+          ranking_id: null,
+          likes_count: 23,
+          comments_count: 12,
+          is_pinned: false,
+          created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+          updated_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+          users: {
+            username: 'demo_user',
+            display_name: 'Demo User',
+            profile_image: null
+          },
+          user_rankings: null
+        }
+      ];
+      
+      return mockPosts.slice(input.offset, input.offset + input.limit);
+    }
+    
     const isAuthed = Boolean(ctx?.user?.id);
     const client = isAuthed ? (ctx.supabase ?? supabase) : ctx.admin;
     if (!client) {
