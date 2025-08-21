@@ -1009,41 +1009,26 @@ export const updateUserProfileCoverProcedure = protectedProcedure
 export const getProfileAvatarsProcedure = publicProcedure
   .query(async ({ ctx }) => {
     try {
-      const { data: files, error } = await ctx.supabase.storage
+      const { data: avatars, error } = await ctx.supabase
         .from('profileavatares')
-        .list('', {
-          limit: 50,
-          sortBy: { column: 'name', order: 'asc' }
-        });
+        .select('id, profile_avatares_url')
+        .order('id', { ascending: true });
 
       if (error) {
         console.error('Error fetching avatars:', error);
         return [];
       }
 
-      if (!files || files.length === 0) {
+      if (!avatars || avatars.length === 0) {
         return [];
       }
 
-      // Filter only image files and create full URLs
-      const avatars = files
-        .filter(file => {
-          const ext = file.name.toLowerCase();
-          return ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png') || ext.endsWith('.webp');
-        })
-        .map(file => {
-          const { data } = ctx.supabase.storage
-            .from('profileavatares')
-            .getPublicUrl(file.name);
-          
-          return {
-            id: file.name,
-            name: file.name,
-            url: data.publicUrl
-          };
-        });
-
-      return avatars;
+      // Map to the expected format
+      return avatars.map(avatar => ({
+        id: avatar.id.toString(),
+        name: `Avatar ${avatar.id}`,
+        url: avatar.profile_avatares_url
+      }));
     } catch (error) {
       console.error('Error in getProfileAvatarsProcedure:', error);
       return [];
