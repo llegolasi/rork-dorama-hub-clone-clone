@@ -135,7 +135,8 @@ export const ONBOARDING_STEPS = {
   LOGIN: 'login',
   CREDENTIALS: 'credentials',
   PERSONAL_INFO: 'personal_info',
-  PROFILE: 'profile',
+  PROFILE_PHOTO: 'profile_photo',
+  PROFILE_INFO: 'profile_info',
   PREFERENCES: 'preferences'
 } as const;
 

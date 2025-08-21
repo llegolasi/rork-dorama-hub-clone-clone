@@ -8,6 +8,7 @@ import LoginStep from '@/components/onboarding/LoginStep';
 import CredentialsStep from '@/components/onboarding/CredentialsStep';
 import PersonalInfoStep from '@/components/onboarding/PersonalInfoStep';
 import ProfileStep from '@/components/onboarding/ProfileStep';
+import ProfileInfoStep from '@/components/onboarding/ProfileInfoStep';
 import PreferencesStep from '@/components/onboarding/PreferencesStep';
 
 export default function OnboardingScreen() {
@@ -22,9 +23,12 @@ export default function OnboardingScreen() {
         setCurrentStep(ONBOARDING_STEPS.PERSONAL_INFO);
         break;
       case ONBOARDING_STEPS.PERSONAL_INFO:
-        setCurrentStep(ONBOARDING_STEPS.PROFILE);
+        setCurrentStep(ONBOARDING_STEPS.PROFILE_PHOTO);
         break;
-      case ONBOARDING_STEPS.PROFILE:
+      case ONBOARDING_STEPS.PROFILE_PHOTO:
+        setCurrentStep(ONBOARDING_STEPS.PROFILE_INFO);
+        break;
+      case ONBOARDING_STEPS.PROFILE_INFO:
         setCurrentStep(ONBOARDING_STEPS.PREFERENCES);
         break;
       case ONBOARDING_STEPS.PREFERENCES:
@@ -54,8 +58,10 @@ export default function OnboardingScreen() {
         );
       case ONBOARDING_STEPS.PERSONAL_INFO:
         return <PersonalInfoStep onComplete={() => handleStepComplete(ONBOARDING_STEPS.PERSONAL_INFO)} />;
-      case ONBOARDING_STEPS.PROFILE:
-        return <ProfileStep onComplete={() => handleStepComplete(ONBOARDING_STEPS.PROFILE)} />;
+      case ONBOARDING_STEPS.PROFILE_PHOTO:
+        return <ProfileStep onComplete={() => handleStepComplete(ONBOARDING_STEPS.PROFILE_PHOTO)} />;
+      case ONBOARDING_STEPS.PROFILE_INFO:
+        return <ProfileInfoStep onComplete={() => handleStepComplete(ONBOARDING_STEPS.PROFILE_INFO)} />;
       case ONBOARDING_STEPS.PREFERENCES:
         return <PreferencesStep onComplete={() => handleStepComplete(ONBOARDING_STEPS.PREFERENCES)} />;
       default:

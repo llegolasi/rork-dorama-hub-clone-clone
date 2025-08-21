@@ -2,30 +2,39 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
   Image,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  FlatList
 } from 'react-native';
-import { Camera, User } from 'lucide-react-native';
+import { Camera, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
+import { trpc } from '@/lib/trpc';
 
 interface ProfileStepProps {
   onComplete: () => void;
 }
 
+interface Avatar {
+  id: string;
+  name: string;
+  url: string;
+}
+
 export default function ProfileStep({ onComplete }: ProfileStepProps) {
-  const [displayName, setDisplayName] = useState<string>('');
-  const [bio, setBio] = useState<string>('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
-  const { updateOnboardingData, onboardingData, completeOnboarding } = useAuth();
+  const { updateOnboardingData } = useAuth();
+  
+  const avatarsQuery = trpc.users.getProfileAvatars.useQuery();
+  const avatars = avatarsQuery.data || [];
 
   const pickImage = async () => {
     try {
@@ -41,8 +50,8 @@ export default function ProfileStep({ onComplete }: ProfileStepProps) {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
-        base64: false, // Don't include base64 to avoid memory issues
-        exif: false, // Don't include EXIF data
+        base64: false,
+        exif: false,
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -55,6 +64,7 @@ export default function ProfileStep({ onComplete }: ProfileStepProps) {
           type: asset.type
         });
         setProfileImage(asset.uri);
+        setSelectedAvatar(null);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -62,69 +72,73 @@ export default function ProfileStep({ onComplete }: ProfileStepProps) {
     }
   };
 
+  const selectAvatar = (avatarUrl: string) => {
+    setSelectedAvatar(avatarUrl);
+    setProfileImage(null);
+  };
+
+  const getSelectedImageUri = () => {
+    return profileImage || selectedAvatar;
+  };
+
   const handleContinue = async () => {
+    const selectedImageUri = getSelectedImageUri();
+    
+    if (!selectedImageUri) {
+      Alert.alert('Foto obrigatória', 'Por favor, selecione uma foto de perfil ou escolha um avatar.');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
       const profileData = {
-        displayName: displayName || onboardingData?.username || '',
-        bio,
-        profileImage: profileImage || undefined
+        profileImage: selectedImageUri
       };
       
-      console.log('ProfileStep - Saving profile data:', profileData);
-      console.log('ProfileStep - Current onboarding data:', onboardingData);
+      console.log('ProfilePhotoStep - Saving profile photo:', profileData);
       
-      // Update onboarding data with profile info
       updateOnboardingData(profileData);
       
       setIsLoading(false);
       onComplete();
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Erro', 'Falha ao atualizar perfil. Tente novamente.');
+      console.error('Error updating profile photo:', error);
+      Alert.alert('Erro', 'Falha ao salvar foto de perfil. Tente novamente.');
       setIsLoading(false);
     }
   };
 
-  const handleSkip = async () => {
-    setIsLoading(true);
-    
-    try {
-      const skipData = {
-        displayName: onboardingData?.username || '',
-        bio: '',
-        profileImage: undefined
-      };
-      
-      console.log('ProfileStep - Skipping with data:', skipData);
-      console.log('ProfileStep - Current onboarding data:', onboardingData);
-      
-      // Update onboarding data with minimal profile info
-      updateOnboardingData(skipData);
-      
-      setIsLoading(false);
-      onComplete();
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Erro', 'Falha ao atualizar perfil. Tente novamente.');
-      setIsLoading(false);
-    }
-  };
+  const renderAvatarItem = ({ item }: { item: Avatar }) => (
+    <TouchableOpacity
+      style={[
+        styles.avatarItem,
+        selectedAvatar === item.url && styles.selectedAvatarItem
+      ]}
+      onPress={() => selectAvatar(item.url)}
+    >
+      <Image source={{ uri: item.url }} style={styles.avatarImage} />
+      {selectedAvatar === item.url && (
+        <View style={styles.selectedOverlay}>
+          <View style={styles.selectedIndicator} />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
-        <Text style={styles.title}>Personalize seu Perfil</Text>
+        <Text style={styles.title}>Escolha sua Foto de Perfil</Text>
         <Text style={styles.subtitle}>
-          Adicione uma foto e conte um pouco sobre você para que outros fãs possam te conhecer melhor
+          Selecione uma foto da sua galeria ou escolha um dos nossos avatares
         </Text>
 
         {/* Profile Image */}
         <View style={styles.imageContainer}>
           <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.profileImage} />
+            {getSelectedImageUri() ? (
+              <Image source={{ uri: getSelectedImageUri()! }} style={styles.profileImage} />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Camera size={32} color={COLORS.textSecondary} />
@@ -134,62 +148,52 @@ export default function ProfileStep({ onComplete }: ProfileStepProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Display Name */}
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
-            <User size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Nome de exibição (opcional)"
-              placeholderTextColor={COLORS.textSecondary}
-              value={displayName}
-              onChangeText={setDisplayName}
-              maxLength={30}
-            />
-          </View>
-          <Text style={styles.helperText}>
-            Este será o nome que aparece no seu perfil. Se deixar em branco, usaremos seu nome de usuário.
-          </Text>
-        </View>
+        {/* Custom Photo Button */}
+        <TouchableOpacity style={styles.customPhotoButton} onPress={pickImage}>
+          <Plus size={16} color={COLORS.accent} />
+          <Text style={styles.customPhotoText}>Usar foto da galeria</Text>
+        </TouchableOpacity>
 
-        {/* Bio */}
-        <View style={styles.inputContainer}>
-          <View style={[styles.inputWrapper, styles.bioWrapper]}>
-            <TextInput
-              style={[styles.input, styles.bioInput]}
-              placeholder="Conte um pouco sobre você... (opcional)"
-              placeholderTextColor={COLORS.textSecondary}
-              value={bio}
-              onChangeText={setBio}
-              multiline
-              maxLength={150}
-              textAlignVertical="top"
+        {/* Avatars Section */}
+        <View style={styles.avatarsSection}>
+          <Text style={styles.avatarsTitle}>Ou escolha um avatar:</Text>
+          
+          {avatarsQuery.isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={COLORS.accent} />
+              <Text style={styles.loadingText}>Carregando avatares...</Text>
+            </View>
+          ) : avatars.length > 0 ? (
+            <FlatList
+              data={avatars}
+              renderItem={renderAvatarItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.avatarsList}
             />
-          </View>
-          <Text style={styles.characterCount}>
-            {bio.length}/150 caracteres
-          </Text>
+          ) : (
+            <Text style={styles.noAvatarsText}>Nenhum avatar disponível</Text>
+          )}
         </View>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.continueButton}
+            style={[
+              styles.continueButton,
+              !getSelectedImageUri() && styles.disabledButton
+            ]}
             onPress={handleContinue}
-            disabled={isLoading}
+            disabled={isLoading || !getSelectedImageUri()}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color={COLORS.text} />
             ) : (
-              <Text style={styles.continueButtonText}>Continuar</Text>
+              <Text style={[
+                styles.continueButtonText,
+                !getSelectedImageUri() && styles.disabledButtonText
+              ]}>Continuar</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-            disabled={isLoading}
-          >
-            <Text style={styles.skipButtonText}>Pular por agora</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -222,7 +226,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   imageButton: {
     width: 120,
@@ -250,48 +254,85 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500' as const,
   },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  inputWrapper: {
+  customPhotoButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    gap: 8,
   },
-  bioWrapper: {
-    alignItems: 'flex-start',
-    paddingVertical: 4,
+  customPhotoText: {
+    color: COLORS.accent,
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+  avatarsSection: {
+    marginBottom: 32,
+  },
+  avatarsTitle: {
     fontSize: 16,
+    fontWeight: '600' as const,
     color: COLORS.text,
+    marginBottom: 16,
+    textAlign: 'center',
   },
-  bioInput: {
-    minHeight: 80,
-    paddingTop: 16,
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 8,
   },
-  inputIcon: {
-    marginRight: 8,
-  },
-  helperText: {
+  loadingText: {
     color: COLORS.textSecondary,
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 16,
-    lineHeight: 16,
+    fontSize: 14,
   },
-  characterCount: {
+  noAvatarsText: {
     color: COLORS.textSecondary,
-    fontSize: 12,
-    textAlign: 'right',
-    marginTop: 4,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  avatarsList: {
+    paddingHorizontal: 8,
+  },
+  avatarItem: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  selectedAvatarItem: {
+    borderWidth: 3,
+    borderColor: COLORS.accent,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  selectedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.accent,
   },
   buttonContainer: {
     gap: 12,
@@ -302,18 +343,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
   },
+  disabledButton: {
+    backgroundColor: COLORS.border,
+  },
   continueButtonText: {
     color: COLORS.text,
     fontSize: 16,
     fontWeight: '600' as const,
     textAlign: 'center',
   },
-  skipButton: {
-    paddingVertical: 12,
-  },
-  skipButtonText: {
+  disabledButtonText: {
     color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
   },
 });
