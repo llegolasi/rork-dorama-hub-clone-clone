@@ -64,46 +64,81 @@ export default function ListsScreen() {
       </View>
 
       {/* Tab Container */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabContainer}
-        style={styles.tabScrollView}
-      >
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
-          const count = lists[tab.listType].length;
-          
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={[
-                styles.tabButton,
-                isActive && styles.activeTabButton,
-              ]}
-              onPress={() => setActiveTab(tab.key)}
-              testID={`tab-${tab.key}`}
-            >
-              <View style={styles.tabIcon}>
-                {getTabIcon(tab.key, isActive)}
-              </View>
-              <Text
+      <View style={styles.tabContainer}>
+        {/* First Row: Assistindo and Quero Assistir */}
+        <View style={styles.tabRow}>
+          {tabs.slice(0, 2).map((tab) => {
+            const isActive = activeTab === tab.key;
+            const count = lists[tab.listType].length;
+            
+            return (
+              <TouchableOpacity
+                key={tab.key}
                 style={[
-                  styles.tabText,
-                  isActive && styles.activeTabText,
+                  styles.tabButton,
+                  isActive && styles.activeTabButton,
                 ]}
+                onPress={() => setActiveTab(tab.key)}
+                testID={`tab-${tab.key}`}
               >
-                {tab.title}
-              </Text>
-              {count > 0 && (
-                <View style={styles.countBadge}>
-                  <Text style={styles.countText}>{count}</Text>
+                <View style={styles.tabIcon}>
+                  {getTabIcon(tab.key, isActive)}
                 </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+                <Text
+                  style={[
+                    styles.tabText,
+                    isActive && styles.activeTabText,
+                  ]}
+                >
+                  {tab.title}
+                </Text>
+                {count > 0 && (
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countText}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        
+        {/* Second Row: Concluídos */}
+        <View style={styles.tabRow}>
+          {tabs.slice(2).map((tab) => {
+            const isActive = activeTab === tab.key;
+            const count = lists[tab.listType].length;
+            
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.tabButton,
+                  isActive && styles.activeTabButton,
+                ]}
+                onPress={() => setActiveTab(tab.key)}
+                testID={`tab-${tab.key}`}
+              >
+                <View style={styles.tabIcon}>
+                  {getTabIcon(tab.key, isActive)}
+                </View>
+                <Text
+                  style={[
+                    styles.tabText,
+                    isActive && styles.activeTabText,
+                  ]}
+                >
+                  {tab.title}
+                </Text>
+                {count > 0 && (
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countText}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       {/* Tab Content */}
       <View style={styles.content}>
@@ -127,15 +162,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: COLORS.text,
   },
-  tabScrollView: {
-    flexGrow: 0,
-  },
   tabContainer: {
-    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
     gap: 12,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'flex-start',
   },
   tabButton: {
     flexDirection: 'row',
@@ -145,7 +181,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: COLORS.card,
     gap: 6,
-    minWidth: 'auto',
+    flex: 1,
+    maxWidth: '48%',
   },
   activeTabButton: {
     backgroundColor: COLORS.accent + '20',
