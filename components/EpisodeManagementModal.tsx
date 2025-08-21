@@ -169,30 +169,14 @@ export default function EpisodeManagementModal({
   const getPositionFromAngle = (angle: number) => {
     const radian = (angle * Math.PI) / 180;
     return {
-      x: CIRCLE_SIZE / 2 + Math.cos(radian) * CIRCLE_RADIUS,
-      y: CIRCLE_SIZE / 2 + Math.sin(radian) * CIRCLE_RADIUS,
+      x: Math.cos(radian) * CIRCLE_RADIUS,
+      y: Math.sin(radian) * CIRCLE_RADIUS,
     };
   };
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: (evt) => {
-      const { locationX, locationY } = evt.nativeEvent;
-      const centerX = CIRCLE_SIZE / 2;
-      const centerY = CIRCLE_SIZE / 2;
-      const distance = Math.sqrt(
-        Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
-      );
-      return distance >= CIRCLE_RADIUS - 30 && distance <= CIRCLE_RADIUS + 30;
-    },
-    onMoveShouldSetPanResponder: (evt) => {
-      const { locationX, locationY } = evt.nativeEvent;
-      const centerX = CIRCLE_SIZE / 2;
-      const centerY = CIRCLE_SIZE / 2;
-      const distance = Math.sqrt(
-        Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
-      );
-      return distance >= CIRCLE_RADIUS - 30 && distance <= CIRCLE_RADIUS + 30;
-    },
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
       const centerX = CIRCLE_SIZE / 2;
@@ -287,8 +271,8 @@ export default function EpisodeManagementModal({
                 style={[
                   styles.sliderHandle,
                   {
-                    left: position.x - 12,
-                    top: position.y - 12,
+                    left: CIRCLE_SIZE / 2 + position.x - 12,
+                    top: CIRCLE_SIZE / 2 + position.y - 12,
                   },
                 ]}
               />
@@ -323,7 +307,7 @@ export default function EpisodeManagementModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <View style={styles.container} pointerEvents="box-none">
         <View style={styles.content}>
           <View style={styles.dramaInfo}>
             <Text style={styles.dramaTitle} numberOfLines={2}>
@@ -445,6 +429,7 @@ const styles = StyleSheet.create({
   touchableArea: {
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
+    position: 'relative',
   },
   circleCenter: {
     position: 'absolute',
@@ -454,6 +439,7 @@ const styles = StyleSheet.create({
     left: CIRCLE_SIZE / 2 - 60,
     width: 120,
     height: 120,
+    pointerEvents: 'none',
   },
   episodeNumber: {
     fontSize: 42,
