@@ -17,9 +17,9 @@ import { UserList } from '@/types/user';
 import { trpc } from '@/lib/trpc';
 
 const { width } = Dimensions.get('window');
-const CIRCLE_SIZE = Math.min(width - 100, 240);
-const CIRCLE_RADIUS = CIRCLE_SIZE / 2 - 15;
-const STROKE_WIDTH = 6;
+const CIRCLE_SIZE = Math.min(width - 60, 320); // Increased size
+const CIRCLE_RADIUS = CIRCLE_SIZE / 2 - 20;
+const STROKE_WIDTH = 8; // Thicker stroke
 
 interface EpisodeManagementModalProps {
   visible: boolean;
@@ -175,8 +175,26 @@ export default function EpisodeManagementModal({
   };
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponder: (evt) => {
+      // Only respond to touches on the circle area
+      const { locationX, locationY } = evt.nativeEvent;
+      const centerX = CIRCLE_SIZE / 2;
+      const centerY = CIRCLE_SIZE / 2;
+      const distance = Math.sqrt(
+        Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
+      );
+      // Only respond if touch is within the circle area (with some padding)
+      return distance <= CIRCLE_RADIUS + 30;
+    },
+    onMoveShouldSetPanResponder: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      const centerX = CIRCLE_SIZE / 2;
+      const centerY = CIRCLE_SIZE / 2;
+      const distance = Math.sqrt(
+        Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
+      );
+      return distance <= CIRCLE_RADIUS + 30;
+    },
     onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
       const centerX = CIRCLE_SIZE / 2;
@@ -271,11 +289,13 @@ export default function EpisodeManagementModal({
                 style={[
                   styles.sliderHandle,
                   {
-                    left: CIRCLE_SIZE / 2 + position.x - 12,
-                    top: CIRCLE_SIZE / 2 + position.y - 12,
+                    left: CIRCLE_SIZE / 2 + position.x - 16,
+                    top: CIRCLE_SIZE / 2 + position.y - 16,
                   },
                 ]}
-              />
+              >
+                <View style={styles.sliderHandleInner} />
+              </View>
             );
           })()}
         </View>
@@ -307,7 +327,7 @@ export default function EpisodeManagementModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container} pointerEvents="box-none">
+      <View style={styles.container}>
         <View style={styles.content}>
           <View style={styles.dramaInfo}>
             <Text style={styles.dramaTitle} numberOfLines={2}>
@@ -423,7 +443,7 @@ const styles = StyleSheet.create({
   circularProgressContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 30,
+    marginVertical: 20,
     position: 'relative',
   },
   touchableArea: {
@@ -442,52 +462,60 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
   episodeNumber: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  episodeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
     marginBottom: 4,
     textAlign: 'center',
   },
-  progressLabel: {
-    fontSize: 12,
+  episodeLabel: {
+    fontSize: 16,
+    fontWeight: '600',
     color: COLORS.textSecondary,
-    marginBottom: 8,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  progressLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
     textAlign: 'center',
   },
   sliderHandle: {
     position: 'absolute',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.accent,
-    borderWidth: 3,
-    borderColor: COLORS.background,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.background,
+    borderWidth: 4,
+    borderColor: COLORS.accent,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sliderHandleInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.accent,
   },
   nextButton: {
     marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     backgroundColor: COLORS.accent,
-    borderRadius: 16,
+    borderRadius: 20,
     alignSelf: 'center',
   },
   nextButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.background,
   },
