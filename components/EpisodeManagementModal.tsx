@@ -167,8 +167,25 @@ export default function EpisodeManagementModal({
     return Math.max(1, Math.min(totalEpisodes, episode));
   };
 
+  const getPositionFromAngle = (angle: number) => {
+    const radian = (angle * Math.PI) / 180;
+    return {
+      x: CIRCLE_SIZE / 2 + Math.cos(radian) * CIRCLE_RADIUS,
+      y: CIRCLE_SIZE / 2 + Math.sin(radian) * CIRCLE_RADIUS,
+    };
+  };
+
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponder: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      const centerX = CIRCLE_SIZE / 2;
+      const centerY = CIRCLE_SIZE / 2;
+      const distance = Math.sqrt(
+        Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
+      );
+      // Only respond if touch is near the circle
+      return distance >= CIRCLE_RADIUS - 30 && distance <= CIRCLE_RADIUS + 30;
+    },
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
@@ -193,8 +210,9 @@ export default function EpisodeManagementModal({
   });
 
   const handleNextEpisode = () => {
-    if (episodesWatched < totalEpisodes) {
-      setSelectedEpisode(episodesWatched + 1);
+    const nextEpisode = episodesWatched + 1;
+    if (nextEpisode <= totalEpisodes) {
+      setSelectedEpisode(nextEpisode);
     }
   };
 
@@ -268,19 +286,23 @@ export default function EpisodeManagementModal({
         </View>
         
         {/* Draggable slider handle */}
-        {selectedEpisode > episodesWatched && (
-          <View
-            style={[
-              styles.sliderHandle,
-              {
-                left: CIRCLE_SIZE / 2 + Math.cos((getAngleFromEpisode(selectedEpisode) * Math.PI) / 180) * CIRCLE_RADIUS - 12,
-                top: CIRCLE_SIZE / 2 + Math.sin((getAngleFromEpisode(selectedEpisode) * Math.PI) / 180) * CIRCLE_RADIUS - 12,
-              },
-            ]}
-          >
-            <View style={styles.sliderHandleInner} />
-          </View>
-        )}
+        {selectedEpisode > episodesWatched && (() => {
+          const angle = getAngleFromEpisode(selectedEpisode);
+          const position = getPositionFromAngle(angle);
+          return (
+            <View
+              style={[
+                styles.sliderHandle,
+                {
+                  left: position.x - 12,
+                  top: position.y - 12,
+                },
+              ]}
+            >
+              <View style={styles.sliderHandleInner} />
+            </View>
+          );
+        })()}
       </View>
     );
   };
