@@ -17,7 +17,8 @@ import {
   UserPlus, 
   UserMinus,
   ArrowLeft,
-  Trophy 
+  Trophy,
+  Camera 
 } from 'lucide-react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 
@@ -328,6 +329,13 @@ const UserProfileScreen = () => {
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.7 }]} />
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.9 }]} />
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
+          </View>
+          
+          {/* Camera icon for visual indication */}
+          <View style={styles.cameraIconContainer}>
+            <View style={styles.cameraIcon}>
+              <Camera size={20} color={COLORS.background} />
+            </View>
           </View>
           
           {/* Back Button */}
@@ -985,6 +993,19 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  cameraIconContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+  },
+  cameraIcon: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

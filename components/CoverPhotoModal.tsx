@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { X, Search } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
 
@@ -193,7 +194,10 @@ const CoverPhotoModal: React.FC<CoverPhotoModalProps> = ({
                 Assine agora e tenha acesso a este e outros recursos incríveis!
               </Text>
               
-              <TouchableOpacity style={styles.upgradeButton} onPress={onClose}>
+              <TouchableOpacity style={styles.upgradeButton} onPress={() => {
+                onClose();
+                router.push('/subscription');
+              }}>
                 <Text style={styles.upgradeButtonText}>Assinar Premium</Text>
               </TouchableOpacity>
             </View>
@@ -321,7 +325,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '95%',
-    minHeight: '75%',
+    minHeight: '80%',
   },
   header: {
     flexDirection: 'row',

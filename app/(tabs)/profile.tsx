@@ -14,6 +14,7 @@ import UserStatsComponent from "@/components/UserStatsComponent";
 import ProfileCustomization from "@/components/ProfileCustomization";
 import UserStatsDisplay from "@/components/UserStatsDisplay";
 import CoverPhotoModal from "@/components/CoverPhotoModal";
+import PremiumCoverModal from "@/components/PremiumCoverModal";
 import { ACHIEVEMENTS } from "@/constants/achievements";
 
 import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures } from "@/types/user";
@@ -26,6 +27,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('posts');
   const [showMenu, setShowMenu] = useState(false);
   const [showCoverModal, setShowCoverModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   
   // Fetch user's community posts
   const { data: userPosts = [], isLoading: postsLoading, refetch: refetchPosts } = trpc.community.getPosts.useQuery({
@@ -198,7 +200,7 @@ export default function ProfileScreen() {
     if (premiumStatus?.isPremium) {
       setShowCoverModal(true);
     } else {
-      router.push('/subscription');
+      setShowPremiumModal(true);
     }
   };
   
@@ -455,6 +457,13 @@ export default function ProfileScreen() {
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
           </View>
           
+          {/* Camera icon for all users */}
+          <View style={styles.cameraIconContainer}>
+            <View style={styles.cameraIcon}>
+              <Camera size={20} color={COLORS.background} />
+            </View>
+          </View>
+          
           {/* Empty overlay for non-premium users - no text shown */}
           {!premiumStatus?.isPremium && (
             <View style={styles.emptyCoverOverlayBlank} />
@@ -614,6 +623,11 @@ export default function ProfileScreen() {
         onClose={() => setShowCoverModal(false)}
         onSelectCover={handleSelectCover}
         isPremium={premiumStatus?.isPremium || false}
+      />
+      
+      <PremiumCoverModal
+        visible={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
       />
     </>
   );
@@ -1149,5 +1163,18 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'transparent',
+  },
+  cameraIconContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+  },
+  cameraIcon: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
