@@ -7,12 +7,20 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Dimensions,
+  PanResponder,
 } from 'react-native';
-import { X, Check, Play, CheckCircle } from 'lucide-react-native';
+import { X, Check, Play } from 'lucide-react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { COLORS } from '@/constants/colors';
 import { Drama } from '@/types/drama';
 import { UserList } from '@/types/user';
 import { trpc } from '@/lib/trpc';
+
+const { width } = Dimensions.get('window');
+const CIRCLE_SIZE = Math.min(width - 80, 280);
+const CIRCLE_RADIUS = CIRCLE_SIZE / 2 - 20;
+const STROKE_WIDTH = 8;
 
 interface EpisodeManagementModalProps {
   visible: boolean;
@@ -149,42 +157,138 @@ export default function EpisodeManagementModal({
     );
   };
 
-  const renderEpisodeGrid = () => {
-    const episodes = [];
-    for (let i = 1; i <= totalEpisodes; i++) {
-      const isWatched = i <= episodesWatched;
-      const isSelected = i === selectedEpisode;
-      const isAvailable = i > episodesWatched; // Can only select episodes after watched
-      
-      episodes.push(
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.episodeButton,
-            isWatched && styles.episodeWatched,
-            isSelected && styles.episodeSelected,
-            !isAvailable && styles.episodeDisabled,
-          ]}
-          onPress={() => isAvailable ? setSelectedEpisode(i) : null}
-          disabled={!isAvailable || isUpdating}
-        >
-          {isWatched ? (
-            <CheckCircle size={16} color={COLORS.background} />
-          ) : (
-            <Text
-              style={[
-                styles.episodeButtonText,
-                isSelected && styles.episodeSelectedText,
-                !isAvailable && styles.episodeDisabledText,
-              ]}
-            >
-              {i}
-            </Text>
+  const getAngleFromEpisode = (episode: number) => {
+    return ((episode - 1) / totalEpisodes) * 360 - 90; // Start from top
+  };
+
+  const getEpisodeFromAngle = (angle: number) => {
+    const normalizedAngle = (angle + 90 + 360) % 360;
+    const episode = Math.round((normalizedAngle / 360) * totalEpisodes) + 1;
+    return Math.max(1, Math.min(totalEpisodes, episode));
+  };
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      const centerX = CIRCLE_SIZE / 2;
+      const centerY = CIRCLE_SIZE / 2;
+      const angle = Math.atan2(locationY - centerY, locationX - centerX) * (180 / Math.PI);
+      const episode = getEpisodeFromAngle(angle);
+      if (episode > episodesWatched) {
+        setSelectedEpisode(episode);
+      }
+    },
+    onPanResponderMove: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      const centerX = CIRCLE_SIZE / 2;
+      const centerY = CIRCLE_SIZE / 2;
+      const angle = Math.atan2(locationY - centerY, locationX - centerX) * (180 / Math.PI);
+      const episode = getEpisodeFromAngle(angle);
+      if (episode > episodesWatched) {
+        setSelectedEpisode(episode);
+      }
+    },
+  });
+
+  const renderCircularProgress = () => {
+    const watchedProgress = (episodesWatched / totalEpisodes) * 100;
+    const selectedProgress = (selectedEpisode / totalEpisodes) * 100;
+    const circumference = 2 * Math.PI * CIRCLE_RADIUS;
+    const watchedStrokeDashoffset = circumference - (watchedProgress / 100) * circumference;
+    const selectedStrokeDashoffset = circumference - (selectedProgress / 100) * circumference;
+
+    return (
+      <View style={styles.circularProgressContainer} {...panResponder.panHandlers}>
+        <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
+          {/* Background circle */}
+          <Circle
+            cx={CIRCLE_SIZE / 2}
+            cy={CIRCLE_SIZE / 2}
+            r={CIRCLE_RADIUS}
+            stroke={COLORS.border}
+            strokeWidth={STROKE_WIDTH}
+            fill="none"
+          />
+          
+          {/* Watched episodes circle */}
+          <Circle
+            cx={CIRCLE_SIZE / 2}
+            cy={CIRCLE_SIZE / 2}
+            r={CIRCLE_RADIUS}
+            stroke="#10B981"
+            strokeWidth={STROKE_WIDTH}
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={watchedStrokeDashoffset}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
+          />
+          
+          {/* Selected episode circle */}
+          {selectedEpisode > episodesWatched && (
+            <Circle
+              cx={CIRCLE_SIZE / 2}
+              cy={CIRCLE_SIZE / 2}
+              r={CIRCLE_RADIUS}
+              stroke={COLORS.accent}
+              strokeWidth={STROKE_WIDTH / 2}
+              fill="none"
+              strokeDasharray={circumference}
+              strokeDashoffset={selectedStrokeDashoffset}
+              strokeLinecap="round"
+              transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
+              opacity={0.7}
+            />
           )}
-        </TouchableOpacity>
-      );
-    }
-    return episodes;
+        </Svg>
+        
+        {/* Center content */}
+        <View style={styles.circleCenter}>
+          <Text style={styles.episodeNumber}>{selectedEpisode}</Text>
+          <Text style={styles.episodeLabel}>Episódio</Text>
+          <Text style={styles.progressLabel}>
+            {selectedEpisode} de {totalEpisodes}
+          </Text>
+        </View>
+        
+        {/* Episode markers */}
+        {Array.from({ length: totalEpisodes }, (_, i) => {
+          const episode = i + 1;
+          const angle = getAngleFromEpisode(episode);
+          const radian = (angle * Math.PI) / 180;
+          const markerRadius = CIRCLE_RADIUS + 15;
+          const x = CIRCLE_SIZE / 2 + Math.cos(radian) * markerRadius;
+          const y = CIRCLE_SIZE / 2 + Math.sin(radian) * markerRadius;
+          
+          return (
+            <TouchableOpacity
+              key={episode}
+              style={[
+                styles.episodeMarker,
+                {
+                  left: x - 8,
+                  top: y - 8,
+                },
+                episode <= episodesWatched && styles.episodeMarkerWatched,
+                episode === selectedEpisode && styles.episodeMarkerSelected,
+              ]}
+              onPress={() => episode > episodesWatched && setSelectedEpisode(episode)}
+              disabled={episode <= episodesWatched || isUpdating}
+            >
+              <Text style={[
+                styles.episodeMarkerText,
+                episode <= episodesWatched && styles.episodeMarkerTextWatched,
+                episode === selectedEpisode && styles.episodeMarkerTextSelected,
+              ]}>
+                {episode <= 9 ? episode : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
   };
 
   return (
@@ -216,15 +320,12 @@ export default function EpisodeManagementModal({
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Marcar Episódios como Assistidos</Text>
+            <Text style={styles.sectionTitle}>Selecionar Episódio</Text>
             <Text style={styles.sectionSubtitle}>
-              Selecione até qual episódio você assistiu. Episódios com ✓ já foram marcados como assistidos.
+              Toque no círculo ou arraste para selecionar até qual episódio você assistiu.
             </Text>
 
-            
-            <View style={styles.episodeGrid}>
-              {renderEpisodeGrid()}
-            </View>
+            {renderCircularProgress()}
           </View>
 
           <View style={styles.quickActions}>
@@ -352,47 +453,63 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 16,
   },
-  episodeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+  circularProgressContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+    position: 'relative',
   },
-  episodeButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  circleCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  episodeNumber: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  episodeLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  episodeMarker: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: COLORS.card,
     borderWidth: 2,
     borderColor: COLORS.border,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  episodeWatched: {
+  episodeMarkerWatched: {
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },
-  episodeSelected: {
+  episodeMarkerSelected: {
+    backgroundColor: COLORS.accent,
     borderColor: COLORS.accent,
-    backgroundColor: COLORS.background,
+    transform: [{ scale: 1.2 }],
   },
-  episodeButtonText: {
-    fontSize: 14,
+  episodeMarkerText: {
+    fontSize: 8,
     fontWeight: '600',
     color: COLORS.text,
   },
-  episodeWatchedText: {
+  episodeMarkerTextWatched: {
     color: COLORS.background,
   },
-  episodeDisabled: {
-    backgroundColor: COLORS.border,
-    borderColor: COLORS.border,
-    opacity: 0.5,
-  },
-  episodeDisabledText: {
-    color: COLORS.textSecondary,
-  },
-  episodeSelectedText: {
-    color: COLORS.accent,
+  episodeMarkerTextSelected: {
+    color: COLORS.background,
   },
   quickActions: {
     marginBottom: 20,
