@@ -236,8 +236,8 @@ export default function EpisodeManagementModal({
 
     return (
       <View style={styles.circularProgressContainer}>
-        <View {...panResponder.panHandlers} style={styles.touchableArea}>
-          <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
+        <View style={styles.svgContainer}>
+          <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={styles.svg}>
             {/* Background circle */}
             <Circle
               cx={CIRCLE_SIZE / 2}
@@ -298,6 +298,9 @@ export default function EpisodeManagementModal({
               </View>
             );
           })()}
+          
+          {/* Touch area for pan responder */}
+          <View {...panResponder.panHandlers} style={styles.touchableArea} />
         </View>
         
         {/* Center content */}
@@ -311,6 +314,7 @@ export default function EpisodeManagementModal({
             <TouchableOpacity 
               style={styles.nextButton}
               onPress={handleNextEpisode}
+              activeOpacity={0.7}
             >
               <Text style={styles.nextButtonText}>Próximo</Text>
             </TouchableOpacity>
@@ -446,10 +450,23 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     position: 'relative',
   },
-  touchableArea: {
+  svgContainer: {
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
     position: 'relative',
+  },
+  svg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  touchableArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    backgroundColor: 'transparent',
   },
   circleCenter: {
     position: 'absolute',
@@ -459,7 +476,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    pointerEvents: 'none',
+    pointerEvents: 'box-none',
   },
   episodeNumber: {
     fontSize: 42,
@@ -513,6 +530,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
     borderRadius: 20,
     alignSelf: 'center',
+    pointerEvents: 'auto',
   },
   nextButtonText: {
     fontSize: 14,
