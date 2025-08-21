@@ -15,6 +15,7 @@ import UpcomingReleasesCard from "@/components/UpcomingReleasesCard";
 import NewsCarousel from "@/components/NewsCarousel";
 import { useUserLists } from "@/hooks/useUserStore";
 import { trpc } from '@/lib/trpc';
+import { FeaturedSkeleton, CategorySkeleton, HorizontalListSkeleton, NewsSkeleton, UpcomingReleasesSkeleton } from '@/components/SkeletonLoader';
 
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -65,35 +66,50 @@ export default function DiscoverScreen() {
 
 
 
-  const sections = useMemo(() => [
-    { id: 'header', type: 'header' },
-    { id: 'featured', type: 'featured' },
-    { id: 'news', type: 'news' },
-    { id: 'categories', type: 'categories' },
-    { id: 'upcoming-releases', type: 'upcoming-releases' },
-    ...(isLoading
-      ? [{ id: 'loading', type: 'loading' }]
-      : hasError
-      ? [{ id: 'error', type: 'error' }]
-      : [
-          {
-            id: 'trending',
-            type: 'horizontal-list',
-            title: 'Em Alta Agora',
-            data: trendingQuery.data || [],
-            viewAllRoute: '/trending',
-            cardSize: 'medium',
-          },
-          {
-            id: 'popular',
-            type: 'horizontal-list',
-            title: 'K-Dramas Populares',
-            data: popularQuery.data || [],
-            viewAllRoute: '/popular',
-            cardSize: 'medium',
-          },
-        ]),
-  ], [isLoading, hasError, trendingQuery.data, popularQuery.data]);
+  const sections = useMemo(() => {
+    if (isLoading) {
+      return [
+        { id: 'header', type: 'header' },
+        { id: 'featured-skeleton', type: 'featured-skeleton' },
+        { id: 'news-skeleton', type: 'news-skeleton' },
+        { id: 'categories-skeleton', type: 'categories-skeleton' },
+        { id: 'upcoming-skeleton', type: 'upcoming-skeleton' },
+        { id: 'trending-skeleton', type: 'horizontal-list-skeleton' },
+        { id: 'popular-skeleton', type: 'horizontal-list-skeleton' },
+      ];
+    }
+    
+    if (hasError) {
+      return [
+        { id: 'header', type: 'header' },
+        { id: 'error', type: 'error' },
+      ];
+    }
+    
+    return [
+      { id: 'header', type: 'header' },
+      { id: 'featured', type: 'featured' },
+      { id: 'news', type: 'news' },
+      { id: 'categories', type: 'categories' },
+      { id: 'upcoming-releases', type: 'upcoming-releases' },
+      {
+        id: 'trending',
+        type: 'horizontal-list',
+        title: 'Em Alta Agora',
+        data: trendingQuery.data || [],
+        viewAllRoute: '/trending',
+        cardSize: 'medium',
+      },
+      {
+        id: 'popular',
+        type: 'horizontal-list',
+        title: 'K-Dramas Populares',
+        data: popularQuery.data || [],
+        viewAllRoute: '/popular',
+        cardSize: 'medium',
+      },
+    ];
+  }, [isLoading, hasError, trendingQuery.data, popularQuery.data]);
 
   const handleAddToList = useCallback(async (listType: 'watchlist' | 'watching') => {
     if (!featuredDrama) return;
@@ -239,6 +255,16 @@ export default function DiscoverScreen() {
         return <NewsCarousel news={newsQuery.data || []} />;
       case 'upcoming-releases':
         return <UpcomingReleasesCard />;
+      case 'featured-skeleton':
+        return <FeaturedSkeleton />;
+      case 'news-skeleton':
+        return <NewsSkeleton />;
+      case 'categories-skeleton':
+        return <CategorySkeleton />;
+      case 'horizontal-list-skeleton':
+        return <HorizontalListSkeleton />;
+      case 'upcoming-skeleton':
+        return <UpcomingReleasesSkeleton />;
       case 'loading':
         return (
           <View style={styles.loadingContainer}>
