@@ -438,7 +438,16 @@ export default function ProfileScreen() {
           />
           
           {/* Gradient overlay */}
-          <View style={styles.coverGradient} />
+          <View style={styles.coverGradient}>
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.1 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.2 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.3 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.5 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.7 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.9 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
+          </View>
           
           {/* Show message only if no cover and not premium */}
           {!premiumStatus?.isPremium && (
@@ -618,7 +627,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   coverSection: {
-    height: 200,
+    height: 280,
     position: 'relative',
   },
   coverImage: {
@@ -630,9 +639,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
-    backgroundColor: 'transparent',
-    background: `linear-gradient(to bottom, transparent, ${COLORS.background})`,
+    height: 120,
+    flexDirection: 'column',
+  },
+  gradientLayer: {
+    flex: 1,
+    width: '100%',
   },
   emptyCoverOverlay: {
     position: 'absolute',
@@ -667,7 +679,9 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    marginTop: -50,
+    marginTop: -80,
+    position: 'relative',
+    zIndex: 10,
   },
   profileSection: {
     flexDirection: 'row',
