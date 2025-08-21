@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { Image } from 'expo-image';
 import { 
   Eye, 
@@ -319,10 +319,16 @@ const UserProfileScreen = () => {
             contentFit="cover"
           />
           {/* Gradient overlay */}
-          <LinearGradient
-            colors={['transparent', COLORS.background]}
-            style={styles.coverGradient}
-          />
+          <View style={styles.coverGradient}>
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.1 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.2 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.3 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.5 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.7 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.9 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
+          </View>
           
           {/* Back Button */}
           <TouchableOpacity 
@@ -489,6 +495,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 120,
+    flexDirection: 'column',
+  },
+  gradientLayer: {
+    flex: 1,
+    width: '100%',
   },
   backButtonOverlay: {
     position: 'absolute',
@@ -504,6 +515,8 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     marginTop: -80,
+    position: 'relative',
+    zIndex: 10,
   },
   profileSection: {
     flexDirection: 'row',
@@ -511,9 +524,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileImageContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     overflow: 'hidden',
     borderWidth: 4,
     borderColor: COLORS.background,
@@ -535,21 +548,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   displayName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   username: {
     fontSize: 16,
     color: COLORS.textSecondary,
     marginBottom: 12,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
   },
   socialStats: {
     flexDirection: 'row',

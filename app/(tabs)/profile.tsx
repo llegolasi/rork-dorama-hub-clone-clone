@@ -193,7 +193,11 @@ export default function ProfileScreen() {
   };
   
   const handleCoverPhotoPress = () => {
-    setShowCoverModal(true);
+    if (premiumStatus?.isPremium) {
+      setShowCoverModal(true);
+    } else {
+      router.push('/subscription');
+    }
   };
   
   const handleSelectCover = async (imageUrl: string) => {
@@ -424,8 +428,8 @@ export default function ProfileScreen() {
         {/* Cover Photo Section */}
         <TouchableOpacity 
           style={styles.coverSection}
-          onPress={premiumStatus?.isPremium ? handleCoverPhotoPress : undefined}
-          activeOpacity={premiumStatus?.isPremium ? 0.8 : 1}
+          onPress={handleCoverPhotoPress}
+          activeOpacity={0.8}
         >
           <Image
             source={{
@@ -449,17 +453,9 @@ export default function ProfileScreen() {
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
           </View>
           
-          {/* Show message only if no cover and not premium */}
+          {/* Empty overlay for non-premium users - no text shown */}
           {!premiumStatus?.isPremium && (
-            <View style={styles.emptyCoverOverlay}>
-              <Crown size={32} color={COLORS.accent} />
-              <Text style={styles.emptyCoverTitle}>
-                Foto de Capa Premium
-              </Text>
-              <Text style={styles.emptyCoverSubtitle}>
-                Assine Premium para personalizar seu perfil
-              </Text>
-            </View>
+            <View style={styles.emptyCoverOverlayBlank} />
           )}
           
           {/* Show add message for premium users without cover */}
@@ -1143,5 +1139,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.background,
+  },
+  emptyCoverOverlayBlank: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
   },
 });
