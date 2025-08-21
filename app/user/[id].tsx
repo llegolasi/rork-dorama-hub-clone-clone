@@ -312,19 +312,20 @@ const UserProfileScreen = () => {
         <View style={styles.coverSection}>
           <Image
             source={{
-              uri: userProfile?.user_profile_cover || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&auto=format&fit=crop&q=60'
+              uri: userProfile?.user_profile_cover || 'https://tmbpgttvoabpmcanuqkm.supabase.co/storage/v1/object/public/profilecover/cover.jpg'
             }}
             style={styles.coverImage}
             contentFit="cover"
           />
-          <View style={styles.coverOverlay} />
+          {/* Gradient overlay */}
+          <View style={styles.coverGradient} />
           
           {/* Back Button */}
           <TouchableOpacity 
             style={styles.backButtonOverlay}
             onPress={() => router.back()}
           >
-            <ArrowLeft size={20} color={COLORS.background} />
+            <ArrowLeft size={20} color="white" />
           </TouchableOpacity>
         </View>
         
@@ -478,13 +479,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  coverOverlay: {
+  coverGradient: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    height: 60,
+    backgroundColor: 'transparent',
+    background: `linear-gradient(to bottom, transparent, ${COLORS.background})`,
   },
   backButtonOverlay: {
     position: 'absolute',

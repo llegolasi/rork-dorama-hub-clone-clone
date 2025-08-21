@@ -630,9 +630,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 120,
-    background: 'linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8))',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    height: 60,
+    backgroundColor: 'transparent',
+    background: `linear-gradient(to bottom, transparent, ${COLORS.background})`,
   },
   emptyCoverOverlay: {
     position: 'absolute',
