@@ -17,9 +17,9 @@ import { UserList } from '@/types/user';
 import { trpc } from '@/lib/trpc';
 
 const { width } = Dimensions.get('window');
-const CIRCLE_SIZE = Math.min(width - 80, 280);
-const CIRCLE_RADIUS = CIRCLE_SIZE / 2 - 20;
-const STROKE_WIDTH = 8;
+const CIRCLE_SIZE = Math.min(width - 100, 240);
+const CIRCLE_RADIUS = CIRCLE_SIZE / 2 - 15;
+const STROKE_WIDTH = 6;
 
 interface EpisodeManagementModalProps {
   visible: boolean;
@@ -182,8 +182,7 @@ export default function EpisodeManagementModal({
       const distance = Math.sqrt(
         Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
       );
-      // Only respond if touch is near the circle
-      return distance >= CIRCLE_RADIUS - 40 && distance <= CIRCLE_RADIUS + 40;
+      return distance >= CIRCLE_RADIUS - 30 && distance <= CIRCLE_RADIUS + 30;
     },
     onMoveShouldSetPanResponder: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
@@ -192,7 +191,7 @@ export default function EpisodeManagementModal({
       const distance = Math.sqrt(
         Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
       );
-      return distance >= CIRCLE_RADIUS - 40 && distance <= CIRCLE_RADIUS + 40;
+      return distance >= CIRCLE_RADIUS - 30 && distance <= CIRCLE_RADIUS + 30;
     },
     onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
@@ -231,52 +230,71 @@ export default function EpisodeManagementModal({
     const selectedProgress = (selectedEpisode / totalEpisodes) * 100;
     const circumference = 2 * Math.PI * CIRCLE_RADIUS;
     const watchedStrokeDashoffset = circumference - (watchedProgress / 100) * circumference;
-
+    const selectedStrokeDashoffset = circumference - (selectedProgress / 100) * circumference;
 
     return (
-      <View style={styles.circularProgressContainer} {...panResponder.panHandlers}>
-        <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
-          {/* Background circle */}
-          <Circle
-            cx={CIRCLE_SIZE / 2}
-            cy={CIRCLE_SIZE / 2}
-            r={CIRCLE_RADIUS}
-            stroke={COLORS.border}
-            strokeWidth={STROKE_WIDTH}
-            fill="none"
-          />
-          
-          {/* Watched episodes circle */}
-          <Circle
-            cx={CIRCLE_SIZE / 2}
-            cy={CIRCLE_SIZE / 2}
-            r={CIRCLE_RADIUS}
-            stroke="#10B981"
-            strokeWidth={STROKE_WIDTH}
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={watchedStrokeDashoffset}
-            strokeLinecap="round"
-            transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
-          />
-          
-          {/* Selected episode preview circle */}
-          {selectedEpisode > episodesWatched && (
+      <View style={styles.circularProgressContainer}>
+        <View {...panResponder.panHandlers} style={styles.touchableArea}>
+          <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
+            {/* Background circle */}
             <Circle
               cx={CIRCLE_SIZE / 2}
               cy={CIRCLE_SIZE / 2}
               r={CIRCLE_RADIUS}
-              stroke={COLORS.accent}
-              strokeWidth={3}
+              stroke="#333"
+              strokeWidth={STROKE_WIDTH}
               fill="none"
-              strokeDasharray={`${(selectedProgress - watchedProgress) / 100 * circumference} ${circumference}`}
+            />
+            
+            {/* Watched episodes circle */}
+            <Circle
+              cx={CIRCLE_SIZE / 2}
+              cy={CIRCLE_SIZE / 2}
+              r={CIRCLE_RADIUS}
+              stroke="#10B981"
+              strokeWidth={STROKE_WIDTH}
+              fill="none"
+              strokeDasharray={circumference}
               strokeDashoffset={watchedStrokeDashoffset}
               strokeLinecap="round"
               transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
-              opacity={0.6}
             />
-          )}
-        </Svg>
+            
+            {/* Selected episode preview circle */}
+            {selectedEpisode > episodesWatched && (
+              <Circle
+                cx={CIRCLE_SIZE / 2}
+                cy={CIRCLE_SIZE / 2}
+                r={CIRCLE_RADIUS}
+                stroke={COLORS.accent}
+                strokeWidth={STROKE_WIDTH}
+                fill="none"
+                strokeDasharray={circumference}
+                strokeDashoffset={selectedStrokeDashoffset}
+                strokeLinecap="round"
+                transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
+                opacity={0.8}
+              />
+            )}
+          </Svg>
+          
+          {/* Draggable slider handle */}
+          {(() => {
+            const angle = getAngleFromEpisode(selectedEpisode);
+            const position = getPositionFromAngle(angle);
+            return (
+              <View
+                style={[
+                  styles.sliderHandle,
+                  {
+                    left: position.x - 12,
+                    top: position.y - 12,
+                  },
+                ]}
+              />
+            );
+          })()}
+        </View>
         
         {/* Center content */}
         <View style={styles.circleCenter}>
@@ -294,25 +312,6 @@ export default function EpisodeManagementModal({
             </TouchableOpacity>
           )}
         </View>
-        
-        {/* Draggable slider handle */}
-        {selectedEpisode > episodesWatched && (() => {
-          const angle = getAngleFromEpisode(selectedEpisode);
-          const position = getPositionFromAngle(angle);
-          return (
-            <View
-              style={[
-                styles.sliderHandle,
-                {
-                  left: position.x - 10,
-                  top: position.y - 10,
-                },
-              ]}
-            >
-              <View style={styles.sliderHandleInner} />
-            </View>
-          );
-        })()}
       </View>
     );
   };
@@ -376,8 +375,6 @@ export default function EpisodeManagementModal({
               <Text style={styles.closeButtonText}>Fechar</Text>
             </TouchableOpacity>
           </View>
-
-
         </View>
       </View>
     </Modal>
@@ -442,53 +439,55 @@ const styles = StyleSheet.create({
   circularProgressContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: 30,
     position: 'relative',
+  },
+  touchableArea: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
   },
   circleCenter: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    top: CIRCLE_SIZE / 2 - 60,
+    left: CIRCLE_SIZE / 2 - 60,
+    width: 120,
+    height: 120,
   },
   episodeNumber: {
-    fontSize: 48,
+    fontSize: 42,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   episodeLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  progressLabel: {
+    fontSize: 12,
     color: COLORS.textSecondary,
     marginBottom: 8,
   },
-  progressLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-
   sliderHandle: {
     position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: COLORS.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.background,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  sliderHandleInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.background,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
   nextButton: {
     marginTop: 12,
