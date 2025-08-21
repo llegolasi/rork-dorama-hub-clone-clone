@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { 
   Eye, 
@@ -318,7 +319,10 @@ const UserProfileScreen = () => {
             contentFit="cover"
           />
           {/* Gradient overlay */}
-          <View style={styles.coverGradient} />
+          <LinearGradient
+            colors={['transparent', COLORS.background]}
+            style={styles.coverGradient}
+          />
           
           {/* Back Button */}
           <TouchableOpacity 
@@ -472,7 +476,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   coverSection: {
-    height: 200,
+    height: 280,
     position: 'relative',
   },
   coverImage: {
@@ -484,9 +488,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
-    backgroundColor: 'transparent',
-    background: `linear-gradient(to bottom, transparent, ${COLORS.background})`,
+    height: 120,
   },
   backButtonOverlay: {
     position: 'absolute',
@@ -501,7 +503,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    marginTop: -40,
+    marginTop: -80,
   },
   profileSection: {
     flexDirection: 'row',
@@ -509,13 +511,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     overflow: 'hidden',
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: COLORS.background,
     marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   profileImage: {
     width: '100%',
@@ -525,15 +535,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   displayName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   username: {
     fontSize: 16,
     color: COLORS.textSecondary,
     marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   socialStats: {
     flexDirection: 'row',
