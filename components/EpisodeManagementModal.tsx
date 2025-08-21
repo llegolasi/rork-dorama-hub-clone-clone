@@ -6,7 +6,6 @@ import {
   Modal,
   TouchableOpacity,
   Alert,
-  ScrollView,
   Dimensions,
   PanResponder,
 } from 'react-native';
@@ -184,9 +183,17 @@ export default function EpisodeManagementModal({
         Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
       );
       // Only respond if touch is near the circle
-      return distance >= CIRCLE_RADIUS - 30 && distance <= CIRCLE_RADIUS + 30;
+      return distance >= CIRCLE_RADIUS - 40 && distance <= CIRCLE_RADIUS + 40;
     },
-    onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      const centerX = CIRCLE_SIZE / 2;
+      const centerY = CIRCLE_SIZE / 2;
+      const distance = Math.sqrt(
+        Math.pow(locationX - centerX, 2) + Math.pow(locationY - centerY, 2)
+      );
+      return distance >= CIRCLE_RADIUS - 40 && distance <= CIRCLE_RADIUS + 40;
+    },
     onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
       const centerX = CIRCLE_SIZE / 2;
@@ -206,6 +213,9 @@ export default function EpisodeManagementModal({
       if (episode > episodesWatched) {
         setSelectedEpisode(episode);
       }
+    },
+    onPanResponderRelease: () => {
+      // Optional: Add haptic feedback here if needed
     },
   });
 
@@ -294,8 +304,8 @@ export default function EpisodeManagementModal({
               style={[
                 styles.sliderHandle,
                 {
-                  left: position.x - 12,
-                  top: position.y - 12,
+                  left: position.x - 10,
+                  top: position.y - 10,
                 },
               ]}
             >
@@ -315,11 +325,7 @@ export default function EpisodeManagementModal({
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Gerenciar Episódios</Text>
-        </View>
-
-        <ScrollView style={styles.content}>
+        <View style={styles.content}>
           <View style={styles.dramaInfo}>
             <Text style={styles.dramaTitle} numberOfLines={2}>
               {drama.name}
@@ -362,12 +368,17 @@ export default function EpisodeManagementModal({
                 }
               </Text>
             </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </TouchableOpacity>
           </View>
 
 
-        </ScrollView>
-
-
+        </View>
       </View>
     </Modal>
   );
@@ -396,6 +407,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 20,
   },
   dramaInfo: {
     paddingVertical: 20,
@@ -457,12 +469,10 @@ const styles = StyleSheet.create({
 
   sliderHandle: {
     position: 'absolute',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.background,
-    borderWidth: 3,
-    borderColor: COLORS.accent,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -478,7 +488,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.background,
   },
   nextButton: {
     marginTop: 12,
@@ -514,5 +524,19 @@ const styles = StyleSheet.create({
   mainActionButtonTextDisabled: {
     color: COLORS.textSecondary,
   },
-
+  closeButton: {
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
 });
