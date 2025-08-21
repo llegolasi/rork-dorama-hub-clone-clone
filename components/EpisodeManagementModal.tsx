@@ -69,17 +69,29 @@ export default function EpisodeManagementModal({
   const handleEpisodeUpdate = async () => {
     if (selectedEpisode > episodesWatched && selectedEpisode <= totalEpisodes) {
       setIsUpdating(true);
+      
+      // Fechar o modal imediatamente para melhor UX
+      onClose();
+      
       try {
         console.log(`Marking episodes 1 to ${selectedEpisode} as watched for drama ${drama.id}`);
         
+        // Processar em segundo plano
+        const updatePromises = [];
+        
         // Mark all episodes from 1 to selectedEpisode as watched
         for (let ep = episodesWatched + 1; ep <= selectedEpisode; ep++) {
-          await markEpisodeMutation.mutateAsync({
-            dramaId: drama.id,
-            episodeNumber: ep,
-            episodeDurationMinutes: 60, // Default duration
-          });
+          updatePromises.push(
+            markEpisodeMutation.mutateAsync({
+              dramaId: drama.id,
+              episodeNumber: ep,
+              episodeDurationMinutes: 60, // Default duration
+            })
+          );
         }
+        
+        // Executar todas as atualizações em paralelo
+        await Promise.all(updatePromises);
         
         // Also call the legacy update for compatibility
         await onProgressUpdate(selectedEpisode);
@@ -89,11 +101,11 @@ export default function EpisodeManagementModal({
           await onDataUpdated();
         }
         
-        Alert.alert('Sucesso', `Episódios 1-${selectedEpisode} marcados como assistidos!`);
-        onClose();
+        console.log(`Successfully updated episodes up to ${selectedEpisode}`);
       } catch (error) {
         console.error('Error updating episode:', error);
-        Alert.alert('Erro', 'Não foi possível atualizar o episódio. Tente novamente.');
+        // Mostrar erro apenas se necessário, sem interromper o fluxo
+        Alert.alert('Erro', 'Houve um problema ao atualizar alguns episódios. Verifique sua conexão e tente novamente se necessário.');
       } finally {
         setIsUpdating(false);
       }
@@ -121,17 +133,29 @@ export default function EpisodeManagementModal({
           style: 'default',
           onPress: async () => {
             setIsUpdating(true);
+            
+            // Fechar o modal imediatamente para melhor UX
+            onClose();
+            
             try {
               console.log(`Completing drama ${drama.id} with ${totalEpisodes} episodes`);
               
+              // Processar em segundo plano
+              const updatePromises = [];
+              
               // Mark all remaining episodes as watched using the new system
               for (let ep = episodesWatched + 1; ep <= totalEpisodes; ep++) {
-                await markEpisodeMutation.mutateAsync({
-                  dramaId: drama.id,
-                  episodeNumber: ep,
-                  episodeDurationMinutes: 60,
-                });
+                updatePromises.push(
+                  markEpisodeMutation.mutateAsync({
+                    dramaId: drama.id,
+                    episodeNumber: ep,
+                    episodeDurationMinutes: 60,
+                  })
+                );
               }
+              
+              // Executar todas as atualizações em paralelo
+              await Promise.all(updatePromises);
               
               // Also call legacy functions for compatibility
               await onProgressUpdate(totalEpisodes);
@@ -142,11 +166,10 @@ export default function EpisodeManagementModal({
                 await onDataUpdated();
               }
               
-              Alert.alert('Sucesso', 'Drama marcado como concluído!');
-              onClose();
+              console.log('Drama successfully completed');
             } catch (error) {
               console.error('Error completing drama:', error);
-              Alert.alert('Erro', 'Não foi possível concluir o drama. Tente novamente.');
+              Alert.alert('Erro', 'Houve um problema ao concluir o drama. Verifique sua conexão e tente novamente se necessário.');
             } finally {
               setIsUpdating(false);
             }
