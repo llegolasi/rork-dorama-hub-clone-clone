@@ -10,7 +10,7 @@ import {
   Dimensions,
   PanResponder,
 } from 'react-native';
-import { X, Check, Play } from 'lucide-react-native';
+
 import Svg, { Circle } from 'react-native-svg';
 import { COLORS } from '@/constants/colors';
 import { Drama } from '@/types/drama';
@@ -192,12 +192,18 @@ export default function EpisodeManagementModal({
     },
   });
 
+  const handleNextEpisode = () => {
+    if (episodesWatched < totalEpisodes) {
+      setSelectedEpisode(episodesWatched + 1);
+    }
+  };
+
   const renderCircularProgress = () => {
     const watchedProgress = (episodesWatched / totalEpisodes) * 100;
     const selectedProgress = (selectedEpisode / totalEpisodes) * 100;
     const circumference = 2 * Math.PI * CIRCLE_RADIUS;
     const watchedStrokeDashoffset = circumference - (watchedProgress / 100) * circumference;
-    const selectedStrokeDashoffset = circumference - (selectedProgress / 100) * circumference;
+
 
     return (
       <View style={styles.circularProgressContainer} {...panResponder.panHandlers}>
@@ -226,20 +232,20 @@ export default function EpisodeManagementModal({
             transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
           />
           
-          {/* Selected episode circle */}
+          {/* Selected episode preview circle */}
           {selectedEpisode > episodesWatched && (
             <Circle
               cx={CIRCLE_SIZE / 2}
               cy={CIRCLE_SIZE / 2}
               r={CIRCLE_RADIUS}
               stroke={COLORS.accent}
-              strokeWidth={STROKE_WIDTH / 2}
+              strokeWidth={3}
               fill="none"
-              strokeDasharray={circumference}
-              strokeDashoffset={selectedStrokeDashoffset}
+              strokeDasharray={`${(selectedProgress - watchedProgress) / 100 * circumference} ${circumference}`}
+              strokeDashoffset={watchedStrokeDashoffset}
               strokeLinecap="round"
               transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
-              opacity={0.7}
+              opacity={0.6}
             />
           )}
         </Svg>
@@ -251,42 +257,30 @@ export default function EpisodeManagementModal({
           <Text style={styles.progressLabel}>
             {selectedEpisode} de {totalEpisodes}
           </Text>
+          {episodesWatched < totalEpisodes && (
+            <TouchableOpacity 
+              style={styles.nextButton}
+              onPress={handleNextEpisode}
+            >
+              <Text style={styles.nextButtonText}>Próximo</Text>
+            </TouchableOpacity>
+          )}
         </View>
         
-        {/* Episode markers */}
-        {Array.from({ length: totalEpisodes }, (_, i) => {
-          const episode = i + 1;
-          const angle = getAngleFromEpisode(episode);
-          const radian = (angle * Math.PI) / 180;
-          const markerRadius = CIRCLE_RADIUS + 15;
-          const x = CIRCLE_SIZE / 2 + Math.cos(radian) * markerRadius;
-          const y = CIRCLE_SIZE / 2 + Math.sin(radian) * markerRadius;
-          
-          return (
-            <TouchableOpacity
-              key={episode}
-              style={[
-                styles.episodeMarker,
-                {
-                  left: x - 8,
-                  top: y - 8,
-                },
-                episode <= episodesWatched && styles.episodeMarkerWatched,
-                episode === selectedEpisode && styles.episodeMarkerSelected,
-              ]}
-              onPress={() => episode > episodesWatched && setSelectedEpisode(episode)}
-              disabled={episode <= episodesWatched || isUpdating}
-            >
-              <Text style={[
-                styles.episodeMarkerText,
-                episode <= episodesWatched && styles.episodeMarkerTextWatched,
-                episode === selectedEpisode && styles.episodeMarkerTextSelected,
-              ]}>
-                {episode <= 9 ? episode : ''}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {/* Draggable slider handle */}
+        {selectedEpisode > episodesWatched && (
+          <View
+            style={[
+              styles.sliderHandle,
+              {
+                left: CIRCLE_SIZE / 2 + Math.cos((getAngleFromEpisode(selectedEpisode) * Math.PI) / 180) * CIRCLE_RADIUS - 12,
+                top: CIRCLE_SIZE / 2 + Math.sin((getAngleFromEpisode(selectedEpisode) * Math.PI) / 180) * CIRCLE_RADIUS - 12,
+              },
+            ]}
+          >
+            <View style={styles.sliderHandleInner} />
+          </View>
+        )}
       </View>
     );
   };
@@ -301,9 +295,6 @@ export default function EpisodeManagementModal({
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Gerenciar Episódios</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X size={24} color={COLORS.text} />
-          </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content}>
@@ -328,67 +319,30 @@ export default function EpisodeManagementModal({
             {renderCircularProgress()}
           </View>
 
-          <View style={styles.quickActions}>
-            <Text style={styles.sectionTitle}>Marcar Episódios</Text>
-            
+          <View style={styles.actionSection}>
             <TouchableOpacity
               style={[
-                styles.updateButton,
-                (selectedEpisode <= episodesWatched || isUpdating) && styles.updateButtonDisabled,
+                styles.mainActionButton,
+                (selectedEpisode <= episodesWatched || isUpdating) && styles.mainActionButtonDisabled,
               ]}
-              onPress={handleEpisodeUpdate}
+              onPress={selectedEpisode === totalEpisodes ? handleCompleteAll : handleEpisodeUpdate}
               disabled={selectedEpisode <= episodesWatched || isUpdating}
             >
               <Text style={[
-                styles.updateButtonText,
-                (selectedEpisode <= episodesWatched || isUpdating) && styles.updateButtonTextDisabled,
+                styles.mainActionButtonText,
+                (selectedEpisode <= episodesWatched || isUpdating) && styles.mainActionButtonTextDisabled,
               ]}>
-                {isUpdating ? 'Atualizando...' : `Marcar até Ep. ${selectedEpisode}`}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={styles.sectionTitle}>Ações Rápidas</Text>
-            
-            <TouchableOpacity
-              style={[
-                styles.quickActionButton,
-                (episodesWatched >= totalEpisodes || isUpdating) && styles.quickActionButtonDisabled
-              ]}
-              onPress={() => setSelectedEpisode(episodesWatched + 1)}
-              disabled={episodesWatched >= totalEpisodes || isUpdating}
-            >
-              <Play size={20} color={episodesWatched >= totalEpisodes ? COLORS.textSecondary : COLORS.accent} />
-              <Text style={[
-                styles.quickActionText,
-                (episodesWatched >= totalEpisodes || isUpdating) && styles.quickActionTextDisabled
-              ]}>
-                Próximo Episódio ({episodesWatched + 1})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.completeAllButton,
-                isUpdating && styles.completeAllButtonDisabled
-              ]}
-              onPress={handleCompleteAll}
-              disabled={isUpdating}
-            >
-              <Check size={20} color={COLORS.background} />
-              <Text style={styles.completeAllText}>
-                {isUpdating ? 'Processando...' : 'Marcar como Concluído'}
+                {isUpdating 
+                  ? 'Processando...' 
+                  : selectedEpisode === totalEpisodes 
+                    ? 'Marcar como Concluído'
+                    : `Marcar até Ep. ${selectedEpisode}`
+                }
               </Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onClose}
-            >
-              <Text style={styles.cancelButtonText}>Fechar</Text>
-            </TouchableOpacity>
-          </View>
+
         </ScrollView>
 
 
@@ -416,9 +370,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
-  closeButton: {
-    padding: 4,
-  },
+
   content: {
     flex: 1,
     paddingHorizontal: 20,
@@ -480,126 +432,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
   },
-  episodeMarker: {
+
+  sliderHandle: {
     position: 'absolute',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.card,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  episodeMarkerWatched: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  episodeMarkerSelected: {
-    backgroundColor: COLORS.accent,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    borderWidth: 3,
     borderColor: COLORS.accent,
-    transform: [{ scale: 1.2 }],
-  },
-  episodeMarkerText: {
-    fontSize: 8,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  episodeMarkerTextWatched: {
-    color: COLORS.background,
-  },
-  episodeMarkerTextSelected: {
-    color: COLORS.background,
-  },
-  quickActions: {
-    marginBottom: 20,
-  },
-  quickActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    marginBottom: 12,
-    gap: 12,
-  },
-  quickActionText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  completeAllButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  completeAllText: {
-    fontSize: 16,
+  sliderHandleInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.accent,
+  },
+  nextButton: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: COLORS.accent,
+    borderRadius: 16,
+  },
+  nextButtonText: {
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.background,
   },
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+  actionSection: {
+    marginBottom: 20,
+    paddingBottom: 20,
   },
-  cancelButton: {
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: COLORS.card,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  updateButton: {
+  mainActionButton: {
     width: '100%',
     paddingVertical: 16,
     borderRadius: 12,
     backgroundColor: COLORS.accent,
     alignItems: 'center',
-    marginBottom: 12,
   },
-  updateButtonDisabled: {
+  mainActionButtonDisabled: {
     backgroundColor: COLORS.border,
   },
-  updateButtonText: {
+  mainActionButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.background,
   },
-  updateButtonTextDisabled: {
+  mainActionButtonTextDisabled: {
     color: COLORS.textSecondary,
   },
-  selectionInfo: {
-    backgroundColor: COLORS.accent + '20',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  selectionText: {
-    fontSize: 14,
-    color: COLORS.accent,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  quickActionButtonDisabled: {
-    opacity: 0.5,
-  },
-  quickActionTextDisabled: {
-    color: COLORS.textSecondary,
-  },
-  completeAllButtonDisabled: {
-    opacity: 0.7,
-  },
+
 });
