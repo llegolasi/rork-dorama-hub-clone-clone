@@ -424,13 +424,30 @@ export default function ProfileScreen() {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Cover Photo Section */}
         <View style={styles.coverSection}>
-          <Image
-            source={{
-              uri: userProfile?.userProfileCover || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&auto=format&fit=crop&q=60'
-            }}
-            style={styles.coverImage}
-            contentFit="cover"
-          />
+          {userProfile?.userProfileCover ? (
+            <Image
+              source={{
+                uri: userProfile.userProfileCover
+              }}
+              style={styles.coverImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.emptyCoverContainer}>
+              <View style={styles.emptyCoverContent}>
+                <Camera size={32} color={COLORS.textSecondary} />
+                <Text style={styles.emptyCoverTitle}>
+                  {premiumStatus?.isPremium ? 'Adicionar Foto de Capa' : 'Foto de Capa Premium'}
+                </Text>
+                <Text style={styles.emptyCoverSubtitle}>
+                  {premiumStatus?.isPremium 
+                    ? 'Toque para escolher uma imagem de dorama'
+                    : 'Assine Premium para personalizar seu perfil'
+                  }
+                </Text>
+              </View>
+            </View>
+          )}
           <View style={styles.coverOverlay} />
           
           {/* Cover Photo Edit Button */}
@@ -438,7 +455,10 @@ export default function ProfileScreen() {
             style={styles.coverEditButton}
             onPress={handleCoverPhotoPress}
           >
-            <Camera size={16} color={COLORS.background} />
+            <Camera size={20} color={COLORS.background} />
+            <Text style={styles.coverEditButtonText}>
+              {userProfile?.userProfileCover ? 'Alterar' : 'Adicionar'}
+            </Text>
           </TouchableOpacity>
         </View>
         
@@ -602,24 +622,63 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  emptyCoverContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyCoverContent: {
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyCoverTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyCoverSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   coverOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   coverEditButton: {
     position: 'absolute',
     top: 50,
     right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+    backgroundColor: COLORS.accent,
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  coverEditButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.background,
   },
   loadingContainer: {
     flex: 1,

@@ -21,4 +21,4 @@ SELECT
     END as is_premium
 FROM public.users u
 LEFT JOIN public.user_stats us ON u.id = us.user_id
-LEFT JOIN public.premium_subscriptions ps ON u.id = ps.user_id;
+LEFT JOIN public.user_subscriptions ps ON u.id = ps.user_id;

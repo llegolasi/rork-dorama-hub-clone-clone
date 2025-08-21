@@ -900,7 +900,7 @@ export const updateUserProfileCoverProcedure = protectedProcedure
     try {
       // Check if user has premium subscription
       const { data: subscription } = await ctx.supabase
-        .from('premium_subscriptions')
+        .from('user_subscriptions')
         .select('*')
         .eq('user_id', ctx.user.id)
         .eq('status', 'active')
@@ -934,7 +934,7 @@ export const checkUserPremiumStatusProcedure = protectedProcedure
   .query(async ({ ctx }) => {
     try {
       const { data: subscription } = await ctx.supabase
-        .from('premium_subscriptions')
+        .from('user_subscriptions')
         .select('*')
         .eq('user_id', ctx.user.id)
         .eq('status', 'active')
