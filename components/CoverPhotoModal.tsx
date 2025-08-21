@@ -320,8 +320,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '90%',
-    minHeight: '60%',
+    maxHeight: '95%',
+    minHeight: '75%',
   },
   header: {
     flexDirection: 'row',
