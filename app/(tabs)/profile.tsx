@@ -203,6 +203,7 @@ export default function ProfileScreen() {
       if (userProfile) {
         userProfile.userProfileCover = imageUrl;
       }
+      setShowCoverModal(false);
       Alert.alert('Sucesso', 'Foto de capa atualizada com sucesso!');
     } catch (error) {
       console.error('Error updating cover:', error);
@@ -419,22 +420,18 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
-      
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Cover Photo Section */}
         <TouchableOpacity 
           style={styles.coverSection}
-          onPress={handleCoverPhotoPress}
-          activeOpacity={0.8}
+          onPress={premiumStatus?.isPremium ? handleCoverPhotoPress : undefined}
+          activeOpacity={premiumStatus?.isPremium ? 0.8 : 1}
         >
           <Image
             source={{
-              uri: userProfile?.userProfileCover || 'https://tmbpgttvoabpmcanuqkm.supabase.co/storage/v1/object/public/profilecover/cover.jpg'
+              uri: (userProfile?.userProfileCover && premiumStatus?.isPremium) 
+                ? userProfile.userProfileCover 
+                : 'https://tmbpgttvoabpmcanuqkm.supabase.co/storage/v1/object/public/profilecover/cover.jpg'
             }}
             style={styles.coverImage}
             contentFit="cover"
@@ -444,14 +441,14 @@ export default function ProfileScreen() {
           <View style={styles.coverGradient} />
           
           {/* Show message only if no cover and not premium */}
-          {!userProfile?.userProfileCover && !premiumStatus?.isPremium && (
+          {!premiumStatus?.isPremium && (
             <View style={styles.emptyCoverOverlay}>
-              <Camera size={32} color={COLORS.background} />
+              <Crown size={32} color={COLORS.accent} />
               <Text style={styles.emptyCoverTitle}>
                 Foto de Capa Premium
               </Text>
               <Text style={styles.emptyCoverSubtitle}>
-                Assine Premium para personalizar
+                Assine Premium para personalizar seu perfil
               </Text>
             </View>
           )}
@@ -499,33 +496,31 @@ export default function ProfileScreen() {
           
           <Text style={styles.bio}>{userProfile?.bio || 'Apaixonado por K-dramas!'}</Text>
         
-        <View style={styles.profileActions}>
-          <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-            <Edit3 size={16} color={COLORS.text} />
-            <Text style={styles.editProfileText}>Editar Perfil</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuButton} onPress={() => setShowMenu(!showMenu)}>
-            <Menu size={20} color={COLORS.text} />
-          </TouchableOpacity>
-        </View>
-        
-        {showMenu && (
-          <View style={styles.menuDropdown}>
-            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <LogOut size={16} color={COLORS.error} />
-              <Text style={[styles.menuItemText, { color: COLORS.error }]}>Sair da Conta</Text>
+          <View style={styles.profileActions}>
+            <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+              <Edit3 size={16} color={COLORS.text} />
+              <Text style={styles.editProfileText}>Editar Perfil</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.menuButton} onPress={() => setShowMenu(!showMenu)}>
+              <Menu size={20} color={COLORS.text} />
             </TouchableOpacity>
           </View>
+          
+          {showMenu && (
+            <View style={styles.menuDropdown}>
+              <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                <LogOut size={16} color={COLORS.error} />
+                <Text style={[styles.menuItemText, { color: COLORS.error }]}>Sair da Conta</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Componente de estatísticas detalhadas */}
+        {userProfile?.id && userProfile.id !== '' && (
+          <UserStatsDisplay userId={userProfile.id} isOwnProfile={true} />
         )}
-      </View>
-
-
-
-      {/* Componente de estatísticas detalhadas */}
-      {userProfile?.id && userProfile.id !== '' && (
-        <UserStatsDisplay userId={userProfile.id} isOwnProfile={true} />
-      )}
 
         <View style={styles.tabContainer}>
           {renderTabButton(
@@ -635,8 +630,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    height: 120,
+    background: 'linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8))',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   emptyCoverOverlay: {
     position: 'absolute',
