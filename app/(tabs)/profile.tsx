@@ -460,7 +460,7 @@ export default function ProfileScreen() {
           {/* Camera icon for all users */}
           <View style={styles.cameraIconContainer}>
             <View style={styles.cameraIcon}>
-              <Camera size={20} color={COLORS.background} />
+              <Camera size={20} color="white" />
             </View>
           </View>
           

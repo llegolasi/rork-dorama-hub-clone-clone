@@ -334,7 +334,7 @@ const UserProfileScreen = () => {
           {/* Camera icon for visual indication */}
           <View style={styles.cameraIconContainer}>
             <View style={styles.cameraIcon}>
-              <Camera size={20} color={COLORS.background} />
+              <Camera size={20} color="white" />
             </View>
           </View>
           
