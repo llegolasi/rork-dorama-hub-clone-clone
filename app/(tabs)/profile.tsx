@@ -199,6 +199,10 @@ export default function ProfileScreen() {
   const handleSelectCover = async (imageUrl: string) => {
     try {
       await updateCoverMutation.mutateAsync({ coverImageUrl: imageUrl });
+      // Update local state immediately for better UX
+      if (userProfile) {
+        userProfile.userProfileCover = imageUrl;
+      }
       Alert.alert('Sucesso', 'Foto de capa atualizada com sucesso!');
     } catch (error) {
       console.error('Error updating cover:', error);
@@ -423,44 +427,48 @@ export default function ProfileScreen() {
       
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Cover Photo Section */}
-        <View style={styles.coverSection}>
-          {userProfile?.userProfileCover ? (
-            <Image
-              source={{
-                uri: userProfile.userProfileCover
-              }}
-              style={styles.coverImage}
-              contentFit="cover"
-            />
-          ) : (
-            <View style={styles.emptyCoverContainer}>
-              <View style={styles.emptyCoverContent}>
-                <Camera size={32} color={COLORS.textSecondary} />
-                <Text style={styles.emptyCoverTitle}>
-                  {premiumStatus?.isPremium ? 'Adicionar Foto de Capa' : 'Foto de Capa Premium'}
-                </Text>
-                <Text style={styles.emptyCoverSubtitle}>
-                  {premiumStatus?.isPremium 
-                    ? 'Toque para escolher uma imagem de dorama'
-                    : 'Assine Premium para personalizar seu perfil'
-                  }
-                </Text>
-              </View>
+        <TouchableOpacity 
+          style={styles.coverSection}
+          onPress={handleCoverPhotoPress}
+          activeOpacity={0.8}
+        >
+          <Image
+            source={{
+              uri: userProfile?.userProfileCover || 'https://tmbpgttvoabpmcanuqkm.supabase.co/storage/v1/object/public/profilecover/cover.jpg'
+            }}
+            style={styles.coverImage}
+            contentFit="cover"
+          />
+          
+          {/* Gradient overlay */}
+          <View style={styles.coverGradient} />
+          
+          {/* Show message only if no cover and not premium */}
+          {!userProfile?.userProfileCover && !premiumStatus?.isPremium && (
+            <View style={styles.emptyCoverOverlay}>
+              <Camera size={32} color={COLORS.background} />
+              <Text style={styles.emptyCoverTitle}>
+                Foto de Capa Premium
+              </Text>
+              <Text style={styles.emptyCoverSubtitle}>
+                Assine Premium para personalizar
+              </Text>
             </View>
           )}
-          <View style={styles.coverOverlay} />
           
-          {/* Cover Photo Edit Button */}
-          <TouchableOpacity 
-            style={styles.coverEditButton}
-            onPress={handleCoverPhotoPress}
-          >
-            <Camera size={20} color={COLORS.background} />
-            <Text style={styles.coverEditButtonText}>
-              {userProfile?.userProfileCover ? 'Alterar' : 'Adicionar'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          {/* Show add message for premium users without cover */}
+          {!userProfile?.userProfileCover && premiumStatus?.isPremium && (
+            <View style={styles.emptyCoverOverlay}>
+              <Camera size={32} color={COLORS.background} />
+              <Text style={styles.emptyCoverTitle}>
+                Adicionar Foto de Capa
+              </Text>
+              <Text style={styles.emptyCoverSubtitle}>
+                Toque para escolher uma imagem
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
         
         <View style={styles.header}>
           <View style={styles.profileSection}>
@@ -622,63 +630,39 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  emptyCoverContainer: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: COLORS.card,
+  coverGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  emptyCoverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  emptyCoverContent: {
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingHorizontal: 40,
   },
   emptyCoverTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.text,
+    color: COLORS.background,
     marginTop: 12,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyCoverSubtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS.background,
     textAlign: 'center',
     lineHeight: 20,
-  },
-  coverOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  coverEditButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: COLORS.accent,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  coverEditButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.background,
+    opacity: 0.9,
   },
   loadingContainer: {
     flex: 1,
@@ -687,7 +671,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    marginTop: -40,
+    marginTop: -50,
   },
   profileSection: {
     flexDirection: 'row',
@@ -699,9 +683,17 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: "hidden",
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: COLORS.background,
     marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   profileImage: {
     width: "100%",
