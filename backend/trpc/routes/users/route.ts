@@ -67,7 +67,8 @@ export const updateUserProfileProcedure = protectedProcedure
   .input(z.object({
     displayName: z.string().min(1).max(100).optional(),
     bio: z.string().max(500).optional(),
-    profileImage: z.string().url().optional()
+    profileImage: z.string().url().optional(),
+    userProfileCover: z.string().url().optional()
   }))
   .mutation(async ({ input, ctx }) => {
     try {
@@ -76,7 +77,8 @@ export const updateUserProfileProcedure = protectedProcedure
         .update({
           display_name: input.displayName,
           bio: input.bio,
-          profile_image: input.profileImage
+          profile_image: input.profileImage,
+          user_profile_cover: input.userProfileCover
         })
         .eq('id', ctx.user.id)
         .select()
@@ -886,5 +888,68 @@ export const getUserCompletedDramasProcedure = publicProcedure
     } catch (error) {
       console.error('Error fetching completed dramas:', error);
       throw new Error('Failed to fetch completed dramas');
+    }
+  });
+
+// Update user profile cover
+export const updateUserProfileCoverProcedure = protectedProcedure
+  .input(z.object({
+    coverImageUrl: z.string().url()
+  }))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      // Check if user has premium subscription
+      const { data: subscription } = await ctx.supabase
+        .from('premium_subscriptions')
+        .select('*')
+        .eq('user_id', ctx.user.id)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString())
+        .single();
+
+      if (!subscription) {
+        throw new Error('Premium subscription required to set profile cover');
+      }
+
+      const { data, error } = await ctx.supabase
+        .from('users')
+        .update({
+          user_profile_cover: input.coverImageUrl
+        })
+        .eq('id', ctx.user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Error updating user profile cover:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to update profile cover');
+    }
+  });
+
+// Check if user has premium subscription
+export const checkUserPremiumStatusProcedure = protectedProcedure
+  .query(async ({ ctx }) => {
+    try {
+      const { data: subscription } = await ctx.supabase
+        .from('premium_subscriptions')
+        .select('*')
+        .eq('user_id', ctx.user.id)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString())
+        .single();
+
+      return {
+        isPremium: !!subscription,
+        subscription: subscription || null
+      };
+    } catch (error) {
+      console.error('Error checking premium status:', error);
+      return {
+        isPremium: false,
+        subscription: null
+      };
     }
   });

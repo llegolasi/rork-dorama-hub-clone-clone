@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, ScrollView, Alert, FlatList } from "react-native";
 import { Image } from "expo-image";
-import { BookOpen, Check, Eye, Heart, MessageCircle, Edit3, Award, Crown, BarChart3, Settings, Menu, LogOut, Trophy } from "lucide-react-native";
+import { BookOpen, Check, Eye, Heart, MessageCircle, Edit3, Award, Crown, BarChart3, Settings, Menu, LogOut, Trophy, Camera, Plus } from "lucide-react-native";
 import { router, Stack, useFocusEffect } from "expo-router";
 
 import { COLORS } from "@/constants/colors";
@@ -13,6 +13,7 @@ import PremiumSubscription from "@/components/PremiumSubscription";
 import UserStatsComponent from "@/components/UserStatsComponent";
 import ProfileCustomization from "@/components/ProfileCustomization";
 import UserStatsDisplay from "@/components/UserStatsDisplay";
+import CoverPhotoModal from "@/components/CoverPhotoModal";
 import { ACHIEVEMENTS } from "@/constants/achievements";
 
 import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures } from "@/types/user";
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('posts');
   const [showMenu, setShowMenu] = useState(false);
+  const [showCoverModal, setShowCoverModal] = useState(false);
   
   // Fetch user's community posts
   const { data: userPosts = [], isLoading: postsLoading, refetch: refetchPosts } = trpc.community.getPosts.useQuery({
@@ -46,6 +48,20 @@ export default function ProfileScreen() {
     userId: userProfile?.id
   }, {
     enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
+  });
+  
+  // Check premium status
+  const { data: premiumStatus } = trpc.users.checkPremiumStatus.useQuery();
+  
+  // Update profile cover mutation
+  const updateCoverMutation = trpc.users.updateProfileCover.useMutation({
+    onSuccess: () => {
+      console.log('Profile cover updated successfully');
+      // Refresh user data if needed
+    },
+    onError: (error) => {
+      Alert.alert('Erro', error.message);
+    }
   });
   
   // Auto-refresh user profile when screen is focused
@@ -174,6 +190,19 @@ export default function ProfileScreen() {
   const handleBorderChange = (borderId: string) => {
     setCurrentBorder(borderId);
     console.log('Border changed to:', borderId);
+  };
+  
+  const handleCoverPhotoPress = () => {
+    setShowCoverModal(true);
+  };
+  
+  const handleSelectCover = async (imageUrl: string) => {
+    try {
+      await updateCoverMutation.mutateAsync({ coverImageUrl: imageUrl });
+      Alert.alert('Sucesso', 'Foto de capa atualizada com sucesso!');
+    } catch (error) {
+      console.error('Error updating cover:', error);
+    }
   };
 
   const renderTabButton = (tab: TabType, title: string, icon: React.ReactNode) => (
@@ -388,20 +417,31 @@ export default function ProfileScreen() {
     <>
       <Stack.Screen
         options={{
-          title: "Perfil",
-          headerStyle: {
-            backgroundColor: COLORS.background,
-          },
-          headerTitleStyle: {
-            fontSize: 28,
-            fontWeight: "700",
-            color: COLORS.text,
-          },
-          headerShadowVisible: false,
+          headerShown: false,
         }}
       />
       
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Cover Photo Section */}
+        <View style={styles.coverSection}>
+          <Image
+            source={{
+              uri: userProfile?.userProfileCover || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&auto=format&fit=crop&q=60'
+            }}
+            style={styles.coverImage}
+            contentFit="cover"
+          />
+          <View style={styles.coverOverlay} />
+          
+          {/* Cover Photo Edit Button */}
+          <TouchableOpacity 
+            style={styles.coverEditButton}
+            onPress={handleCoverPhotoPress}
+          >
+            <Camera size={16} color={COLORS.background} />
+          </TouchableOpacity>
+        </View>
+        
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <View style={styles.profileImageContainer}>
@@ -538,6 +578,13 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
+      
+      <CoverPhotoModal
+        visible={showCoverModal}
+        onClose={() => setShowCoverModal(false)}
+        onSelectCover={handleSelectCover}
+        isPremium={premiumStatus?.isPremium || false}
+      />
     </>
   );
 }
@@ -547,6 +594,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  coverSection: {
+    height: 200,
+    position: 'relative',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  coverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  coverEditButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -554,6 +628,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+    marginTop: -40,
   },
   profileSection: {
     flexDirection: 'row',
@@ -565,8 +640,8 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: "hidden",
-    borderWidth: 2,
-    borderColor: COLORS.accent,
+    borderWidth: 3,
+    borderColor: COLORS.background,
     marginRight: 16,
   },
   profileImage: {

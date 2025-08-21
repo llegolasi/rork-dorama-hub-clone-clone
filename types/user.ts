@@ -67,6 +67,7 @@ export interface UserProfile {
   displayName: string;
   bio?: string;
   profileImage?: string;
+  userProfileCover?: string;
   isFollowing?: boolean;
   followersCount: number;
   followingCount: number;
@@ -181,6 +182,7 @@ export interface AuthUser {
   displayName: string;
   bio?: string;
   profileImage?: string;
+  userProfileCover?: string;
   followersCount?: number;
   followingCount?: number;
   isOnboardingComplete: boolean;

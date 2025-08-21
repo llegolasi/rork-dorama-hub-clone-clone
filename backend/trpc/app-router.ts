@@ -51,7 +51,9 @@ import {
   getUserStatsProcedure,
   updateUserStatsProcedure,
   markEpisodeWatchedProcedure,
-  completeDramaWithDateRangeProcedure
+  completeDramaWithDateRangeProcedure,
+  updateUserProfileCoverProcedure,
+  checkUserPremiumStatusProcedure
 } from "./routes/users/route";
 
 // Discover routes
@@ -142,6 +144,8 @@ export const appRouter = createTRPCRouter({
     updateStats: updateUserStatsProcedure,
     markEpisodeWatched: markEpisodeWatchedProcedure,
     completeDramaWithDateRange: completeDramaWithDateRangeProcedure,
+    updateProfileCover: updateUserProfileCoverProcedure,
+    checkPremiumStatus: checkUserPremiumStatusProcedure,
   }),
   
   discover: createTRPCRouter({

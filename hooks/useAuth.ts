@@ -172,6 +172,7 @@ export const [AuthContext, useAuth] = createContextHook(() => {
                 displayName: profile.display_name,
                 bio: profile.bio,
                 profileImage: profile.profile_image,
+                userProfileCover: profile.user_profile_cover,
                 isOnboardingComplete: profile.is_onboarding_complete,
                 createdAt: profile.created_at
               };
@@ -220,6 +221,7 @@ export const [AuthContext, useAuth] = createContextHook(() => {
               displayName: profile.display_name,
               bio: profile.bio,
               profileImage: profile.profile_image,
+              userProfileCover: profile.user_profile_cover,
               isOnboardingComplete: profile.is_onboarding_complete,
               createdAt: profile.created_at
             };
@@ -402,6 +404,7 @@ export const [AuthContext, useAuth] = createContextHook(() => {
               displayName: profile.display_name,
               bio: profile.bio,
               profileImage: profile.profile_image,
+              userProfileCover: profile.user_profile_cover,
               isOnboardingComplete: profile.is_onboarding_complete,
               createdAt: profile.created_at
             };

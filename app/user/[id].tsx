@@ -303,25 +303,31 @@ const UserProfileScreen = () => {
     <>
       <Stack.Screen
         options={{
-          title: userProfile.display_name || 'Perfil',
-          headerStyle: {
-            backgroundColor: COLORS.background,
-          },
-          headerTitleStyle: {
-            fontSize: 28,
-            fontWeight: "700",
-            color: COLORS.text,
-          },
-          headerShadowVisible: false,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <ArrowLeft size={24} color={COLORS.text} />
-            </TouchableOpacity>
-          ),
+          headerShown: false,
         }}
       />
       
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Cover Photo Section */}
+        <View style={styles.coverSection}>
+          <Image
+            source={{
+              uri: userProfile?.user_profile_cover || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&auto=format&fit=crop&q=60'
+            }}
+            style={styles.coverImage}
+            contentFit="cover"
+          />
+          <View style={styles.coverOverlay} />
+          
+          {/* Back Button */}
+          <TouchableOpacity 
+            style={styles.backButtonOverlay}
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={20} color={COLORS.background} />
+          </TouchableOpacity>
+        </View>
+        
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <View style={styles.profileImageContainer}>
@@ -464,8 +470,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  coverSection: {
+    height: 200,
+    position: 'relative',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  coverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  backButtonOverlay: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     padding: 20,
+    marginTop: -40,
   },
   profileSection: {
     flexDirection: 'row',
@@ -477,8 +511,8 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: COLORS.accent,
+    borderWidth: 3,
+    borderColor: COLORS.background,
     marginRight: 16,
   },
   profileImage: {

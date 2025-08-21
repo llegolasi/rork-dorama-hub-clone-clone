@@ -19,6 +19,7 @@ CREATE TABLE public.users (
     display_name VARCHAR(100) NOT NULL,
     bio TEXT,
     profile_image TEXT,
+    user_profile_cover TEXT,
     is_onboarding_complete BOOLEAN DEFAULT FALSE,
     followers_count INTEGER DEFAULT 0,
     following_count INTEGER DEFAULT 0,
