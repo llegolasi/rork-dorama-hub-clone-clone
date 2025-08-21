@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,14 @@ import {
   BarChart3,
   Clock,
   Trophy,
-  Filter,
   Star,
   Target,
   Zap,
   Award,
-  Crown,
-  ArrowLeft,
+  Calendar,
+  Eye,
 } from 'lucide-react-native';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { COLORS } from '@/constants/colors';
@@ -42,10 +41,9 @@ export default function StatisticsScreen() {
   const { user } = useAuth();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [activeStatType, setActiveStatType] = useState<StatType>('overview');
-  const [showFilters, setShowFilters] = useState(false);
 
   const { data: stats, isLoading, error, refetch } = trpc.users.getStats.useQuery(
-    { userId: user?.id },
+    { userId: user?.id, timeFilter },
     {
       enabled: !!user?.id && user.id !== '' && user.id.length > 0,
       refetchOnMount: true,
@@ -54,85 +52,14 @@ export default function StatisticsScreen() {
     }
   );
 
-  // Mock data for premium features (replace with real data from backend)
-  const mockTimeData = useMemo(() => {
-    const now = new Date();
-    const data: ChartData[] = [];
-    
-    switch (timeFilter) {
-      case 'week':
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          data.push({
-            label: date.toLocaleDateString('pt-BR', { weekday: 'short' }),
-            value: Math.floor(Math.random() * 180) + 30,
-            color: COLORS.accent,
-          });
-        }
-        break;
-      case 'month':
-        for (let i = 29; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          if (i % 5 === 0) {
-            data.push({
-              label: date.getDate().toString(),
-              value: Math.floor(Math.random() * 240) + 60,
-              color: COLORS.accent,
-            });
-          }
-        }
-        break;
-      case 'quarter':
-        for (let i = 11; i >= 0; i--) {
-          const date = new Date(now);
-          date.setMonth(date.getMonth() - i);
-          data.push({
-            label: date.toLocaleDateString('pt-BR', { month: 'short' }),
-            value: Math.floor(Math.random() * 1200) + 300,
-            color: COLORS.accent,
-          });
-        }
-        break;
-      case 'year':
-        for (let i = 11; i >= 0; i--) {
-          const date = new Date(now);
-          date.setMonth(date.getMonth() - i);
-          data.push({
-            label: date.toLocaleDateString('pt-BR', { month: 'short' }),
-            value: Math.floor(Math.random() * 2000) + 500,
-            color: COLORS.accent,
-          });
-        }
-        break;
-      default:
-        data.push(
-          { label: '2022', value: 8640, color: COLORS.accent },
-          { label: '2023', value: 12480, color: COLORS.accent },
-          { label: '2024', value: 15360, color: COLORS.accent }
-        );
-    }
-    
-    return data;
-  }, [timeFilter]);
-
-  const mockGenreData: ChartData[] = [
-    { label: 'Romance', value: 35, color: '#FF6B9D' },
-    { label: 'Thriller', value: 25, color: '#4ECDC4' },
-    { label: 'Comédia', value: 20, color: '#45B7D1' },
-    { label: 'Drama', value: 15, color: '#96CEB4' },
-    { label: 'Histórico', value: 5, color: '#FFEAA7' },
-  ];
-
   const formatWatchTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    if (hours < 24) return `${hours}h ${remainingMinutes}m`;
+    if (hours < 24) return `${hours}h ${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
     const days = Math.floor(hours / 24);
     const remainingHours = hours % 24;
-    return `${days}d ${remainingHours}h`;
+    return `${days}d${remainingHours > 0 ? ` ${remainingHours}h` : ''}`;
   };
 
   const getTimeFilterLabel = (filter: TimeFilter) => {
@@ -146,17 +73,25 @@ export default function StatisticsScreen() {
   };
 
   const renderBarChart = (data: ChartData[]) => {
+    if (!data || data.length === 0) {
+      return (
+        <View style={styles.chartContainer}>
+          <Text style={styles.noDataText}>Nenhum dado disponível</Text>
+        </View>
+      );
+    }
+
     const maxValue = Math.max(...data.map(d => d.value));
     const chartWidth = screenWidth - 64;
-    const barWidth = (chartWidth - (data.length - 1) * 8) / data.length;
+    const barWidth = Math.max(20, (chartWidth - (data.length - 1) * 8) / data.length);
 
     return (
       <View style={styles.chartContainer}>
         <View style={styles.chart}>
           {data.map((item, index) => {
-            const height = (item.value / maxValue) * 120;
+            const height = maxValue > 0 ? (item.value / maxValue) * 120 : 0;
             return (
-              <View key={index} style={styles.barContainer}>
+              <View key={`${item.label}-${index}`} style={styles.barContainer}>
                 <View style={[styles.bar, { height, backgroundColor: item.color, width: barWidth }]} />
                 <Text style={styles.barLabel} numberOfLines={1}>
                   {item.label}
@@ -173,15 +108,23 @@ export default function StatisticsScreen() {
   };
 
   const renderPieChart = (data: ChartData[]) => {
+    if (!data || data.length === 0) {
+      return (
+        <View style={styles.pieChartContainer}>
+          <Text style={styles.noDataText}>Nenhum gênero registrado</Text>
+        </View>
+      );
+    }
+
     const total = data.reduce((sum, item) => sum + item.value, 0);
     
     return (
       <View style={styles.pieChartContainer}>
         <View style={styles.pieChart}>
           {data.map((item, index) => {
-            const percentage = (item.value / total) * 100;
+            const percentage = total > 0 ? (item.value / total) * 100 : 0;
             return (
-              <View key={index} style={styles.pieItem}>
+              <View key={`${item.label}-${index}`} style={styles.pieItem}>
                 <View style={[styles.pieColor, { backgroundColor: item.color }]} />
                 <Text style={styles.pieLabel}>{item.label}</Text>
                 <Text style={styles.pieValue}>{percentage.toFixed(1)}%</Text>
@@ -197,9 +140,8 @@ export default function StatisticsScreen() {
     if (!stats) return null;
 
     const totalMinutes = stats.total_watch_time_minutes || 0;
-    const avgPerDay = totalMinutes / 365; // Rough estimate
-    const avgPerDrama = stats.average_drama_runtime || 0;
-    const completionRate = stats.dramas_completed / (stats.dramas_completed + stats.dramas_watching + stats.dramas_in_watchlist) * 100;
+    const avgPerDay = stats.average_episodes_per_day || 0;
+    const completionRate = stats.completion_rate || 0;
 
     return (
       <View style={styles.overviewGrid}>
@@ -207,11 +149,11 @@ export default function StatisticsScreen() {
           colors={[COLORS.accent + '20', COLORS.accent + '10']}
           style={styles.overviewCard}
         >
-          <Clock size={24} color={COLORS.accent} />
+          <Clock size={28} color={COLORS.accent} />
           <Text style={styles.overviewValue}>{formatWatchTime(totalMinutes)}</Text>
           <Text style={styles.overviewLabel}>Tempo Total</Text>
           <Text style={styles.overviewSubtext}>
-            ~{formatWatchTime(Math.round(avgPerDay))} por dia
+            {stats.total_episodes_watched} episódios
           </Text>
         </LinearGradient>
 
@@ -219,7 +161,7 @@ export default function StatisticsScreen() {
           colors={['#4ECDC4' + '20', '#4ECDC4' + '10']}
           style={styles.overviewCard}
         >
-          <Trophy size={24} color="#4ECDC4" />
+          <Trophy size={28} color="#4ECDC4" />
           <Text style={styles.overviewValue}>{stats.dramas_completed}</Text>
           <Text style={styles.overviewLabel}>Concluídos</Text>
           <Text style={styles.overviewSubtext}>
@@ -231,11 +173,11 @@ export default function StatisticsScreen() {
           colors={['#FF6B9D' + '20', '#FF6B9D' + '10']}
           style={styles.overviewCard}
         >
-          <Target size={24} color="#FF6B9D" />
-          <Text style={styles.overviewValue}>{formatWatchTime(Math.round(avgPerDrama))}</Text>
-          <Text style={styles.overviewLabel}>Média por Drama</Text>
+          <Target size={28} color="#FF6B9D" />
+          <Text style={styles.overviewValue}>{avgPerDay.toFixed(1)}</Text>
+          <Text style={styles.overviewLabel}>Episódios/Dia</Text>
           <Text style={styles.overviewSubtext}>
-            {Math.round(avgPerDrama / 60)} episódios aprox.
+            Média diária
           </Text>
         </LinearGradient>
 
@@ -243,11 +185,35 @@ export default function StatisticsScreen() {
           colors={['#96CEB4' + '20', '#96CEB4' + '10']}
           style={styles.overviewCard}
         >
-          <Zap size={24} color="#96CEB4" />
+          <Zap size={28} color="#96CEB4" />
           <Text style={styles.overviewValue}>{stats.dramas_watching}</Text>
           <Text style={styles.overviewLabel}>Assistindo</Text>
           <Text style={styles.overviewSubtext}>
             Em progresso
+          </Text>
+        </LinearGradient>
+
+        <LinearGradient
+          colors={['#FFEAA7' + '20', '#FFEAA7' + '10']}
+          style={styles.overviewCard}
+        >
+          <Eye size={28} color="#FFEAA7" />
+          <Text style={styles.overviewValue}>{stats.dramas_in_watchlist}</Text>
+          <Text style={styles.overviewLabel}>Na Lista</Text>
+          <Text style={styles.overviewSubtext}>
+            Para assistir
+          </Text>
+        </LinearGradient>
+
+        <LinearGradient
+          colors={['#DDA0DD' + '20', '#DDA0DD' + '10']}
+          style={styles.overviewCard}
+        >
+          <Calendar size={28} color="#DDA0DD" />
+          <Text style={styles.overviewValue}>{stats.most_active_hour}h</Text>
+          <Text style={styles.overviewLabel}>Hora Favorita</Text>
+          <Text style={styles.overviewSubtext}>
+            Mais ativo
           </Text>
         </LinearGradient>
       </View>
@@ -255,13 +221,57 @@ export default function StatisticsScreen() {
   };
 
   const renderAchievements = () => {
+    if (!stats) return null;
+
     const achievements = [
-      { icon: Crown, title: 'Maratonista', description: 'Assistiu 10+ dramas', unlocked: true, color: '#FFD700' },
-      { icon: Star, title: 'Crítico', description: 'Avaliou 50+ dramas', unlocked: true, color: '#FF6B9D' },
-      { icon: Award, title: 'Explorador', description: 'Assistiu 5+ gêneros', unlocked: true, color: '#4ECDC4' },
-      { icon: Target, title: 'Dedicado', description: '100h+ assistidas', unlocked: false, color: '#96CEB4' },
-      { icon: Trophy, title: 'Lenda', description: 'Completou 100+ dramas', unlocked: false, color: '#FFEAA7' },
-      { icon: Zap, title: 'Velocista', description: 'Completou drama em 1 dia', unlocked: false, color: '#DDA0DD' },
+      { 
+        icon: Trophy, 
+        title: 'Maratonista', 
+        description: 'Assistiu 10+ dramas', 
+        unlocked: stats.dramas_completed >= 10, 
+        color: '#FFD700',
+        progress: `${stats.dramas_completed}/10`
+      },
+      { 
+        icon: Star, 
+        title: 'Crítico', 
+        description: 'Completou 50+ dramas', 
+        unlocked: stats.dramas_completed >= 50, 
+        color: '#FF6B9D',
+        progress: `${stats.dramas_completed}/50`
+      },
+      { 
+        icon: Award, 
+        title: 'Explorador', 
+        description: 'Assistiu 5+ gêneros', 
+        unlocked: (stats.genre_data?.length || 0) >= 5, 
+        color: '#4ECDC4',
+        progress: `${stats.genre_data?.length || 0}/5`
+      },
+      { 
+        icon: Target, 
+        title: 'Dedicado', 
+        description: '100h+ assistidas', 
+        unlocked: (stats.total_watch_time_minutes || 0) >= 6000, 
+        color: '#96CEB4',
+        progress: `${Math.round((stats.total_watch_time_minutes || 0) / 60)}h/100h`
+      },
+      { 
+        icon: Clock, 
+        title: 'Lenda', 
+        description: 'Completou 100+ dramas', 
+        unlocked: stats.dramas_completed >= 100, 
+        color: '#FFEAA7',
+        progress: `${stats.dramas_completed}/100`
+      },
+      { 
+        icon: Zap, 
+        title: 'Velocista', 
+        description: '500+ episódios', 
+        unlocked: (stats.total_episodes_watched || 0) >= 500, 
+        color: '#DDA0DD',
+        progress: `${stats.total_episodes_watched || 0}/500`
+      },
     ];
 
     return (
@@ -273,7 +283,7 @@ export default function StatisticsScreen() {
               key={index}
               style={[
                 styles.achievementCard,
-                { opacity: achievement.unlocked ? 1 : 0.5 }
+                { opacity: achievement.unlocked ? 1 : 0.7 }
               ]}
             >
               <LinearGradient
@@ -296,9 +306,12 @@ export default function StatisticsScreen() {
                 <Text style={styles.achievementDescription}>
                   {achievement.description}
                 </Text>
+                <Text style={styles.achievementProgress}>
+                  {achievement.progress}
+                </Text>
                 {achievement.unlocked && (
                   <View style={styles.unlockedBadge}>
-                    <Text style={styles.unlockedText}>Desbloqueado</Text>
+                    <Text style={styles.unlockedText}>✓ Desbloqueado</Text>
                   </View>
                 )}
               </LinearGradient>
@@ -309,8 +322,6 @@ export default function StatisticsScreen() {
     );
   };
 
-
-
   if (isLoading) {
     return (
       <>
@@ -319,16 +330,11 @@ export default function StatisticsScreen() {
             title: "Estatísticas",
             headerStyle: { backgroundColor: COLORS.background },
             headerTitleStyle: {
-              fontSize: 28,
-              fontWeight: "700",
+              fontSize: 20,
+              fontWeight: "600",
               color: COLORS.text,
             },
             headerShadowVisible: false,
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
-                <ArrowLeft size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            ),
           }}
         />
         <View style={styles.loadingContainer}>
@@ -347,16 +353,11 @@ export default function StatisticsScreen() {
             title: "Estatísticas",
             headerStyle: { backgroundColor: COLORS.background },
             headerTitleStyle: {
-              fontSize: 28,
-              fontWeight: "700",
+              fontSize: 20,
+              fontWeight: "600",
               color: COLORS.text,
             },
             headerShadowVisible: false,
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
-                <ArrowLeft size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            ),
           }}
         />
         <View style={styles.errorContainer}>
@@ -376,57 +377,39 @@ export default function StatisticsScreen() {
           title: "Estatísticas",
           headerStyle: { backgroundColor: COLORS.background },
           headerTitleStyle: {
-            fontSize: 28,
-            fontWeight: "700",
+            fontSize: 20,
+            fontWeight: "600",
             color: COLORS.text,
           },
           headerShadowVisible: false,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <ArrowLeft size={24} color={COLORS.text} />
-            </TouchableOpacity>
-          ),
-          headerRight: () => (
-            <TouchableOpacity 
-              style={styles.filterButton}
-              onPress={() => setShowFilters(!showFilters)}
-            >
-              <Filter size={20} color={COLORS.accent} />
-            </TouchableOpacity>
-          ),
         }}
       />
       
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-
-
-        {/* Filters */}
-        {showFilters && (
-          <View style={styles.filtersContainer}>
-            <Text style={styles.filtersTitle}>Filtros de Tempo</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.filterButtons}>
-                {(['week', 'month', 'quarter', 'year', 'all'] as TimeFilter[]).map((filter) => (
-                  <TouchableOpacity
-                    key={filter}
-                    style={[
-                      styles.filterChip,
-                      timeFilter === filter && styles.filterChipActive
-                    ]}
-                    onPress={() => setTimeFilter(filter)}
-                  >
-                    <Text style={[
-                      styles.filterChipText,
-                      timeFilter === filter && styles.filterChipTextActive
-                    ]}>
-                      {getTimeFilterLabel(filter)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        )}
+        {/* Time Filter Tabs */}
+        <View style={styles.filtersContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.filterButtons}>
+              {(['week', 'month', 'quarter', 'year', 'all'] as TimeFilter[]).map((filter) => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[
+                    styles.filterChip,
+                    timeFilter === filter && styles.filterChipActive
+                  ]}
+                  onPress={() => setTimeFilter(filter)}
+                >
+                  <Text style={[
+                    styles.filterChipText,
+                    timeFilter === filter && styles.filterChipTextActive
+                  ]}>
+                    {getTimeFilterLabel(filter)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
 
         {/* Stat Type Tabs */}
         <View style={styles.tabsContainer}>
@@ -475,20 +458,22 @@ export default function StatisticsScreen() {
                 <Clock size={20} color={COLORS.accent} />
                 <Text style={styles.sectionTitle}>Tempo Assistido - {getTimeFilterLabel(timeFilter)}</Text>
               </View>
-              {renderBarChart(mockTimeData)}
+              {renderBarChart(stats?.time_data || [])}
               
-              <View style={styles.timeInsights}>
-                <Text style={styles.insightsTitle}>Insights</Text>
-                <Text style={styles.insightText}>
-                  • Você assiste mais nos fins de semana
-                </Text>
-                <Text style={styles.insightText}>
-                  • Seu pico de atividade é às 20h
-                </Text>
-                <Text style={styles.insightText}>
-                  • Média de 2.5 episódios por sessão
-                </Text>
-              </View>
+              {stats && (
+                <View style={styles.timeInsights}>
+                  <Text style={styles.insightsTitle}>Insights</Text>
+                  <Text style={styles.insightText}>
+                    • Você assiste em média {stats.average_episodes_per_day.toFixed(1)} episódios por dia
+                  </Text>
+                  <Text style={styles.insightText}>
+                    • Seu horário mais ativo é às {stats.most_active_hour}h
+                  </Text>
+                  <Text style={styles.insightText}>
+                    • Total de {stats.total_episodes_watched} episódios assistidos
+                  </Text>
+                </View>
+              )}
             </View>
           )}
           
@@ -498,20 +483,24 @@ export default function StatisticsScreen() {
                 <Star size={20} color={COLORS.accent} />
                 <Text style={styles.sectionTitle}>Distribuição por Gêneros</Text>
               </View>
-              {renderPieChart(mockGenreData)}
+              {renderPieChart(stats?.genre_data || [])}
               
-              <View style={styles.genreInsights}>
-                <Text style={styles.insightsTitle}>Suas Preferências</Text>
-                <Text style={styles.insightText}>
-                  • Romance é seu gênero favorito (35%)
-                </Text>
-                <Text style={styles.insightText}>
-                  • Você gosta de variedade - 5 gêneros diferentes
-                </Text>
-                <Text style={styles.insightText}>
-                  • Recomendação: Experimente mais Históricos
-                </Text>
-              </View>
+              {stats?.genre_data && stats.genre_data.length > 0 && (
+                <View style={styles.genreInsights}>
+                  <Text style={styles.insightsTitle}>Suas Preferências</Text>
+                  <Text style={styles.insightText}>
+                    • {stats.genre_data[0]?.label} é seu gênero favorito ({stats.genre_data[0]?.value}%)
+                  </Text>
+                  <Text style={styles.insightText}>
+                    • Você gosta de variedade - {stats.genre_data.length} gêneros diferentes
+                  </Text>
+                  {stats.genre_data.length < 5 && (
+                    <Text style={styles.insightText}>
+                      • Recomendação: Experimente mais gêneros para descobrir novos favoritos
+                    </Text>
+                  )}
+                </View>
+              )}
             </View>
           )}
           
@@ -534,40 +523,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  premiumRequired: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  premiumTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  premiumDescription: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  upgradeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.accent,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  upgradeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
@@ -602,34 +557,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  filterButton: {
-    padding: 8,
-  },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 16,
-    padding: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  premiumBadgeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.accent,
-  },
   filtersContainer: {
-    backgroundColor: COLORS.card,
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-  },
-  filtersTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 12,
+    marginTop: 16,
+    marginHorizontal: 16,
+    marginBottom: 8,
   },
   filterButtons: {
     flexDirection: 'row',
@@ -639,7 +570,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -761,6 +692,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  noDataText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    padding: 20,
+  },
   pieChartContainer: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -828,7 +765,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     gap: 8,
-    minHeight: 140,
+    minHeight: 160,
     justifyContent: 'center',
   },
   achievementTitle: {
@@ -842,12 +779,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
   },
+  achievementProgress: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+    fontWeight: '500',
+  },
   unlockedBadge: {
     backgroundColor: COLORS.accent,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    marginTop: 4,
+    marginTop: 8,
   },
   unlockedText: {
     fontSize: 10,

@@ -350,192 +350,172 @@ export const getFollowingWithDetailsProcedure = protectedProcedure
     }
   });
 
-// Get user statistics
+// Get user statistics with detailed analytics
 export const getUserStatsProcedure = protectedProcedure
   .input(z.object({
-    userId: z.string().uuid().optional()
+    userId: z.string().uuid().optional(),
+    timeFilter: z.enum(['week', 'month', 'quarter', 'year', 'all']).default('month')
   }).transform((data) => {
     if (!data.userId || data.userId.trim() === '' || data.userId === 'undefined') {
-      return { userId: undefined };
+      return { userId: undefined, timeFilter: data.timeFilter };
     }
-    return { userId: data.userId };
+    return { userId: data.userId, timeFilter: data.timeFilter };
   }))
   .query(async ({ input, ctx }) => {
     try {
       const targetUserId = input.userId || ctx.user.id;
       
-      // First try to get detailed stats from the new RPC function
-      const { data: detailedStats, error: detailedError } = await ctx.supabase.rpc('get_user_detailed_stats', {
-        p_user_id: targetUserId
-      });
-
-      if (!detailedError && detailedStats && Array.isArray(detailedStats) && detailedStats.length > 0) {
-        const stats = detailedStats[0];
-        
-        // Get total episodes watched from episode_watch_history
-        const { data: episodeHistory } = await ctx.supabase
-          .from('episode_watch_history')
-          .select('episode_number')
-          .eq('user_id', targetUserId);
-        
-        const totalEpisodesWatched = episodeHistory?.length || 0;
-        
-        return {
-          user_id: targetUserId,
-          total_watch_time_minutes: stats.total_watch_time_minutes || 0,
-          total_episodes_watched: totalEpisodesWatched,
-          dramas_completed: stats.dramas_completed || 0,
-          dramas_watching: stats.dramas_watching || 0,
-          dramas_in_watchlist: stats.dramas_in_watchlist || 0,
-          average_drama_runtime: stats.dramas_completed > 0 ? 
-            (stats.total_watch_time_minutes / stats.dramas_completed) : 0,
-          favorite_genres: stats.favorite_genres || {},
-          weekly_watch_time: stats.weekly_watch_time || {},
-          monthly_watch_time: stats.monthly_watch_time || {},
-          yearly_watch_time: stats.yearly_watch_time || {},
-          average_episodes_per_day: stats.average_episodes_per_day || 0,
-          most_active_hour: stats.most_active_hour || 20,
-          completion_rate: stats.completion_rate || 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-      }
-
-      console.log('Detailed stats RPC failed, trying legacy function:', detailedError);
-      
-      // Fallback to legacy RPC function
-      const { data: rpcData, error: rpcError } = await ctx.supabase.rpc('get_user_comprehensive_stats', {
-        p_user_id: targetUserId
-      });
-
-      if (!rpcError && rpcData && typeof rpcData === 'object') {
-        return rpcData;
-      }
-
-      console.log('Legacy RPC function failed, falling back to manual calculation:', rpcError, rpcData);
-      
-      // Fallback: manually calculate stats
-      const { data: userStats, error: statsError } = await ctx.supabase
-        .from('user_stats')
-        .select('*')
+      // Get basic stats from user_drama_lists
+      const { data: watchingDramas } = await ctx.supabase
+        .from('user_drama_lists')
+        .select('id, watched_minutes, total_runtime_minutes, drama_category')
         .eq('user_id', targetUserId)
-        .single();
+        .eq('list_type', 'watching');
 
-      // If no user stats exist, create them
-      if (statsError || !userStats) {
-        // Count dramas in each list
-        const { data: watchingDramas } = await ctx.supabase
-          .from('user_drama_lists')
-          .select('id')
-          .eq('user_id', targetUserId)
-          .eq('list_type', 'watching');
+      const { data: watchlistDramas } = await ctx.supabase
+        .from('user_drama_lists')
+        .select('id')
+        .eq('user_id', targetUserId)
+        .eq('list_type', 'watchlist');
 
-        const { data: watchlistDramas } = await ctx.supabase
-          .from('user_drama_lists')
-          .select('id')
-          .eq('user_id', targetUserId)
-          .eq('list_type', 'watchlist');
+      const { data: completedDramas } = await ctx.supabase
+        .from('user_drama_lists')
+        .select('id, watched_minutes, total_runtime_minutes, drama_category, updated_at')
+        .eq('user_id', targetUserId)
+        .eq('list_type', 'completed');
 
-        const { data: completedDramas } = await ctx.supabase
-          .from('user_drama_lists')
-          .select('id')
-          .eq('user_id', targetUserId)
-          .eq('list_type', 'completed');
-
-        // Get total watch time from user_drama_lists only
-        const { data: allDramas } = await ctx.supabase
-          .from('user_drama_lists')
-          .select('watched_minutes, total_runtime_minutes, list_type')
-          .eq('user_id', targetUserId);
-
-        const totalWatchTime = allDramas?.reduce((sum, drama) => {
-          // For completed dramas, use total_runtime_minutes
-          // For watching dramas, use watched_minutes (partial progress)
-          if (drama.list_type === 'completed') {
-            return sum + (drama.total_runtime_minutes || 0);
-          } else if (drama.list_type === 'watching') {
-            return sum + (drama.watched_minutes || 0);
-          }
-          return sum;
-        }, 0) || 0;
-
-        // Get total episodes watched from episode_watch_history
-        const { data: episodeHistory } = await ctx.supabase
-          .from('episode_watch_history')
-          .select('episode_number')
-          .eq('user_id', targetUserId);
-        
-        const totalEpisodesWatched = episodeHistory?.length || 0;
-        
-        const fallbackStats = {
-          user_id: targetUserId,
-          total_watch_time_minutes: totalWatchTime,
-          total_episodes_watched: totalEpisodesWatched,
-          dramas_completed: completedDramas?.length || 0,
-          dramas_watching: watchingDramas?.length || 0,
-          dramas_in_watchlist: watchlistDramas?.length || 0,
-          average_drama_runtime: completedDramas?.length ? totalWatchTime / completedDramas.length : 0,
-          first_completion_date: null,
-          latest_completion_date: null,
-          monthly_watch_time: {},
-          favorite_genres: {},
-          yearly_watch_time: {},
-          favorite_actor_id: null,
-          favorite_actor_name: null,
-          favorite_actor_works_watched: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        // Try to insert/update user stats
-        await ctx.supabase
-          .from('user_stats')
-          .upsert({
-            user_id: targetUserId,
-            total_watch_time_minutes: totalWatchTime,
-            dramas_completed: completedDramas?.length || 0,
-            dramas_watching: watchingDramas?.length || 0,
-            dramas_in_watchlist: watchlistDramas?.length || 0,
-            updated_at: new Date().toISOString()
-          });
-
-        return fallbackStats;
-      }
-
-      // Get total episodes watched from episode_watch_history
+      // Get episode watch history for detailed analytics
       const { data: episodeHistory } = await ctx.supabase
         .from('episode_watch_history')
-        .select('episode_number')
-        .eq('user_id', targetUserId);
-      
+        .select('episode_number, episode_duration_minutes, watched_at, drama_id')
+        .eq('user_id', targetUserId)
+        .order('watched_at', { ascending: false });
+
       const totalEpisodesWatched = episodeHistory?.length || 0;
       
-      // Return existing user stats with additional calculated fields
+      // Calculate total watch time
+      const totalWatchTime = (completedDramas || []).reduce((sum, drama) => {
+        return sum + (drama.total_runtime_minutes || drama.watched_minutes || 0);
+      }, 0) + (watchingDramas || []).reduce((sum, drama) => {
+        return sum + (drama.watched_minutes || 0);
+      }, 0);
+
+      // Calculate time-based analytics
+      const now = new Date();
+      const timeData: { label: string; value: number; color: string }[] = [];
+      const genreData: Record<string, number> = {};
+      
+      // Process episode history for time analytics
+      if (episodeHistory && episodeHistory.length > 0) {
+        const timeMap: Record<string, number> = {};
+        
+        episodeHistory.forEach(episode => {
+          const watchDate = new Date(episode.watched_at);
+          let key = '';
+          
+          switch (input.timeFilter) {
+            case 'week':
+              const dayOfWeek = watchDate.getDay();
+              const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+              key = days[dayOfWeek];
+              break;
+            case 'month':
+              key = watchDate.getDate().toString();
+              break;
+            case 'quarter':
+            case 'year':
+              key = watchDate.toLocaleDateString('pt-BR', { month: 'short' });
+              break;
+            case 'all':
+              key = watchDate.getFullYear().toString();
+              break;
+          }
+          
+          timeMap[key] = (timeMap[key] || 0) + (episode.episode_duration_minutes || 60);
+        });
+        
+        // Convert to array format for charts
+        Object.entries(timeMap).forEach(([label, value]) => {
+          timeData.push({ label, value, color: '#6366f1' });
+        });
+      }
+      
+      // Process genre data
+      [...(completedDramas || []), ...(watchingDramas || [])].forEach(drama => {
+        if (drama.drama_category) {
+          genreData[drama.drama_category] = (genreData[drama.drama_category] || 0) + 1;
+        }
+      });
+      
+      // Convert genre data to percentage
+      const totalDramas = Object.values(genreData).reduce((sum, count) => sum + count, 0);
+      const genrePercentages = Object.entries(genreData).map(([genre, count]) => ({
+        label: genre,
+        value: totalDramas > 0 ? Math.round((count / totalDramas) * 100) : 0,
+        color: getGenreColor(genre)
+      }));
+      
+      // Calculate completion rate
+      const totalDramasInLists = (completedDramas?.length || 0) + (watchingDramas?.length || 0) + (watchlistDramas?.length || 0);
+      const completionRate = totalDramasInLists > 0 ? ((completedDramas?.length || 0) / totalDramasInLists) * 100 : 0;
+      
+      // Calculate average episodes per day
+      const oldestEpisode = episodeHistory?.[episodeHistory.length - 1];
+      const daysSinceStart = oldestEpisode ? 
+        Math.max(1, Math.ceil((now.getTime() - new Date(oldestEpisode.watched_at).getTime()) / (1000 * 60 * 60 * 24))) : 1;
+      const avgEpisodesPerDay = totalEpisodesWatched / daysSinceStart;
+      
+      // Find most active hour
+      const hourCounts: Record<number, number> = {};
+      episodeHistory?.forEach(episode => {
+        const hour = new Date(episode.watched_at).getHours();
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      });
+      const mostActiveHour = Object.entries(hourCounts).reduce((max, [hour, count]) => 
+        count > max.count ? { hour: parseInt(hour), count } : max, { hour: 20, count: 0 }).hour;
+      
       return {
-        user_id: userStats.user_id,
-        total_watch_time_minutes: userStats.total_watch_time_minutes || 0,
+        user_id: targetUserId,
+        total_watch_time_minutes: totalWatchTime,
         total_episodes_watched: totalEpisodesWatched,
-        dramas_completed: userStats.dramas_completed || 0,
-        dramas_watching: userStats.dramas_watching || 0,
-        dramas_in_watchlist: userStats.dramas_in_watchlist || 0,
-        average_drama_runtime: userStats.dramas_completed > 0 ? 
-          (userStats.total_watch_time_minutes / userStats.dramas_completed) : 0,
-        first_completion_date: null,
-        latest_completion_date: null,
-        monthly_watch_time: userStats.monthly_watch_time || {},
-        favorite_genres: userStats.favorite_genres || {},
-        yearly_watch_time: userStats.yearly_watch_time || {},
-        favorite_actor_id: userStats.favorite_actor_id,
-        favorite_actor_name: userStats.favorite_actor_name,
-        favorite_actor_works_watched: userStats.favorite_actor_works_watched || 0,
-        created_at: userStats.created_at,
-        updated_at: userStats.updated_at
+        dramas_completed: completedDramas?.length || 0,
+        dramas_watching: watchingDramas?.length || 0,
+        dramas_in_watchlist: watchlistDramas?.length || 0,
+        average_drama_runtime: (completedDramas?.length || 0) > 0 ? totalWatchTime / completedDramas!.length : 0,
+        completion_rate: completionRate,
+        average_episodes_per_day: avgEpisodesPerDay,
+        most_active_hour: mostActiveHour,
+        time_data: timeData,
+        genre_data: genrePercentages,
+        recent_completions: completedDramas?.slice(0, 5).map(drama => ({
+          drama_id: drama.id,
+          completed_at: drama.updated_at
+        })) || [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
     } catch (error) {
       console.error('Error in getUserStatsProcedure:', error);
       throw new Error('Failed to fetch user statistics');
     }
   });
+
+// Helper function to get genre colors
+function getGenreColor(genre: string): string {
+  const colors: Record<string, string> = {
+    'Romance': '#FF6B9D',
+    'Comédia': '#45B7D1',
+    'Drama': '#96CEB4',
+    'Thriller': '#4ECDC4',
+    'Ação': '#FF8C42',
+    'Histórico': '#FFEAA7',
+    'Fantasia': '#DDA0DD',
+    'Mistério': '#87CEEB',
+    'Slice of Life': '#98D8C8',
+    'Médico': '#F7DC6F'
+  };
+  return colors[genre] || '#6366f1';
+}
 
 // Mark episode as watched
 export const markEpisodeWatchedProcedure = protectedProcedure
