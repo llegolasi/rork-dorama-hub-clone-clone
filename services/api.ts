@@ -2,7 +2,26 @@ import { TMDB_API_KEY, TMDB_BASE_URL } from "@/constants/config";
 import { ActorCredits, ActorDetails } from "@/types/actor";
 import { Drama, DramaCredits, DramaDetails, DramaResponse, DramaImages, DramaVideos, SeasonDetails } from "@/types/drama";
 
-// Mock data for fallback when API fails
+// Test API key validity
+const testApiKey = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/configuration`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return response.ok;
+  } catch (error) {
+    console.error('API key test failed:', error);
+    return false;
+  }
+};
+
+// Enhanced mock data for fallback when API fails
 const mockDramas: Drama[] = [
   {
     id: 1,
@@ -45,6 +64,48 @@ const mockDramas: Drama[] = [
     popularity: 876.543,
     genre_ids: [18, 27, 10759],
     origin_country: ["KR"]
+  },
+  {
+    id: 4,
+    name: "Vincenzo",
+    original_name: "빈센조",
+    overview: "An Italian lawyer and Mafia consigliere moves his operations to South Korea.",
+    poster_path: "/dvXJgEDQXhL9Ouot2WkBHpQiHGd.jpg",
+    backdrop_path: "/h7dZpJkBY9JCTKlTMc5IIIKLbkS.jpg",
+    first_air_date: "2021-02-20",
+    vote_average: 8.4,
+    vote_count: 1567,
+    popularity: 1890.234,
+    genre_ids: [18, 35, 80],
+    origin_country: ["KR"]
+  },
+  {
+    id: 5,
+    name: "Hotel del Luna",
+    original_name: "호텔 델루나",
+    overview: "When he's invited to manage a hotel for dead souls, an elite hotelier gets to know the establishment's ancient owner and her strange world.",
+    poster_path: "/q1bRGvnh8fB1dCjhbNjJvOVEqNa.jpg",
+    backdrop_path: "/3H8ZyPpHjHvKNNBKlGkKhQVKhxL.jpg",
+    first_air_date: "2019-07-13",
+    vote_average: 8.1,
+    vote_count: 892,
+    popularity: 1456.789,
+    genre_ids: [18, 14, 10749],
+    origin_country: ["KR"]
+  },
+  {
+    id: 6,
+    name: "Goblin",
+    original_name: "도깨비",
+    overview: "In his quest to find his bride to break his immortal curse, Dokkaebi, a 939-year-old guardian of souls, meets a grim reaper and a sprightly student with a tragic past.",
+    poster_path: "/rN6oPTl2dIOSNbOx6qOgVKPeNMu.jpg",
+    backdrop_path: "/qGWKKKNqpgK4q6itZKs7SxVNRgR.jpg",
+    first_air_date: "2016-12-02",
+    vote_average: 8.6,
+    vote_count: 2134,
+    popularity: 2345.678,
+    genre_ids: [18, 14, 10749],
+    origin_country: ["KR"]
   }
 ];
 
@@ -75,6 +136,21 @@ const filterKoreanDramas = (dramas: Drama[]): Drama[] => {
 export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse> => {
   try {
     console.log(`Fetching trending dramas page ${page}...`);
+    console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
+    
+    // Test API key first if this is the first page
+    if (page === 1) {
+      const isValidKey = await testApiKey();
+      if (!isValidKey) {
+        console.warn('API key appears to be invalid, using mock data');
+        return {
+          page: 1,
+          results: mockDramas,
+          total_pages: 3,
+          total_results: mockDramas.length
+        };
+      }
+    }
 
     const trendingRes = await fetch(
       `${TMDB_BASE_URL}/trending/tv/day?language=pt-BR&page=${page}`,
@@ -93,9 +169,11 @@ export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse
       console.log(`After KR filter: ${data.results.length}`);
       return data;
     } else {
-      console.error(`TMDB trending error: ${trendingRes.status} ${trendingRes.statusText}`);
+      const errorText = await trendingRes.text();
+      console.error(`TMDB trending error: ${trendingRes.status}`, errorText);
       
       // Fallback to discover endpoint
+      console.log('Trying fallback discover endpoint...');
       const discoverRes = await fetch(
         `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=${page}`,
         {
@@ -109,7 +187,11 @@ export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse
       if (discoverRes.ok) {
         const data = await discoverRes.json() as DramaResponse;
         data.results = filterKoreanDramas(data.results || []);
+        console.log(`Fallback successful: ${data.results.length} dramas`);
         return data;
+      } else {
+        const fallbackError = await discoverRes.text();
+        console.error(`Fallback discover error: ${discoverRes.status}`, fallbackError);
       }
     }
 
@@ -155,6 +237,22 @@ export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse
 export const getPopularDramas = async (page: number = 1): Promise<DramaResponse> => {
   try {
     console.log(`Fetching popular dramas page ${page}...`);
+    console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
+    
+    // Test API key first if this is the first page
+    if (page === 1) {
+      const isValidKey = await testApiKey();
+      if (!isValidKey) {
+        console.warn('API key appears to be invalid, using mock data');
+        return {
+          page: 1,
+          results: mockDramas,
+          total_pages: 3,
+          total_results: mockDramas.length
+        };
+      }
+    }
+    
     const response = await fetch(
       `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=${page}`,
       {
@@ -166,7 +264,8 @@ export const getPopularDramas = async (page: number = 1): Promise<DramaResponse>
     );
     
     if (!response.ok) {
-      console.error(`TMDB API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`TMDB API error: ${response.status}`, errorText);
       
       if (page === 1) {
         console.log('Using mock data as fallback for popular dramas');
