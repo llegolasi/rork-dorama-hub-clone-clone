@@ -697,7 +697,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
             bottom: keyboardHeight > 0 
               ? (Platform.OS === 'android' ? keyboardHeight - insets.bottom : keyboardHeight)
               : insets.bottom,
-            paddingBottom: Platform.OS === 'android' ? 8 : 8,
+            paddingBottom: 8,
           }
         ]}
       >

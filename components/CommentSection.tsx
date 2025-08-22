@@ -123,7 +123,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
       <View style={[
         styles.inputContainer, 
         Platform.OS === 'android' && styles.inputContainerAndroid,
-        { paddingBottom: bottomPadding + (Platform.OS === 'android' ? 16 : 0) }
+        { paddingBottom: bottomPadding }
       ]}>
         <TextInput
           style={[
