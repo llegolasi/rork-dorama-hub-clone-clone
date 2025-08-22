@@ -21,14 +21,22 @@ export default function ProfileInfoStep({ onComplete }: ProfileInfoStepProps) {
   const [bio, setBio] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
-  const { updateOnboardingData, onboardingData } = useAuth();
+  const { updateOnboardingData } = useAuth();
+
+  const canProceed = (): boolean => {
+    return displayName.trim().length > 0;
+  };
 
   const handleContinue = async () => {
+    if (!canProceed()) {
+      return;
+    }
+
     setIsLoading(true);
     
     try {
       const profileData = {
-        displayName: displayName || onboardingData?.username || '',
+        displayName: displayName.trim(),
         bio
       };
       
@@ -58,7 +66,7 @@ export default function ProfileInfoStep({ onComplete }: ProfileInfoStepProps) {
             <User size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Nome de exibição (opcional)"
+              placeholder="Nome de exibição"
               placeholderTextColor={COLORS.textSecondary}
               value={displayName}
               onChangeText={setDisplayName}
@@ -66,7 +74,7 @@ export default function ProfileInfoStep({ onComplete }: ProfileInfoStepProps) {
             />
           </View>
           <Text style={styles.helperText}>
-            Este será o nome que aparece no seu perfil. Se deixar em branco, usaremos seu nome de usuário.
+            Este será o nome que aparece no seu perfil.
           </Text>
         </View>
 
@@ -91,14 +99,14 @@ export default function ProfileInfoStep({ onComplete }: ProfileInfoStepProps) {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.continueButton}
+            style={[styles.continueButton, !canProceed() && styles.continueButtonDisabled]}
             onPress={handleContinue}
-            disabled={isLoading}
+            disabled={!canProceed() || isLoading}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color={COLORS.text} />
             ) : (
-              <Text style={styles.continueButtonText}>Continuar</Text>
+              <Text style={[styles.continueButtonText, !canProceed() && styles.continueButtonTextDisabled]}>Continuar</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -182,10 +190,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
   },
+  continueButtonDisabled: {
+    backgroundColor: COLORS.border,
+  },
   continueButtonText: {
     color: COLORS.text,
     fontSize: 16,
     fontWeight: '600' as const,
     textAlign: 'center',
+  },
+  continueButtonTextDisabled: {
+    color: COLORS.textSecondary,
   },
 });

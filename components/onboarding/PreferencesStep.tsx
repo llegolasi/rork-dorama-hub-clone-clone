@@ -73,30 +73,7 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
     setIsLoading(false);
   };
 
-  const handleSkip = async () => {
-    console.log('Skipping preferences step');
-    setIsLoading(true);
-    
-    try {
-      const result = await completeOnboarding({
-        favoriteGenres: [],
-        lovedDramas: []
-      });
-      
-      console.log('Skip onboarding result:', result);
-      
-      if (result.success) {
-        console.log('Skip successful, navigating to tabs');
-        router.replace('/(tabs)');
-      } else {
-        console.error('Skip failed:', result.error);
-      }
-    } catch (error) {
-      console.error('Error during skip:', error);
-    }
-    
-    setIsLoading(false);
-  };
+
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -122,7 +99,7 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
                     {genre.name}
                   </Text>
                   {isSelected && (
-                    <Check size={16} color={COLORS.text} style={styles.checkIcon} />
+                    <Check size={14} color={COLORS.text} style={styles.checkIcon} />
                   )}
                 </TouchableOpacity>
               );
@@ -147,13 +124,7 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-            disabled={isLoading}
-          >
-            <Text style={styles.skipButtonText}>Pular por agora</Text>
-          </TouchableOpacity>
+
         </View>
       </View>
     </ScrollView>
@@ -207,19 +178,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.card,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-    gap: 8,
+    gap: 6,
   },
   genreTagSelected: {
     backgroundColor: COLORS.accent,
     borderColor: COLORS.accent,
   },
   genreText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
     fontWeight: '500' as const,
   },
@@ -251,12 +222,5 @@ const styles = StyleSheet.create({
   continueButtonTextDisabled: {
     color: COLORS.textSecondary,
   },
-  skipButton: {
-    paddingVertical: 12,
-  },
-  skipButtonText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-  },
+
 });

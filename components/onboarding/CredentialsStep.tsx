@@ -24,7 +24,9 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
   const [username, setUsername] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState<boolean>(false);
@@ -37,7 +39,11 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
   };
 
   const validatePassword = (password: string): boolean => {
-    return password.length >= 8 && /[A-Z]/.test(password) && /\d/.test(password);
+    return password.length >= 6;
+  };
+
+  const passwordsMatch = (): boolean => {
+    return password === confirmPassword && password.length > 0;
   };
 
   const checkUsername = async (username: string) => {
@@ -60,15 +66,23 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
   };
 
   const handleUsernameChange = (text: string) => {
-    setUsername(text);
+    // Remove spaces and convert to lowercase like Instagram/TikTok
+    const cleanText = text.replace(/\s/g, '').toLowerCase();
+    setUsername(cleanText);
     setUsernameAvailable(null);
     
     // Debounce username check
     const timeoutId = setTimeout(() => {
-      checkUsername(text);
+      checkUsername(cleanText);
     }, 500);
     
     return () => clearTimeout(timeoutId);
+  };
+
+  const handleEmailChange = (text: string) => {
+    // Remove spaces from email
+    const cleanText = text.replace(/\s/g, '');
+    setEmail(cleanText);
   };
 
   const canProceed = (): boolean => {
@@ -81,7 +95,8 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
       username.length >= 3 &&
       usernameAvailable === true &&
       validateEmail(email) &&
-      validatePassword(password)
+      validatePassword(password) &&
+      passwordsMatch()
     );
   };
 
@@ -195,7 +210,7 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
               placeholder="E-mail"
               placeholderTextColor={COLORS.textSecondary}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -233,7 +248,39 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
           </View>
           {password && !validatePassword(password) && (
             <Text style={styles.errorText}>
-              A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um número
+              A senha deve ter pelo menos 6 caracteres
+            </Text>
+          )}
+        </View>
+
+        {/* Confirm Password Field */}
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <Lock size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirmar senha"
+              placeholderTextColor={COLORS.textSecondary}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={styles.inputIcon}
+            >
+              {showConfirmPassword ? (
+                <EyeOff size={20} color={COLORS.textSecondary} />
+              ) : (
+                <Eye size={20} color={COLORS.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
+          {confirmPassword && !passwordsMatch() && (
+            <Text style={styles.errorText}>
+              As senhas não coincidem
             </Text>
           )}
         </View>
