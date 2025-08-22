@@ -2,6 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { UserBadge, AvatarBorder, UserType } from '@/types/user';
 
+// SVG Icons as components
+const VerifiedBrandSolid = (props: any) => (
+  <Text style={[{ fontSize: 16, color: '#FFD700' }, props.style]}>✓</Text>
+);
+
+const Vip2Fill = (props: any) => (
+  <Text style={[{ fontSize: 16, color: '#FFD700' }, props.style]}>👑</Text>
+);
+
 interface UserBadgeDisplayProps {
   badge?: UserBadge;
   size?: 'small' | 'medium' | 'large';
@@ -191,7 +200,12 @@ export const UserDisplayName: React.FC<UserDisplayNameProps> = ({
   const getVerificationBadge = () => {
     if (userType === 'official') {
       return (
-        <Text style={[styles.verificationBadge, { color: '#FFD700' }]}>✓</Text>
+        <VerifiedBrandSolid style={[styles.verificationBadge, { color: '#FFD700' }]} />
+      );
+    }
+    if (userType === 'premium') {
+      return (
+        <Vip2Fill style={[styles.verificationBadge, { color: '#FFD700' }]} />
       );
     }
     return null;

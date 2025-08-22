@@ -64,7 +64,11 @@ export const getCommunityPostsProcedure = publicProcedure
           users: {
             username: 'demo_user',
             display_name: 'Demo User',
-            profile_image: null
+            profile_image: null,
+            user_type: 'normal',
+            is_verified: false,
+            current_badge_id: null,
+            current_avatar_border_id: null
           },
           user_rankings: {
             id: 'mock_ranking_1',
@@ -103,7 +107,11 @@ export const getCommunityPostsProcedure = publicProcedure
           users: {
             username: 'demo_user',
             display_name: 'Demo User',
-            profile_image: null
+            profile_image: null,
+            user_type: 'normal',
+            is_verified: false,
+            current_badge_id: null,
+            current_avatar_border_id: null
           },
           user_rankings: null
         }
@@ -130,7 +138,11 @@ export const getCommunityPostsProcedure = publicProcedure
             users!inner (
               username,
               display_name,
-              profile_image
+              profile_image,
+              user_type,
+              is_verified,
+              current_badge_id,
+              current_avatar_border_id
             ),
             user_rankings (
               id,
@@ -231,7 +243,11 @@ export const getCommunityPostsProcedure = publicProcedure
               users!inner (
                 username,
                 display_name,
-                profile_image
+                profile_image,
+                user_type,
+                is_verified,
+                current_badge_id,
+                current_avatar_border_id
               ),
               user_rankings (
                 id,
@@ -297,7 +313,11 @@ export const getCommunityPostsProcedure = publicProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type,
+            is_verified,
+            current_badge_id,
+            current_avatar_border_id
           ),
           user_rankings (
             id,
@@ -354,9 +374,17 @@ export const getCommunityPostsProcedure = publicProcedure
     } catch (error) {
       console.error('Error fetching community posts:', error);
       
-      // Return empty array instead of throwing to prevent crashes
-      console.warn('Returning empty array due to error:', error);
-      return [];
+      // Check if it's a specific database error we can handle
+      if (error && typeof error === 'object' && 'message' in error) {
+        const errorMessage = (error as any).message;
+        if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
+          console.warn('Database schema issue detected, returning empty array:', errorMessage);
+          return [];
+        }
+      }
+      
+      // For any other error, throw it to be handled by the caller
+      throw new Error('Failed to fetch community posts');
     }
   });
 
@@ -417,7 +445,11 @@ export const createCommunityPostProcedure = protectedProcedure
           users (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type,
+            is_verified,
+            current_badge_id,
+            current_avatar_border_id
           )
         `)
         .single();
@@ -464,7 +496,11 @@ export const getPostDetailsProcedure = publicProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type,
+            is_verified,
+            current_badge_id,
+            current_avatar_border_id
           ),
           user_rankings (
             title,
@@ -490,7 +526,11 @@ export const getPostDetailsProcedure = publicProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type,
+            is_verified,
+            current_badge_id,
+            current_avatar_border_id
           )
         `)
         .eq('post_id', input.postId)
@@ -509,7 +549,11 @@ export const getPostDetailsProcedure = publicProcedure
             users!inner (
               username,
               display_name,
-              profile_image
+              profile_image,
+              user_type,
+              is_verified,
+              current_badge_id,
+              current_avatar_border_id
             )
           `)
           .in('parent_comment_id', commentIds)
@@ -648,7 +692,11 @@ export const addPostCommentProcedure = protectedProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type,
+            is_verified,
+            current_badge_id,
+            current_avatar_border_id
           )
         `)
         .single();
