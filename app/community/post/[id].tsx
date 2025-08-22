@@ -320,6 +320,7 @@ const styles = StyleSheet.create({
   },
   userDetails: {
     flex: 1,
+    marginLeft: 12,
   },
   userName: {
     fontSize: 16,
