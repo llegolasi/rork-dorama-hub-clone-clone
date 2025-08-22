@@ -11,6 +11,7 @@ import {
   ActionSheetIOS,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Heart, MessageCircle, MoreVertical } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
@@ -21,6 +22,7 @@ import InstagramStyleComments from '@/components/InstagramStyleComments';
 
 const PostDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
 
   const { user } = useAuth();
 
@@ -126,7 +128,10 @@ const PostDetailScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      Platform.OS === 'android' && { paddingTop: insets.top }
+    ]}>
       <Stack.Screen
         options={{
           title: 'Publicação',
