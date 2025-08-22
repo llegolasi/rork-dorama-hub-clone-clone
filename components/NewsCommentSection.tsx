@@ -67,7 +67,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : 'height';
-  const keyboardOffset = Platform.OS === 'ios' ? 64 : Platform.OS === 'android' ? 20 : 0;
+  const keyboardOffset = Platform.OS === 'ios' ? 64 : 0;
   
   // Android-specific optimizations
   const androidInputProps = Platform.OS === 'android' ? {
@@ -587,7 +587,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       <View style={[
         styles.inputContainer,
         Platform.OS === 'android' && styles.inputContainerAndroid,
-        { paddingBottom: bottomPadding }
+        { paddingBottom: Platform.OS === 'android' ? bottomPadding : bottomPadding }
       ]}> 
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">

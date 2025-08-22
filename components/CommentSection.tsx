@@ -56,8 +56,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardOffset = useMemo(() => {
-    const extra = Platform.OS === 'android' ? 20 : 0;
-    return (Platform.OS === 'ios' ? extra : extra) + insets.bottom;
+    return Platform.OS === 'ios' ? insets.bottom : 0;
   }, [insets.bottom]);
   
   // Android-specific optimizations
