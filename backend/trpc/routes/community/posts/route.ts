@@ -196,8 +196,8 @@ export const getCommunityPostsProcedure = publicProcedure
           // First get the list of users that the current user follows
           const { data: followedUsers, error: followError } = await client
             .from('user_follows')
-            .select('followed_user_id')
-            .eq('follower_user_id', ctx.user.id);
+            .select('following_id')
+            .eq('follower_id', ctx.user.id);
             
           if (followError) {
             console.error('Error fetching followed users:', followError);
@@ -218,7 +218,7 @@ export const getCommunityPostsProcedure = publicProcedure
             return []; // No followed users, return empty array
           }
           
-          const followedUserIds = followedUsers.map(f => f.followed_user_id);
+          const followedUserIds = followedUsers.map(f => f.following_id);
           console.log('Following user IDs:', followedUserIds);
           
           // Check if community_posts table exists and has the required structure

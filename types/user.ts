@@ -49,6 +49,41 @@ export interface UserStats {
   monthlyWatchTime: { [month: string]: number };
 }
 
+export type UserType = 'normal' | 'premium' | 'official';
+export type VerificationType = 'official' | 'premium' | 'special';
+export type BadgeType = 'vip' | 'verified' | 'special';
+export type BorderRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'exclusive';
+
+export interface AvatarBorder {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl: string;
+  rarity: BorderRarity;
+  isPremiumOnly: boolean;
+  isOfficialOnly: boolean;
+  unlockRequirement?: any;
+  isUnlocked?: boolean;
+  isCurrent?: boolean;
+  unlockedAt?: string;
+  unlockMethod?: string;
+}
+
+export interface UserBadge {
+  id: string;
+  name: string;
+  description?: string;
+  icon: string;
+  color: string;
+  type: BadgeType;
+  isPremiumOnly: boolean;
+  isOfficialOnly: boolean;
+  isUnlocked?: boolean;
+  isCurrent?: boolean;
+  unlockedAt?: string;
+  unlockMethod?: string;
+}
+
 export interface PremiumFeatures {
   isSubscribed: boolean;
   subscriptionType?: 'monthly' | 'yearly';
@@ -71,6 +106,16 @@ export interface UserProfile {
   isFollowing?: boolean;
   followersCount: number;
   followingCount: number;
+  // Novos campos do sistema de tipos
+  userType: UserType;
+  isVerified: boolean;
+  verificationType?: VerificationType;
+  premiumExpiresAt?: string;
+  dailySwipeLimit: number;
+  currentBadge?: UserBadge;
+  currentAvatarBorder?: AvatarBorder;
+  isPremiumActive: boolean;
+  // Dados existentes
   lists: {
     watching: UserList[];
     watchlist: UserList[];
@@ -92,7 +137,7 @@ export interface RankingWithDetails {
     displayName: string;
     profileImage?: string;
   };
-  dramas: Array<{
+  dramas: {
     drama: {
       id: number;
       name: string;
@@ -100,7 +145,7 @@ export interface RankingWithDetails {
       first_air_date: string;
     };
     rank: number;
-  }>;
+  }[];
   likesCount: number;
   commentsCount: number;
   isLiked?: boolean;
@@ -186,5 +231,39 @@ export interface AuthUser {
   followersCount?: number;
   followingCount?: number;
   isOnboardingComplete: boolean;
+  // Novos campos do sistema de tipos
+  userType: UserType;
+  isVerified: boolean;
+  verificationType?: VerificationType;
+  premiumExpiresAt?: string;
+  dailySwipeLimit: number;
+  currentBadge?: UserBadge;
+  currentAvatarBorder?: AvatarBorder;
+  isPremiumActive: boolean;
   createdAt: string;
+}
+
+export interface UserTypeInfo {
+  type: UserType;
+  displayName: string;
+  description: string;
+  features: {
+    rankingLimit: number;
+    dailySwipes: number;
+    hasAdvancedStats: boolean;
+    hasCustomBorders: boolean;
+    hasBadges: boolean;
+    hasVerification: boolean;
+  };
+  badge?: UserBadge;
+  availableBorders: AvatarBorder[];
+}
+
+export interface UserCustomization {
+  availableBorders: AvatarBorder[];
+  availableBadges: UserBadge[];
+  currentBorder?: AvatarBorder;
+  currentBadge?: UserBadge;
+  canChangeBorder: boolean;
+  canChangeBadge: boolean;
 }
