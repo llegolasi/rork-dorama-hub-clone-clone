@@ -186,82 +186,100 @@ export const getCommunityPostsProcedure = publicProcedure
       // Specialized query for following posts
       if (input.type === 'following') {
         if (!isAuthed || !ctx.user?.id) {
+          console.log('User not authenticated for following posts');
           return []; // Return empty array if not authenticated
         }
         
-        // First get the list of users that the current user follows
-        const { data: followedUsers, error: followError } = await client
-          .from('user_follows')
-          .select('followed_user_id')
-          .eq('follower_user_id', ctx.user.id);
+        console.log('Fetching following posts for user:', ctx.user.id);
+        
+        try {
+          // First get the list of users that the current user follows
+          const { data: followedUsers, error: followError } = await client
+            .from('user_follows')
+            .select('followed_user_id')
+            .eq('follower_user_id', ctx.user.id);
+            
+          if (followError) {
+            console.error('Error fetching followed users:', followError);
+            // If the table doesn't exist or there's a schema issue, return empty array instead of throwing
+            if (followError.code === '42P01' || followError.message?.includes('relation "user_follows" does not exist')) {
+              console.warn('user_follows table does not exist, returning empty array');
+              return [];
+            }
+            throw followError;
+          }
           
-        if (followError) {
-          console.error('Error fetching followed users:', followError);
-          throw followError;
+          console.log('Found followed users:', followedUsers?.length ?? 0);
+          
+          if (!followedUsers || followedUsers.length === 0) {
+            console.log('No followed users found, returning empty array');
+            return []; // No followed users, return empty array
+          }
+          
+          const followedUserIds = followedUsers.map(f => f.followed_user_id);
+          console.log('Following user IDs:', followedUserIds);
+          
+          let query = client
+            .from('community_posts')
+            .select(`
+              *,
+              users!inner (
+                username,
+                display_name,
+                profile_image
+              ),
+              user_rankings (
+                id,
+                title,
+                description,
+                ranking_items (
+                  drama_id,
+                  rank_position,
+                  drama_title,
+                  poster_image,
+                  cover_image
+                )
+              ),
+              post_likes!left(id),
+              post_comments!left(id)
+            `)
+            .in('user_id', followedUserIds);
+
+          // Apply sorting
+          if (input.sortBy === 'popular') {
+            query = query.order('created_at', { ascending: false });
+          } else {
+            query = query.order('created_at', { ascending: false });
+          }
+
+          const { data: posts, error } = await query.range(input.offset, input.offset + input.limit - 1);
+
+          if (error) {
+            console.error('Supabase error (following):', error);
+            throw error;
+          }
+
+          console.log('Fetched following posts count:', posts?.length ?? 0);
+          
+          // Process posts to add engagement counts and sort if needed
+          const processedPosts = (posts || []).map((post: any) => ({
+            ...post,
+            likes_count: post.post_likes?.length || 0,
+            comments_count: post.post_comments?.length || 0,
+            engagement_score: (post.post_likes?.length || 0) + (post.post_comments?.length || 0) * 2
+          }));
+
+          // Sort by popularity if requested
+          if (input.sortBy === 'popular') {
+            processedPosts.sort((a, b) => b.engagement_score - a.engagement_score);
+          }
+
+          return processedPosts;
+        } catch (followingError) {
+          console.error('Error in following posts section:', followingError);
+          // Return empty array instead of throwing to prevent the entire endpoint from failing
+          return [];
         }
-        
-        if (!followedUsers || followedUsers.length === 0) {
-          return []; // No followed users, return empty array
-        }
-        
-        const followedUserIds = followedUsers.map(f => f.followed_user_id);
-        
-        let query = client
-          .from('community_posts')
-          .select(`
-            *,
-            users!inner (
-              username,
-              display_name,
-              profile_image
-            ),
-            user_rankings (
-              id,
-              title,
-              description,
-              ranking_items (
-                drama_id,
-                rank_position,
-                drama_title,
-                poster_image,
-                cover_image
-              )
-            ),
-            post_likes!left(id),
-            post_comments!left(id)
-          `)
-          .in('user_id', followedUserIds);
-
-        // Apply sorting
-        if (input.sortBy === 'popular') {
-          query = query.order('created_at', { ascending: false });
-        } else {
-          query = query.order('created_at', { ascending: false });
-        }
-
-        const { data: posts, error } = await query.range(input.offset, input.offset + input.limit - 1);
-
-        if (error) {
-          console.error('Supabase error (following):', error);
-          throw error;
-        }
-
-        console.log('Fetched following posts count:', posts?.length ?? 0);
-        
-        // Process posts to add engagement counts and sort if needed
-        const processedPosts = (posts || []).map((post: any) => ({
-          ...post,
-          likes_count: post.post_likes?.length || 0,
-          comments_count: post.post_comments?.length || 0,
-          engagement_score: (post.post_likes?.length || 0) + (post.post_comments?.length || 0) * 2
-        }));
-
-        // Sort by popularity if requested
-        if (input.sortBy === 'popular') {
-          processedPosts.sort((a, b) => b.engagement_score - a.engagement_score);
-        }
-
-        return processedPosts;
       }
       
       // Generic query for other types
