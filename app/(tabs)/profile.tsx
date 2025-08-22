@@ -17,8 +17,9 @@ import CoverPhotoModal from "@/components/CoverPhotoModal";
 import PremiumCoverModal from "@/components/PremiumCoverModal";
 import { ProfileSkeleton } from "@/components/SkeletonLoader";
 import { ACHIEVEMENTS } from "@/constants/achievements";
+import { UserDisplayName } from "@/components/UserTypeComponents";
 
-import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures } from "@/types/user";
+import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures, UserType } from "@/types/user";
 
 type TabType = 'posts' | 'dramas';
 
@@ -286,8 +287,12 @@ export default function ProfileScreen() {
                 contentFit="cover"
               />
               <View style={styles.userDetails}>
-                <Text style={styles.userName}>{userProfile?.displayName || userProfile?.username}</Text>
-                <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+                <UserDisplayName
+                  displayName={userProfile?.displayName || userProfile?.username || 'Usuário'}
+                  username={userProfile?.username || undefined}
+                  userType={(userProfile?.userType as UserType) || 'normal'}
+                  size="medium"
+                />
               </View>
             </View>
           </View>
@@ -330,8 +335,12 @@ export default function ProfileScreen() {
             contentFit="cover"
           />
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userProfile?.displayName || userProfile?.username}</Text>
-            <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+            <UserDisplayName
+              displayName={userProfile?.displayName || userProfile?.username || 'Usuário'}
+              username={userProfile?.username || undefined}
+              userType={(userProfile?.userType as UserType) || 'normal'}
+              size="medium"
+            />
           </View>
         </View>
       </View>
@@ -491,8 +500,12 @@ export default function ProfileScreen() {
             </View>
             
             <View style={styles.profileInfo}>
-              <Text style={styles.displayName}>{userProfile?.displayName || userProfile?.username || 'Usuário'}</Text>
-              <Text style={styles.username}>@{userProfile?.username || 'usuario'}</Text>
+              <UserDisplayName
+                displayName={userProfile?.displayName || userProfile?.username || 'Usuário'}
+                username={userProfile?.username || undefined}
+                userType={(userProfile?.userType as UserType) || 'normal'}
+                size="large"
+              />
               
               <View style={styles.socialStats}>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowersPress}>
@@ -702,8 +715,6 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: "hidden",
-    borderWidth: 4,
-    borderColor: COLORS.background,
     marginRight: 16,
     shadowColor: '#000',
     shadowOffset: {

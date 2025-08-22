@@ -19,7 +19,7 @@ import { COLORS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
-import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
+import { UserDisplayName } from '@/components/UserTypeComponents';
 import { UserType } from '@/types/user';
 
 interface Comment {

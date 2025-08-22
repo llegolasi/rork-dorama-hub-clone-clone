@@ -17,7 +17,7 @@ import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 import InstagramStyleComments from '@/components/InstagramStyleComments';
-import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
+import { UserDisplayName } from '@/components/UserTypeComponents';
 import { UserType } from '@/types/user';
 
 
@@ -138,18 +138,10 @@ export default function RankingCommentsScreen() {
               {/* Ranking Section */}
               <View style={styles.rankingSection}>
                 <View style={styles.rankingHeader}>
-                  <AvatarWithBorder
-                    imageUri={ranking.users?.profile_image}
-                    size={40}
-                    userType={ranking.users?.user_type as UserType || 'normal'}
-                    border={ranking.users?.current_avatar_border_id ? {
-                      id: ranking.users.current_avatar_border_id,
-                      name: 'Border',
-                      imageUrl: '',
-                      rarity: 'common',
-                      isPremiumOnly: false,
-                      isOfficialOnly: false
-                    } : undefined}
+                  <Image
+                    source={{ uri: ranking.users?.profile_image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }}
+                    style={styles.userAvatar}
+                    contentFit="cover"
                   />
                   <View style={styles.rankingHeaderInfo}>
                     <Text style={styles.rankingTitle}>{ranking.title}</Text>

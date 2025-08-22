@@ -252,8 +252,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 3,
-    borderColor: COLORS.accent,
   },
   cameraButton: {
     position: 'absolute',

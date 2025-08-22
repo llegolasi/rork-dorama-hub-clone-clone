@@ -47,7 +47,7 @@ export const getCommentsProcedure = publicProcedure
     if (allUserIds.length > 0) {
       const { data: profiles, error: usersError } = await ctx.supabase
         .from('users')
-        .select('id, username, display_name, profile_image')
+        .select('id, username, display_name, profile_image, user_type')
         .in('id', allUserIds);
 
       if (usersError) {
@@ -58,7 +58,7 @@ export const getCommentsProcedure = publicProcedure
     }
 
     const mapWithUser = (comment: any) => {
-      const user = profilesById.get(comment.user_id);
+      const user = profilesById.get(comment.user_id) as (ReturnType<typeof profilesById.get> & { user_type?: string }) | undefined;
       const usernameFallback = `user_${String(comment.user_id).substring(0, 8)}`;
       return {
         id: comment.id,
@@ -74,6 +74,7 @@ export const getCommentsProcedure = publicProcedure
         username: user?.username ?? usernameFallback,
         full_name: user?.display_name ?? user?.username ?? 'Usuário',
         avatar_url: user?.profile_image ?? null,
+        user_type: (user?.user_type as string | undefined) ?? 'normal',
         replies_count: 0,
         user_liked: false,
       };

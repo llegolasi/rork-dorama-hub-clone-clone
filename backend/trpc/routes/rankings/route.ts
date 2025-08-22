@@ -23,7 +23,8 @@ export const getUserRankingsProcedure = publicProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type
           )
         `)
         .eq('user_id', input.userId)
@@ -60,7 +61,8 @@ export const getRankingDetailsProcedure = publicProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type
           )
         `)
         .eq('id', input.rankingId)
@@ -75,7 +77,8 @@ export const getRankingDetailsProcedure = publicProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type
           )
         `)
         .eq('ranking_id', input.rankingId)
@@ -94,7 +97,8 @@ export const getRankingDetailsProcedure = publicProcedure
             users!inner (
               username,
               display_name,
-              profile_image
+              profile_image,
+              user_type
             )
           `)
           .in('parent_comment_id', parentIds)
@@ -264,7 +268,8 @@ export const addRankingCommentProcedure = protectedProcedure
           users!inner (
             username,
             display_name,
-            profile_image
+            profile_image,
+            user_type
           )
         `)
         .single();
