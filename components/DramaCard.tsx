@@ -11,9 +11,10 @@ import { Drama } from "@/types/drama";
 interface DramaCardProps {
   drama: Drama;
   size?: "small" | "medium" | "large";
+  width?: number;
 }
 
-function DramaCard({ drama, size = "medium" }: DramaCardProps) {
+function DramaCard({ drama, size = "medium", width }: DramaCardProps) {
   const router = useRouter();
   
   const handlePress = () => {
@@ -31,13 +32,24 @@ function DramaCard({ drama, size = "medium" }: DramaCardProps) {
   
   // Determine image dimensions based on size
   const getCardStyle = () => {
+    const baseStyle = {
+      backgroundColor: COLORS.card,
+      borderRadius: 12,
+      overflow: "hidden" as const,
+      marginBottom: 16,
+    };
+    
+    if (width) {
+      return { ...baseStyle, width };
+    }
+    
     switch (size) {
       case "small":
-        return styles.cardSmall;
+        return { ...baseStyle, ...styles.cardSmall };
       case "large":
-        return styles.cardLarge;
+        return { ...baseStyle, ...styles.cardLarge };
       default:
-        return styles.cardMedium;
+        return { ...baseStyle, ...styles.cardMedium };
     }
   };
   
@@ -65,7 +77,7 @@ function DramaCard({ drama, size = "medium" }: DramaCardProps) {
 
   return (
     <TouchableOpacity 
-      style={[styles.container, getCardStyle()]} 
+      style={getCardStyle()} 
       onPress={handlePress}
       activeOpacity={0.7}
       testID={`drama-card-${drama.id}`}

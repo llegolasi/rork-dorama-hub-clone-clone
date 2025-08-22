@@ -18,7 +18,7 @@ import { COLORS } from "@/constants/colors";
 import { searchDramas } from "@/services/api";
 import DramaCard from "@/components/DramaCard";
 import CategoryPill from "@/components/CategoryPill";
-import { getResponsiveColumns, getCardWidth } from "@/constants/utils";
+import { getResponsiveCardDimensions } from "@/constants/utils";
 
 const GENRES = [
   { id: 18, name: "Drama" },
@@ -54,9 +54,8 @@ export default function SearchScreen() {
     enabled: debouncedQuery.length >= 2,
   });
   
-  // Calcular número de colunas responsivo para busca
-  const numColumns = useMemo(() => getResponsiveColumns('small'), []);
-  const cardWidth = useMemo(() => getCardWidth(numColumns, 4), [numColumns]);
+  // Calcular dimensões responsivas para busca
+  const { numColumns, cardWidth, itemPadding } = useMemo(() => getResponsiveCardDimensions('small'), []);
   
   const handleClearSearch = () => {
     setSearchQuery("");
@@ -205,11 +204,12 @@ export default function SearchScreen() {
           data={searchResults.data || []}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={styles.cardContainer}>
-              <DramaCard drama={item} size="large" />
+            <View style={[styles.cardContainer, { padding: itemPadding }]}>
+              <DramaCard drama={item} size="small" width={cardWidth} />
             </View>
           )}
-          numColumns={2}
+          numColumns={numColumns}
+          key={numColumns}
           contentContainerStyle={styles.resultsContainer}
           showsVerticalScrollIndicator={false}
           testID="search-results"
@@ -262,9 +262,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardContainer: {
-    flex: 1,
-    maxWidth: "50%",
-    padding: 4,
+    // padding será definido dinamicamente
   },
   emptyContainer: {
     flex: 1,

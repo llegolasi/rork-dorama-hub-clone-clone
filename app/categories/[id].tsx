@@ -12,7 +12,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { COLORS } from "@/constants/colors";
 import { getDramasByGenre, getTopRatedDramas, getLatestDramas, getTrendingDramasWithPagination } from "@/services/api";
 import DramaCard from "@/components/DramaCard";
-import { getResponsiveColumns, getCardWidth } from "@/constants/utils";
+import { getResponsiveCardDimensions } from "@/constants/utils";
 
 // Mock genres data for title lookup
 const GENRES = [
@@ -87,9 +87,8 @@ export default function CategoryScreen() {
   
   const dramas = data?.pages.flatMap(page => page.results) || [];
   
-  // Calcular número de colunas responsivo
-  const numColumns = useMemo(() => getResponsiveColumns('large'), []);
-  const cardWidth = useMemo(() => getCardWidth(numColumns, 4), [numColumns]);
+  // Calcular dimensões responsivas
+  const { numColumns, cardWidth, itemPadding } = useMemo(() => getResponsiveCardDimensions('large'), []);
   
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -119,8 +118,8 @@ export default function CategoryScreen() {
           data={dramas}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={[styles.cardContainer, { width: cardWidth }]}>
-              <DramaCard drama={item} size="small" />
+            <View style={[styles.cardContainer, { padding: itemPadding }]}>
+              <DramaCard drama={item} size="small" width={cardWidth} />
             </View>
           )}
           numColumns={numColumns}
@@ -158,7 +157,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   cardContainer: {
-    padding: 4,
+    // padding será definido dinamicamente
   },
   footerLoader: {
     paddingVertical: 20,

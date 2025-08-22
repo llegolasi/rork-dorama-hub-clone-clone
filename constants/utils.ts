@@ -68,8 +68,28 @@ export const getResponsiveColumns = (type: 'small' | 'medium' | 'large' = 'mediu
   }
 };
 
-// Função para calcular largura do card baseado no número de colunas
-export const getCardWidth = (numColumns: number, padding: number = 8): string => {
-  const percentage = (100 / numColumns) - (padding * 2 / numColumns);
-  return `${percentage}%`;
+// Função para calcular largura do card baseado no número de colunas e largura da tela
+export const getCardWidth = (numColumns: number, containerPadding: number = 12): number => {
+  const { width } = Dimensions.get('window');
+  const itemPadding = 4; // padding entre os itens
+  
+  // Largura disponível após descontar o padding do container
+  const availableWidth = width - (containerPadding * 2);
+  
+  // Largura de cada item considerando o padding entre eles
+  const itemWidth = (availableWidth - (itemPadding * 2 * numColumns)) / numColumns;
+  
+  return Math.floor(itemWidth);
+};
+
+// Função para calcular dimensões responsivas dos cards
+export const getResponsiveCardDimensions = (type: 'small' | 'medium' | 'large' = 'medium') => {
+  const numColumns = getResponsiveColumns(type);
+  const cardWidth = getCardWidth(numColumns);
+  
+  return {
+    numColumns,
+    cardWidth,
+    itemPadding: 4
+  };
 };

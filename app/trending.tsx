@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View, ActivityIndicator, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -8,10 +8,14 @@ import { COLORS } from '@/constants/colors';
 import { getTrendingDramas } from '@/services/api';
 import DramaCard from '@/components/DramaCard';
 import { Drama } from '@/types/drama';
+import { getResponsiveCardDimensions } from '@/constants/utils';
 
 export default function TrendingScreen() {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Calcular dimensões responsivas
+  const { numColumns, cardWidth, itemPadding } = useMemo(() => getResponsiveCardDimensions('medium'), []);
 
   const trendingQuery = useQuery({
     queryKey: ['trending-dramas-full'],
@@ -28,8 +32,8 @@ export default function TrendingScreen() {
   };
 
   const renderDrama = ({ item }: { item: Drama }) => (
-    <View style={styles.dramaContainer}>
-      <DramaCard drama={item} size="medium" />
+    <View style={[styles.dramaContainer, { padding: itemPadding }]}>
+      <DramaCard drama={item} size="medium" width={cardWidth} />
     </View>
   );
 
@@ -69,8 +73,9 @@ export default function TrendingScreen() {
             data={trendingQuery.data || []}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderDrama}
-            numColumns={2}
-            columnWrapperStyle={styles.row}
+            numColumns={numColumns}
+            key={numColumns}
+            columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={renderEmpty}
@@ -104,7 +109,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dramaContainer: {
-    flex: 0.48,
+    // padding será definido dinamicamente
   },
   loadingContainer: {
     flex: 1,
