@@ -83,7 +83,14 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   // Keyboard listeners
   useEffect(() => {
     const keyboardWillShow = (event: any) => {
-      setKeyboardHeight(event.endCoordinates.height);
+      if (Platform.OS === 'android') {
+        // On Android, use a smaller offset to prevent input from going too high
+        const androidKeyboardHeight = Math.max(event.endCoordinates.height - 50, 0);
+        setKeyboardHeight(androidKeyboardHeight);
+      } else {
+        // iOS behavior remains the same
+        setKeyboardHeight(event.endCoordinates.height);
+      }
     };
 
     const keyboardWillHide = () => {
@@ -687,7 +694,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           styles.fixedInputContainer,
           {
             bottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom,
-            paddingBottom: 8,
+            paddingBottom: Platform.OS === 'android' ? 12 : 8,
           }
         ]}
       >
