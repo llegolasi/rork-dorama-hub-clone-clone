@@ -54,6 +54,14 @@ function DramaCard({ drama, size = "medium", width }: DramaCardProps) {
   };
   
   const getImageStyle = () => {
+    // Se uma largura customizada foi fornecida, calcular altura proporcionalmente
+    if (width) {
+      // Proporção padrão dos posters: 2:3 (largura:altura)
+      const aspectRatio = 2 / 3;
+      const calculatedHeight = width / aspectRatio;
+      return { height: calculatedHeight };
+    }
+    
     switch (size) {
       case "small":
         return styles.imageSmall;
