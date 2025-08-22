@@ -344,6 +344,24 @@ export const [AuthContext, useAuth] = createContextHook(() => {
               email: credentials.email,
               authProvider: 'email'
             });
+            
+            // Automatically follow the official app account for new users
+            const officialAccountId = 'd3a81a4e-3919-457e-a4e4-e3b9dbdf97d6';
+            try {
+              const { error: followError } = await supabase
+                .from('user_follows')
+                .insert({
+                  follower_user_id: data.user.id,
+                  followed_user_id: officialAccountId
+                });
+                
+              if (followError && followError.code !== '23505') {
+                // Log error but don't fail signup if follow fails
+                console.error('Error following official account during signup:', followError);
+              }
+            } catch (followError) {
+              console.error('Error following official account during signup:', followError);
+            }
 
             return { success: true, user: newUser };
           }
@@ -597,6 +615,24 @@ export const [AuthContext, useAuth] = createContextHook(() => {
             console.error('Preferences insert error:', prefsError);
             throw prefsError;
           }
+        }
+        
+        // Automatically follow the official app account
+        const officialAccountId = 'd3a81a4e-3919-457e-a4e4-e3b9dbdf97d6';
+        try {
+          const { error: followError } = await supabase
+            .from('user_follows')
+            .insert({
+              follower_user_id: user.id,
+              followed_user_id: officialAccountId
+            });
+            
+          if (followError && followError.code !== '23505') {
+            // Log error but don't fail onboarding if follow fails
+            console.error('Error following official account:', followError);
+          }
+        } catch (followError) {
+          console.error('Error following official account:', followError);
         }
       }
 

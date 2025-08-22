@@ -40,12 +40,12 @@ const getAuthenticatedSupabase = (ctx: Context) => {
 // Get community posts
 export const getCommunityPostsProcedure = publicProcedure
   .input(z.object({
-    type: z.enum(['all', 'rankings', 'discussions']).optional(),
+    type: z.enum(['all', 'rankings', 'discussions', 'following']).optional(),
     limit: z.number().min(1).max(50).default(20),
     offset: z.number().min(0).default(0),
     sortBy: z.enum(['recent', 'popular']).default('recent')
   }))
-  .query(async ({ input, ctx }: { input: { type?: 'all' | 'rankings' | 'discussions'; limit: number; offset: number; sortBy: 'recent' | 'popular' }; ctx: Context }) => {
+  .query(async ({ input, ctx }: { input: { type?: 'all' | 'rankings' | 'discussions' | 'following'; limit: number; offset: number; sortBy: 'recent' | 'popular' }; ctx: Context }) => {
     // Development mode - return mock posts
     if (ctx.isDevelopmentMode) {
       const mockPosts = [
@@ -166,6 +166,87 @@ export const getCommunityPostsProcedure = publicProcedure
         }
 
         console.log('Fetched ranking posts count:', posts?.length ?? 0);
+        
+        // Process posts to add engagement counts and sort if needed
+        const processedPosts = (posts || []).map((post: any) => ({
+          ...post,
+          likes_count: post.post_likes?.length || 0,
+          comments_count: post.post_comments?.length || 0,
+          engagement_score: (post.post_likes?.length || 0) + (post.post_comments?.length || 0) * 2
+        }));
+
+        // Sort by popularity if requested
+        if (input.sortBy === 'popular') {
+          processedPosts.sort((a, b) => b.engagement_score - a.engagement_score);
+        }
+
+        return processedPosts;
+      }
+      
+      // Specialized query for following posts
+      if (input.type === 'following') {
+        if (!isAuthed || !ctx.user?.id) {
+          return []; // Return empty array if not authenticated
+        }
+        
+        // First get the list of users that the current user follows
+        const { data: followedUsers, error: followError } = await client
+          .from('user_follows')
+          .select('followed_user_id')
+          .eq('follower_user_id', ctx.user.id);
+          
+        if (followError) {
+          console.error('Error fetching followed users:', followError);
+          throw followError;
+        }
+        
+        if (!followedUsers || followedUsers.length === 0) {
+          return []; // No followed users, return empty array
+        }
+        
+        const followedUserIds = followedUsers.map(f => f.followed_user_id);
+        
+        let query = client
+          .from('community_posts')
+          .select(`
+            *,
+            users!inner (
+              username,
+              display_name,
+              profile_image
+            ),
+            user_rankings (
+              id,
+              title,
+              description,
+              ranking_items (
+                drama_id,
+                rank_position,
+                drama_title,
+                poster_image,
+                cover_image
+              )
+            ),
+            post_likes!left(id),
+            post_comments!left(id)
+          `)
+          .in('user_id', followedUserIds);
+
+        // Apply sorting
+        if (input.sortBy === 'popular') {
+          query = query.order('created_at', { ascending: false });
+        } else {
+          query = query.order('created_at', { ascending: false });
+        }
+
+        const { data: posts, error } = await query.range(input.offset, input.offset + input.limit - 1);
+
+        if (error) {
+          console.error('Supabase error (following):', error);
+          throw error;
+        }
+
+        console.log('Fetched following posts count:', posts?.length ?? 0);
         
         // Process posts to add engagement counts and sort if needed
         const processedPosts = (posts || []).map((post: any) => ({

@@ -22,7 +22,7 @@ import { trpc, trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 import { CommunitySkeleton } from '@/components/SkeletonLoader';
 
-type TabType = 'rankings' | 'publications';
+type TabType = 'rankings' | 'publications' | 'following';
 type SortType = 'recent' | 'popular';
 
 const CommunityScreen = () => {
@@ -43,7 +43,7 @@ const CommunityScreen = () => {
   const fetchPosts = useCallback(async (offset: number = 0, isRefresh: boolean = false) => {
     try {
       const response = await trpcClient.community.getPosts.query({
-        type: activeTab === 'rankings' ? 'rankings' : 'discussions',
+        type: activeTab === 'rankings' ? 'rankings' : activeTab === 'following' ? 'following' : 'discussions',
         limit: 10,
         offset,
         sortBy: currentSort
@@ -63,7 +63,7 @@ const CommunityScreen = () => {
 
   // Initial load
   const { isLoading: postsLoading } = trpc.community.getPosts.useQuery({
-    type: activeTab === 'rankings' ? 'rankings' : 'discussions',
+    type: activeTab === 'rankings' ? 'rankings' : activeTab === 'following' ? 'following' : 'discussions',
     limit: 10,
     offset: 0,
     sortBy: currentSort
@@ -76,7 +76,7 @@ const CommunityScreen = () => {
     const loadInitialData = async () => {
       try {
         const data = await trpcClient.community.getPosts.query({
-          type: activeTab === 'rankings' ? 'rankings' : 'discussions',
+          type: activeTab === 'rankings' ? 'rankings' : activeTab === 'following' ? 'following' : 'discussions',
           limit: 10,
           offset: 0,
           sortBy: currentSort
@@ -481,6 +481,11 @@ const CommunityScreen = () => {
           'Publicações',
           <Users size={18} color={activeTab === 'publications' ? COLORS.accent : COLORS.textSecondary} />
         )}
+        {renderTabButton(
+          'following',
+          'Seguindo',
+          <Heart size={18} color={activeTab === 'following' ? COLORS.accent : COLORS.textSecondary} />
+        )}
       </View>
       
       <View style={styles.sortContainer}>
@@ -512,9 +517,9 @@ const CommunityScreen = () => {
           return `${activeTab}-${postType}-${baseId}-${safeTimestamp}-${index}`;
         }}
         renderItem={({ item }) => {
-          if (activeTab === 'rankings' && item.post_type === 'ranking') {
+          if ((activeTab === 'rankings' || activeTab === 'following') && item.post_type === 'ranking') {
             return renderRankingCard(item);
-          } else if (activeTab === 'publications' && item.post_type === 'discussion') {
+          } else if ((activeTab === 'publications' || activeTab === 'following') && item.post_type === 'discussion') {
             return renderPublicationCard(item);
           }
           return null;
@@ -529,11 +534,13 @@ const CommunityScreen = () => {
         ListHeaderComponent={() => (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              {activeTab === 'rankings' ? 'Rankings da Comunidade' : 'Discussões da Comunidade'}
+              {activeTab === 'rankings' ? 'Rankings da Comunidade' : activeTab === 'following' ? 'Posts de Quem Você Segue' : 'Discussões da Comunidade'}
             </Text>
             <Text style={styles.sectionSubtitle}>
               {activeTab === 'rankings' 
                 ? 'Descubra os melhores K-dramas através dos rankings dos usuários'
+                : activeTab === 'following'
+                ? 'Veja os posts e rankings das pessoas que você segue'
                 : 'Participe das conversas sobre seus doramas favoritos'
               }
             </Text>
@@ -546,7 +553,7 @@ const CommunityScreen = () => {
           return (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
-                {activeTab === 'rankings' ? 'Nenhum ranking encontrado' : 'Nenhuma discussão encontrada'}
+                {activeTab === 'rankings' ? 'Nenhum ranking encontrado' : activeTab === 'following' ? 'Nenhum post encontrado de quem você segue' : 'Nenhuma discussão encontrada'}
               </Text>
             </View>
           );
@@ -568,11 +575,11 @@ const CommunityScreen = () => {
         <TouchableOpacity style={styles.fab} onPress={handleCreatePost}>
           <Plus size={24} color={COLORS.background} />
         </TouchableOpacity>
-      ) : (
+      ) : activeTab === 'rankings' ? (
         <TouchableOpacity style={styles.fab} onPress={() => router.push({ pathname: '/ranking/create' } as any)} testID="fab-create-ranking">
           <Plus size={24} color={COLORS.background} />
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 };
