@@ -1,3 +1,5 @@
+import { Dimensions } from 'react-native';
+
 export const formatTimeAgo = (dateString: string): string => {
   const now = new Date();
   const date = new Date(dateString);
@@ -34,4 +36,40 @@ export const formatTimeAgo = (dateString: string): string => {
 
   const diffInYears = Math.floor(diffInDays / 365);
   return `${diffInYears}ano${diffInYears > 1 ? 's' : ''}`;
+};
+
+// Função para calcular número de colunas baseado no tamanho da tela
+export const getResponsiveColumns = (type: 'small' | 'medium' | 'large' = 'medium'): number => {
+  const { width } = Dimensions.get('window');
+  
+  // Breakpoints baseados em tamanhos comuns de dispositivos
+  const isSmallDevice = width < 375; // iPhone SE, dispositivos pequenos
+  const isMediumDevice = width >= 375 && width < 414; // iPhone 8, iPhone X
+  
+  switch (type) {
+    case 'small':
+      // Para cards pequenos (como na busca)
+      if (isSmallDevice) return 2;
+      if (isMediumDevice) return 2;
+      return 3; // dispositivos grandes
+      
+    case 'medium':
+      // Para cards médios (como trending/popular)
+      return 2; // sempre 2 colunas para cards médios
+      
+    case 'large':
+      // Para cards grandes (como categorias)
+      if (isSmallDevice) return 2;
+      if (isMediumDevice) return 2;
+      return 3; // dispositivos grandes
+      
+    default:
+      return 2;
+  }
+};
+
+// Função para calcular largura do card baseado no número de colunas
+export const getCardWidth = (numColumns: number, padding: number = 8): string => {
+  const percentage = (100 / numColumns) - (padding * 2 / numColumns);
+  return `${percentage}%`;
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   ActivityIndicator, 
   FlatList, 
@@ -18,6 +18,7 @@ import { COLORS } from "@/constants/colors";
 import { searchDramas } from "@/services/api";
 import DramaCard from "@/components/DramaCard";
 import CategoryPill from "@/components/CategoryPill";
+import { getResponsiveColumns, getCardWidth } from "@/constants/utils";
 
 const GENRES = [
   { id: 18, name: "Drama" },
@@ -53,7 +54,9 @@ export default function SearchScreen() {
     enabled: debouncedQuery.length >= 2,
   });
   
-
+  // Calcular número de colunas responsivo para busca
+  const numColumns = useMemo(() => getResponsiveColumns('small'), []);
+  const cardWidth = useMemo(() => getCardWidth(numColumns, 4), [numColumns]);
   
   const handleClearSearch = () => {
     setSearchQuery("");

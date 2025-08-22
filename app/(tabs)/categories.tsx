@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, View, TouchableOpacity, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { COLORS } from "@/constants/colors";
 import CategoryPill from "@/components/CategoryPill";
 import DramaCard from "@/components/DramaCard";
 import { getDramasByGenre } from "@/services/api";
+import { getResponsiveColumns, getCardWidth } from "@/constants/utils";
 
 // Mock genres data
 const GENRES = [
@@ -52,6 +53,10 @@ export default function CategoriesScreen() {
   });
   
   const dramas = data?.pages?.flatMap(page => page?.results || []) || [];
+  
+  // Calcular número de colunas responsivo
+  const numColumns = useMemo(() => getResponsiveColumns('large'), []);
+  const cardWidth = useMemo(() => getCardWidth(numColumns, 4), [numColumns]);
   
   const handleGenreSelect = useCallback((genreId: number) => {
     setSelectedGenre(genreId);
@@ -122,11 +127,12 @@ export default function CategoriesScreen() {
             data={dramas}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <View style={styles.cardContainer}>
+              <View style={[styles.cardContainer, { width: cardWidth }]}>
                 <DramaCard drama={item} size="small" />
               </View>
             )}
-            numColumns={3}
+            numColumns={numColumns}
+            key={numColumns}
             contentContainerStyle={styles.dramasList}
             showsVerticalScrollIndicator={false}
             onEndReached={handleLoadMore}
@@ -188,8 +194,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   cardContainer: {
-    flex: 1,
-    maxWidth: "33.33%",
     padding: 4,
   },
   footerLoader: {

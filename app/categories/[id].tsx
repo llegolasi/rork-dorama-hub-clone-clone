@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { 
   ActivityIndicator, 
   FlatList, 
@@ -12,6 +12,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { COLORS } from "@/constants/colors";
 import { getDramasByGenre, getTopRatedDramas, getLatestDramas, getTrendingDramasWithPagination } from "@/services/api";
 import DramaCard from "@/components/DramaCard";
+import { getResponsiveColumns, getCardWidth } from "@/constants/utils";
 
 // Mock genres data for title lookup
 const GENRES = [
@@ -86,6 +87,10 @@ export default function CategoryScreen() {
   
   const dramas = data?.pages.flatMap(page => page.results) || [];
   
+  // Calcular número de colunas responsivo
+  const numColumns = useMemo(() => getResponsiveColumns('large'), []);
+  const cardWidth = useMemo(() => getCardWidth(numColumns, 4), [numColumns]);
+  
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -114,11 +119,12 @@ export default function CategoryScreen() {
           data={dramas}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={styles.cardContainer}>
+            <View style={[styles.cardContainer, { width: cardWidth }]}>
               <DramaCard drama={item} size="small" />
             </View>
           )}
-          numColumns={3}
+          numColumns={numColumns}
+          key={numColumns}
           contentContainerStyle={styles.dramasList}
           showsVerticalScrollIndicator={false}
           onEndReached={handleLoadMore}
@@ -152,8 +158,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   cardContainer: {
-    flex: 1,
-    maxWidth: "33.33%",
     padding: 4,
   },
   footerLoader: {
