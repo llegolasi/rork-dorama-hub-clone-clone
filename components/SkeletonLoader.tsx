@@ -286,6 +286,139 @@ export function ProfileSkeleton() {
   );
 }
 
+export function ListsSkeleton() {
+  return (
+    <View style={styles.listsSkeletonContainer}>
+      {/* Header Skeleton */}
+      <View style={styles.listsHeaderSkeleton}>
+        <SkeletonLoader width={200} height={32} style={{ marginBottom: 20 }} />
+      </View>
+      
+      {/* Tabs Skeleton */}
+      <View style={styles.listsTabsSkeleton}>
+        <View style={styles.listsTabRowSkeleton}>
+          <SkeletonLoader width="48%" height={40} borderRadius={20} style={{ marginRight: 12 }} />
+          <SkeletonLoader width="48%" height={40} borderRadius={20} />
+        </View>
+        <View style={styles.listsTabRowSkeleton}>
+          <SkeletonLoader width="48%" height={40} borderRadius={20} />
+        </View>
+      </View>
+      
+      {/* Content Skeleton */}
+      <View style={styles.listsContentSkeleton}>
+        {[1, 2, 3, 4].map((item) => (
+          <View key={item} style={styles.listsItemSkeleton}>
+            <SkeletonLoader width={80} height={120} borderRadius={8} style={{ marginRight: 16 }} />
+            <View style={styles.listsItemContentSkeleton}>
+              <SkeletonLoader width="90%" height={18} style={{ marginBottom: 8 }} />
+              <SkeletonLoader width="70%" height={14} style={{ marginBottom: 8 }} />
+              <SkeletonLoader width="50%" height={12} style={{ marginBottom: 12 }} />
+              <View style={styles.listsItemActionsSkeleton}>
+                <SkeletonLoader width={60} height={24} borderRadius={12} style={{ marginRight: 8 }} />
+                <SkeletonLoader width={80} height={24} borderRadius={12} />
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export function DiscoverSkeleton() {
+  return (
+    <View style={styles.discoverSkeletonContainer}>
+      {/* Header Skeleton */}
+      <View style={styles.discoverHeaderSkeleton}>
+        <View style={styles.discoverTitleSkeleton}>
+          <SkeletonLoader width={150} height={32} style={{ marginBottom: 8 }} />
+          <SkeletonLoader width={120} height={16} />
+        </View>
+        <SkeletonLoader width={44} height={44} borderRadius={22} />
+      </View>
+      
+      {/* Card Skeleton */}
+      <View style={styles.discoverCardSkeleton}>
+        <SkeletonLoader width={300} height={450} borderRadius={16} />
+      </View>
+      
+      {/* Action Buttons Skeleton */}
+      <View style={styles.discoverActionsSkeleton}>
+        <SkeletonLoader width={64} height={64} borderRadius={32} style={{ marginRight: 60 }} />
+        <SkeletonLoader width={64} height={64} borderRadius={32} />
+      </View>
+      
+      {/* Instructions Skeleton */}
+      <View style={styles.discoverInstructionsSkeleton}>
+        <SkeletonLoader width="80%" height={12} />
+      </View>
+    </View>
+  );
+}
+
+export function CommunitySkeleton() {
+  return (
+    <View style={styles.communitySkeletonContainer}>
+      {/* Header Skeleton */}
+      <View style={styles.communityHeaderSkeleton}>
+        <SkeletonLoader width={180} height={32} style={{ marginBottom: 20 }} />
+      </View>
+      
+      {/* Tabs Skeleton */}
+      <View style={styles.communityTabsSkeleton}>
+        <SkeletonLoader width={120} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+        <SkeletonLoader width={140} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+        <SkeletonLoader width={100} height={40} borderRadius={20} />
+      </View>
+      
+      {/* Sort Buttons Skeleton */}
+      <View style={styles.communitySortSkeleton}>
+        <SkeletonLoader width={80} height={32} borderRadius={16} style={{ marginRight: 8 }} />
+        <SkeletonLoader width={90} height={32} borderRadius={16} />
+      </View>
+      
+      {/* Section Header Skeleton */}
+      <View style={styles.communitySectionSkeleton}>
+        <SkeletonLoader width={250} height={24} style={{ marginBottom: 8 }} />
+        <SkeletonLoader width="90%" height={16} style={{ marginBottom: 24 }} />
+      </View>
+      
+      {/* Posts Skeleton */}
+      <View style={styles.communityPostsSkeleton}>
+        {[1, 2, 3].map((item) => (
+          <View key={item} style={styles.communityPostSkeleton}>
+            {/* Banner Skeleton */}
+            <SkeletonLoader width="100%" height={140} borderRadius={16} style={{ marginBottom: 16 }} />
+            
+            {/* Post Content Skeleton */}
+            <View style={styles.communityPostContentSkeleton}>
+              <View style={styles.communityPostHeaderSkeleton}>
+                <SkeletonLoader width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+                <View style={styles.communityPostUserSkeleton}>
+                  <SkeletonLoader width={120} height={16} style={{ marginBottom: 4 }} />
+                  <SkeletonLoader width={100} height={12} />
+                </View>
+              </View>
+              
+              <SkeletonLoader width="90%" height={18} style={{ marginBottom: 8 }} />
+              <SkeletonLoader width="70%" height={14} style={{ marginBottom: 12 }} />
+              
+              <View style={styles.communityPostStatsSkeleton}>
+                <SkeletonLoader width={60} height={16} style={{ marginRight: 16 }} />
+                <SkeletonLoader width={60} height={16} style={{ marginRight: 16 }} />
+                <SkeletonLoader width={60} height={16} />
+              </View>
+              
+              <SkeletonLoader width="100%" height={40} borderRadius={10} style={{ marginTop: 8 }} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
@@ -492,6 +625,124 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profilePostActionsSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  // Lists Skeleton Styles
+  listsSkeletonContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  listsHeaderSkeleton: {
+    paddingHorizontal: 20,
+  },
+  listsTabsSkeleton: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 12,
+  },
+  listsTabRowSkeleton: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'flex-start',
+  },
+  listsContentSkeleton: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  listsItemSkeleton: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  listsItemContentSkeleton: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  listsItemActionsSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  // Discover Skeleton Styles
+  discoverSkeletonContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  discoverHeaderSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  discoverTitleSkeleton: {
+    flex: 1,
+  },
+  discoverCardSkeleton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  discoverActionsSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 60,
+    paddingVertical: 20,
+  },
+  discoverInstructionsSkeleton: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  // Community Skeleton Styles
+  communitySkeletonContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  communityHeaderSkeleton: {
+    paddingHorizontal: 20,
+  },
+  communityTabsSkeleton: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  communitySortSkeleton: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  communitySectionSkeleton: {
+    padding: 16,
+  },
+  communityPostsSkeleton: {
+    paddingHorizontal: 16,
+  },
+  communityPostSkeleton: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  communityPostContentSkeleton: {
+    padding: 16,
+  },
+  communityPostHeaderSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  communityPostUserSkeleton: {
+    flex: 1,
+  },
+  communityPostStatsSkeleton: {
     flexDirection: 'row',
     alignItems: 'center',
   },

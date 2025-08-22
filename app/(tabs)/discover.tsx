@@ -11,6 +11,7 @@ import { useUserLists } from '@/hooks/useUserStore';
 import { useAuth } from '@/hooks/useAuth';
 import SwipeCard from '@/components/SwipeCard';
 import PremiumLimitModal from '@/components/PremiumLimitModal';
+import { DiscoverSkeleton } from '@/components/SkeletonLoader';
 import type { Drama } from '@/types/drama';
 
 export default function DiscoverScreen() {
@@ -353,9 +354,8 @@ export default function DiscoverScreen() {
     
   if (isInitialLoading && dramas.length === 0) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Carregando K-dramas...</Text>
+      <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
+        <DiscoverSkeleton />
       </View>
     );
   }

@@ -15,6 +15,7 @@ import { useUserLists } from "@/hooks/useUserStore";
 import { WatchingList } from "@/components/lists/WatchingList";
 import { WatchlistList } from "@/components/lists/WatchlistList";
 import { CompletedList } from "@/components/lists/CompletedList";
+import { ListsSkeleton } from "@/components/SkeletonLoader";
 
 type TabType = "watching" | "watchlist" | "completed";
 

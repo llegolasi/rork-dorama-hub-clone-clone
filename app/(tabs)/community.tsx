@@ -20,6 +20,7 @@ import { COLORS } from '@/constants/colors';
 import { formatTimeAgo } from '@/constants/utils';
 import { trpc, trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
+import { CommunitySkeleton } from '@/components/SkeletonLoader';
 
 type TabType = 'rankings' | 'publications';
 type SortType = 'recent' | 'popular';
@@ -540,12 +541,7 @@ const CommunityScreen = () => {
         )}
         ListEmptyComponent={() => {
           if (postsLoading) {
-            return (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.accent} />
-                <Text style={styles.loadingText}>Carregando...</Text>
-              </View>
-            );
+            return <CommunitySkeleton />;
           }
           return (
             <View style={styles.emptyState}>
