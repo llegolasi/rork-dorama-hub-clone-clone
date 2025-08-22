@@ -163,26 +163,30 @@ export default function LoginStep({ onSwitchToSignup }: LoginStepProps) {
           <Text style={styles.forgotPasswordText}>Esqueceu sua senha?</Text>
         </TouchableOpacity>
 
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>ou</Text>
-          <View style={styles.dividerLine} />
-        </View>
+        {/* Google Login Button - Temporarily disabled */}
+        {false && (
+          <>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-        {/* Google Login Button */}
-        <TouchableOpacity 
-          style={styles.googleButton}
-          onPress={handleGoogleLogin}
-          disabled={isLoading}
-        >
-          <View style={styles.googleIconContainer}>
-            <Image 
-              source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
-              style={styles.googleIcon}
-            />
-          </View>
-          <Text style={styles.googleButtonText}>Continuar com Google</Text>
-        </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.googleButton}
+              onPress={handleGoogleLogin}
+              disabled={isLoading}
+            >
+              <View style={styles.googleIconContainer}>
+                <Image 
+                  source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                  style={styles.googleIcon}
+                />
+              </View>
+              <Text style={styles.googleButtonText}>Continuar com Google</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         <View style={styles.signupPrompt}>
           <Text style={styles.signupPromptText}>Não tem uma conta? </Text>
