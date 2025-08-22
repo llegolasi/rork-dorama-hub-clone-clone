@@ -618,18 +618,19 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
     );
   };
 
-  const inputContainerHeight = useMemo(() => {
-    const baseHeight = 60;
-    const replyBannerHeight = replyTo ? 40 : 0;
-    const safeAreaBottom = insets.bottom || 0;
-    return baseHeight + replyBannerHeight + safeAreaBottom;
-  }, [replyTo, insets.bottom]);
+
 
   const scrollContentInset = useMemo(() => {
+    // Calculate proper padding to prevent content from going behind input
+    const baseInputHeight = 60;
+    const replyBannerHeight = replyTo ? 40 : 0;
+    const safeAreaBottom = insets.bottom || 0;
+    const totalInputHeight = baseInputHeight + replyBannerHeight + safeAreaBottom;
+    
     return {
-      paddingBottom: inputContainerHeight + 20
+      paddingBottom: totalInputHeight + 40 // Extra padding to ensure content doesn't hide
     };
-  }, [inputContainerHeight]);
+  }, [replyTo, insets.bottom]);
 
   return (
     <View style={styles.container}>
@@ -694,6 +695,13 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           {
             bottom: Platform.OS === 'android' ? (keyboardHeight > 0 ? keyboardHeight : insets.bottom) : (keyboardHeight > 0 ? keyboardHeight : insets.bottom),
             paddingBottom: Platform.OS === 'android' ? (insets.bottom > 0 ? insets.bottom : 8) : 8,
+            // Ensure input container has proper background and shadow
+            backgroundColor: COLORS.background,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 8,
           }
         ]}
       >

@@ -97,7 +97,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
       
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 84 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 120 }]}
         keyboardShouldPersistTaps="handled"
       >
         {comments.length > 0 ? (
@@ -123,11 +123,18 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
         styles.inputContainer, 
         Platform.OS === 'android' && styles.inputContainerAndroid,
         { 
-          paddingBottom: Platform.OS === 'android' ? 8 : bottomPadding,
+          paddingBottom: Platform.OS === 'android' ? (insets.bottom > 0 ? insets.bottom : 8) : bottomPadding,
           position: Platform.OS === 'android' ? 'absolute' : 'relative',
           bottom: Platform.OS === 'android' ? insets.bottom : undefined,
           left: Platform.OS === 'android' ? 0 : undefined,
-          right: Platform.OS === 'android' ? 0 : undefined
+          right: Platform.OS === 'android' ? 0 : undefined,
+          // Ensure input container has proper background and shadow
+          backgroundColor: COLORS.card,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 8,
         }
       ]}>
         <TextInput

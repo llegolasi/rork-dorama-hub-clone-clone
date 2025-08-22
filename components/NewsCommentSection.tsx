@@ -550,7 +550,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       <ScrollView 
         ref={scrollRef}
         style={styles.scrollContainer}
-        contentContainerStyle={[styles.contentContainer, { paddingBottom: bottomPadding + 96 }]}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: bottomPadding + 120 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -588,8 +588,15 @@ export default function NewsCommentSection(props: CommentSectionProps) {
         styles.inputContainer,
         Platform.OS === 'android' && styles.inputContainerAndroid,
         { 
-          paddingBottom: Platform.OS === 'android' ? 8 : bottomPadding,
-          bottom: Platform.OS === 'android' ? 0 : undefined
+          paddingBottom: Platform.OS === 'android' ? (insets.bottom > 0 ? insets.bottom : 8) : bottomPadding,
+          bottom: Platform.OS === 'android' ? 0 : undefined,
+          // Ensure input container has proper background and shadow
+          backgroundColor: COLORS.card,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 8,
         }
       ]}> 
         {replyTo && (
