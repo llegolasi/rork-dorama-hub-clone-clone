@@ -5,30 +5,23 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
-  ActivityIndicator,
-  Dimensions
+  ActivityIndicator
 } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { DRAMA_GENRES, getFilteredDramas } from '@/constants/onboarding';
+import { DRAMA_GENRES } from '@/constants/onboarding';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PreferencesStepProps {
   onComplete: () => void;
 }
 
-const { width } = Dimensions.get('window');
-const posterWidth = (width - 72) / 3; // 3 columns with padding
-
 export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [lovedDramas, setLovedDramas] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const { completeOnboarding } = useAuth();
-  const filteredDramas = getFilteredDramas();
 
   const toggleGenre = (genreId: string) => {
     setSelectedGenres(prev => {
@@ -40,15 +33,7 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
     });
   };
 
-  const toggleDrama = (dramaId: number) => {
-    setLovedDramas(prev => {
-      if (prev.includes(dramaId)) {
-        return prev.filter(id => id !== dramaId);
-      } else {
-        return [...prev, dramaId];
-      }
-    });
-  };
+
 
   const canProceed = (): boolean => {
     return selectedGenres.length >= 3;
@@ -62,7 +47,7 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
 
     console.log('Starting onboarding completion with:', {
       favoriteGenres: selectedGenres,
-      lovedDramas
+      lovedDramas: []
     });
 
     setIsLoading(true);
@@ -70,7 +55,7 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
     try {
       const result = await completeOnboarding({
         favoriteGenres: selectedGenres,
-        lovedDramas
+        lovedDramas: []
       });
       
       console.log('Onboarding completion result:', result);
@@ -145,35 +130,7 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
           </View>
         </View>
 
-        {/* Popular Dramas */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quais desses você já amou? (opcional)</Text>
-          <Text style={styles.sectionSubtitle}>
-            Toque nos doramas que você já assistiu e gostou
-          </Text>
-          <View style={styles.dramaGrid}>
-            {filteredDramas.map((drama, index) => {
-              const isSelected = lovedDramas.includes(drama.id);
-              return (
-                <TouchableOpacity
-                  key={`drama-${drama.id}-${index}`}
-                  style={[styles.dramaCard, isSelected && styles.dramaCardSelected]}
-                  onPress={() => toggleDrama(drama.id)}
-                >
-                  <Image source={{ uri: `https://image.tmdb.org/t/p/w500${drama.poster_path}` }} style={styles.dramaPoster} />
-                  {isSelected && (
-                    <View style={styles.selectedOverlay}>
-                      <Check size={24} color={COLORS.text} />
-                    </View>
-                  )}
-                  <Text style={styles.dramaTitle} numberOfLines={2}>
-                    {drama.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -272,39 +229,7 @@ const styles = StyleSheet.create({
   checkIcon: {
     marginLeft: 4,
   },
-  dramaGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    justifyContent: 'space-between',
-  },
-  dramaCard: {
-    width: posterWidth,
-    marginBottom: 8,
-  },
-  dramaCardSelected: {
-    opacity: 0.8,
-  },
-  dramaPoster: {
-    width: '100%',
-    height: posterWidth * 1.5,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  selectedOverlay: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    padding: 4,
-  },
-  dramaTitle: {
-    fontSize: 12,
-    color: COLORS.text,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
+
   buttonContainer: {
     gap: 12,
     marginTop: 24,
