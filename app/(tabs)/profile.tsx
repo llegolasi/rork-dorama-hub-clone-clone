@@ -5,6 +5,7 @@ import { BookOpen, Check, Eye, Heart, MessageCircle, Edit3, Award, Crown, BarCha
 import { router, Stack, useFocusEffect } from "expo-router";
 
 import { COLORS } from "@/constants/colors";
+import { UserDisplayName, AvatarWithBorder } from "@/components/UserTypeComponents";
 
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -278,16 +279,21 @@ export default function ProfileScreen() {
         <View style={styles.rankingContent}>
           <View style={styles.rankingHeaderProfile}>
             <View style={styles.userInfo}>
-              <Image
-                source={{
-                  uri: userProfile?.profileImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-                }}
-                style={styles.userAvatar}
-                contentFit="cover"
+              <AvatarWithBorder
+                imageUri={userProfile?.profileImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'}
+                size={40}
+                userType={userProfile?.userType || 'normal'}
+                border={userProfile?.currentAvatarBorder}
               />
               <View style={styles.userDetails}>
-                <Text style={styles.userName}>{userProfile?.displayName || userProfile?.username}</Text>
-                <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+                <UserDisplayName
+                  displayName={userProfile?.displayName || userProfile?.username || 'Usuário'}
+                  username={userProfile?.username || 'usuario'}
+                  userType={userProfile?.userType || 'normal'}
+                  badge={userProfile?.currentBadge}
+                  size="small"
+                  showUsername={true}
+                />
               </View>
             </View>
           </View>
@@ -322,16 +328,21 @@ export default function ProfileScreen() {
     >
       <View style={styles.publicationHeader}>
         <View style={styles.userInfo}>
-          <Image
-            source={{
-              uri: userProfile?.profileImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-            }}
-            style={styles.userAvatar}
-            contentFit="cover"
+          <AvatarWithBorder
+            imageUri={userProfile?.profileImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'}
+            size={40}
+            userType={userProfile?.userType || 'normal'}
+            border={userProfile?.currentAvatarBorder}
           />
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userProfile?.displayName || userProfile?.username}</Text>
-            <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+            <UserDisplayName
+              displayName={userProfile?.displayName || userProfile?.username || 'Usuário'}
+              username={userProfile?.username || 'usuario'}
+              userType={userProfile?.userType || 'normal'}
+              badge={userProfile?.currentBadge}
+              size="small"
+              showUsername={true}
+            />
           </View>
         </View>
       </View>
@@ -483,16 +494,23 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <View style={styles.profileImageContainer}>
-              <Image
-                source={{ uri: userProfile?.profileImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }}
-                style={styles.profileImage}
-                contentFit="cover"
+              <AvatarWithBorder
+                imageUri={userProfile?.profileImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'}
+                size={80}
+                userType={userProfile?.userType || 'normal'}
+                border={userProfile?.currentAvatarBorder}
               />
             </View>
             
             <View style={styles.profileInfo}>
-              <Text style={styles.displayName}>{userProfile?.displayName || userProfile?.username || 'Usuário'}</Text>
-              <Text style={styles.username}>@{userProfile?.username || 'usuario'}</Text>
+              <UserDisplayName
+                displayName={userProfile?.displayName || userProfile?.username || 'Usuário'}
+                username={userProfile?.username || 'usuario'}
+                userType={userProfile?.userType || 'normal'}
+                badge={userProfile?.currentBadge}
+                size="large"
+                showUsername={true}
+              />
               
               <View style={styles.socialStats}>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowersPress}>
