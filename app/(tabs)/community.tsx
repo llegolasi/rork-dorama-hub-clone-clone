@@ -856,6 +856,7 @@ const styles = StyleSheet.create({
   },
   userDetails: {
     flex: 1,
+    marginLeft: 12,
   },
   userName: {
     fontSize: 16,
@@ -870,6 +871,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    marginTop: 2,
   },
   timestampDot: {
     fontSize: 14,
