@@ -84,7 +84,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   useEffect(() => {
     const keyboardWillShow = (event: any) => {
       if (Platform.OS === 'android') {
-        // On Android, don't adjust for keyboard height - let the system handle it
+        // On Android, use minimal keyboard height to avoid extra space
         setKeyboardHeight(0);
       } else {
         // iOS behavior remains the same
@@ -621,142 +621,16 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   const inputContainerHeight = useMemo(() => {
     const baseHeight = 60;
     const replyBannerHeight = replyTo ? 40 : 0;
-    const safeAreaBottom = Platform.OS === 'android' ? 0 : (insets.bottom || 0);
+    const safeAreaBottom = insets.bottom || 0;
     return baseHeight + replyBannerHeight + safeAreaBottom;
   }, [replyTo, insets.bottom]);
 
   const scrollContentInset = useMemo(() => {
     return {
-      paddingBottom: inputContainerHeight + (Platform.OS === 'android' ? insets.bottom + 20 : 20)
+      paddingBottom: inputContainerHeight + 20
     };
-  }, [inputContainerHeight, insets.bottom]);
+  }, [inputContainerHeight]);
 
-  if (Platform.OS === 'android') {
-    // Android version with simpler keyboard handling
-    return (
-      <View style={styles.container}>
-        <FlatList
-          ref={flatListRef}
-          data={comments}
-          keyExtractor={(item) => item.id}
-          renderItem={renderComment}
-          contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          onEndReached={loadMoreComments}
-          onEndReachedThreshold={0.3}
-          ListHeaderComponent={() => (
-            <View>
-              {renderContent && renderContent()}
-              {renderHeader()}
-            </View>
-          )}
-          ListEmptyComponent={() => {
-            if (commentsQuery.isLoading) {
-              return (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={COLORS.accent} />
-                  <Text style={styles.loadingText}>Carregando comentários...</Text>
-                </View>
-              );
-            }
-            if (commentsQuery.error) {
-              return (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>Erro ao carregar comentários</Text>
-                  <TouchableOpacity 
-                    style={styles.retryButton}
-                    onPress={() => commentsQuery.refetch()}
-                  >
-                    <Text style={styles.retryText}>Tentar novamente</Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            }
-            return renderEmptyComments();
-          }}
-          ListFooterComponent={() => {
-            if (loadingMore) {
-              return (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color={COLORS.accent} />
-                  <Text style={styles.loadingText}>Carregando mais comentários...</Text>
-                </View>
-              );
-            }
-            return null;
-          }}
-        />
-        
-        {/* Fixed Input Container for Android */}
-        <View 
-          style={[
-            styles.fixedInputContainer,
-            {
-              bottom: 0,
-              paddingBottom: insets.bottom,
-            }
-          ]}
-        >
-          {replyTo && (
-            <View style={styles.replyBanner} testID="reply-banner">
-              <Text style={styles.replyText} numberOfLines={1}>
-                Respondendo a {replyTo.full_name || replyTo.username || 'Usuário'}
-              </Text>
-              <TouchableOpacity onPress={() => setReplyTo(null)} style={styles.replyCancel} testID="cancel-reply">
-                <X size={14} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          )}
-          
-          <View style={styles.inputRow}>
-            {user?.profileImage ? (
-              <Image source={{ uri: user.profileImage }} style={styles.userAvatar} />
-            ) : (
-              <View style={styles.userAvatarPlaceholder}>
-                <Text style={styles.userAvatarText}>
-                  {(user?.displayName || user?.username || 'U')?.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-            
-            <TextInput
-              ref={inputRef}
-              style={styles.input}
-              placeholder={replyTo ? `Responder a ${replyTo.full_name || replyTo.username || 'usuário'}...` : 'Adicione um comentário...'}
-              placeholderTextColor={COLORS.textSecondary}
-              value={newComment}
-              onChangeText={setNewComment}
-              multiline
-              maxLength={1000}
-              testID="comment-input"
-              returnKeyType="send"
-              onSubmitEditing={handleSubmitComment}
-            />
-            
-            {newComment.trim().length > 0 && (
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleSubmitComment}
-                disabled={isSubmitting}
-                activeOpacity={0.7}
-                testID="submit-comment"
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color={COLORS.text} />
-                ) : (
-                  <Send size={18} color={COLORS.accent} />
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </View>
-    );
-  }
-
-  // iOS version with original keyboard handling
   return (
     <View style={styles.container}>
       <FlatList
@@ -813,13 +687,13 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
         }}
       />
       
-      {/* Fixed Input Container for iOS */}
+      {/* Fixed Input Container */}
       <View 
         style={[
           styles.fixedInputContainer,
           {
-            bottom: keyboardHeight > 0 ? keyboardHeight - insets.bottom : 0,
-            paddingBottom: keyboardHeight > 0 ? 8 : insets.bottom,
+            bottom: Platform.OS === 'android' ? 0 : (keyboardHeight > 0 ? keyboardHeight : insets.bottom),
+            paddingBottom: Platform.OS === 'android' ? insets.bottom : 8,
           }
         ]}
       >
@@ -1169,8 +1043,5 @@ const styles = StyleSheet.create({
   retryText: {
     color: COLORS.text,
     fontWeight: '600',
-  },
-  fixedInputContainerAndroid: {
-    // Android specific styles for input container
   },
 });

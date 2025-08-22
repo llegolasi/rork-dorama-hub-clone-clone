@@ -587,7 +587,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       <View style={[
         styles.inputContainer,
         Platform.OS === 'android' && styles.inputContainerAndroid,
-        { paddingBottom: bottomPadding }
+        { paddingBottom: Platform.OS === 'android' ? bottomPadding : bottomPadding }
       ]}> 
         {replyTo && (
           <View style={styles.replyBanner} testID="reply-banner">
