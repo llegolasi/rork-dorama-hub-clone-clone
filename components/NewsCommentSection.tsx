@@ -19,6 +19,8 @@ import { COLORS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
+import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
+import { UserType } from '@/types/user';
 
 interface Comment {
   id: string;
@@ -31,6 +33,7 @@ interface Comment {
   username?: string | null;
   full_name?: string | null;
   avatar_url?: string | null;
+  user_type?: string | null;
   replies_count: number;
   user_liked?: boolean;
   parent_comment_id?: string | null;
@@ -392,6 +395,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
       username: type === 'news' ? item.username : item.users?.username,
       full_name: type === 'news' ? item.full_name : item.users?.display_name,
       avatar_url: type === 'news' ? item.avatar_url : item.users?.profile_image,
+      user_type: type === 'news' ? item.user_type : item.users?.user_type,
       replies_count: item.replies_count || 0,
       user_liked: item.user_liked || false,
       parent_comment_id: item.parent_comment_id,
@@ -412,9 +416,13 @@ export default function NewsCommentSection(props: CommentSectionProps) {
               </View>
             )}
             <View style={styles.commentMeta}>
-              <Text style={styles.commentUsername}>
-                {comment.full_name || comment.username || 'Usuário'}
-              </Text>
+              <UserDisplayName
+                displayName={comment.full_name || comment.username || 'Usuário'}
+                username={comment.username}
+                userType={comment.user_type as UserType || 'normal'}
+                size="small"
+                showUsername={false}
+              />
               <Text style={styles.commentTime}>{formatDate(comment.created_at)}</Text>
             </View>
           </View>
@@ -473,6 +481,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
                 username: type === 'news' ? replyItem.username : replyItem.users?.username,
                 full_name: type === 'news' ? replyItem.full_name : replyItem.users?.display_name,
                 avatar_url: type === 'news' ? replyItem.avatar_url : replyItem.users?.profile_image,
+                user_type: type === 'news' ? replyItem.user_type : replyItem.users?.user_type,
                 user_liked: replyItem.user_liked || false,
               };
 
@@ -490,9 +499,13 @@ export default function NewsCommentSection(props: CommentSectionProps) {
                         </View>
                       )}
                       <View style={styles.commentMeta}>
-                        <Text style={styles.commentUsername}>
-                          {reply.full_name || reply.username || 'Usuário'}
-                        </Text>
+                        <UserDisplayName
+                          displayName={reply.full_name || reply.username || 'Usuário'}
+                          username={reply.username}
+                          userType={reply.user_type as UserType || 'normal'}
+                          size="small"
+                          showUsername={false}
+                        />
                         <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
                       </View>
                     </View>

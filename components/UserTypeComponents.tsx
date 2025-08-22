@@ -214,12 +214,12 @@ export const UserDisplayName: React.FC<UserDisplayNameProps> = ({
   const getVerificationBadge = () => {
     if (userType === 'official') {
       return (
-        <VerifiedBrandSolid style={[styles.verificationBadge, { color: '#FFD700' }]} />
+        <VerifiedBrandSolid size={16} color="#FFD700" style={styles.verificationBadge} />
       );
     }
     if (userType === 'premium') {
       return (
-        <Vip2Fill style={[styles.verificationBadge, { color: '#FFD700' }]} />
+        <Vip2Fill size={16} color="#FFD700" style={styles.verificationBadge} />
       );
     }
     return null;
@@ -307,16 +307,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   displayName: {
-    fontWeight: '600' as const,
-    color: '#111827',
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
   },
   username: {
     color: '#6B7280',
     marginTop: 2,
   },
   verificationBadge: {
-    fontSize: 16,
     marginLeft: 4,
-    fontWeight: 'bold' as const,
   },
 });

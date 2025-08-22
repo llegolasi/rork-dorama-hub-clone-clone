@@ -17,6 +17,8 @@ import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 import InstagramStyleComments from '@/components/InstagramStyleComments';
+import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
+import { UserType } from '@/types/user';
 
 
 export default function RankingCommentsScreen() {
@@ -136,14 +138,31 @@ export default function RankingCommentsScreen() {
               {/* Ranking Section */}
               <View style={styles.rankingSection}>
                 <View style={styles.rankingHeader}>
-                  <Image
-                    source={{ uri: ranking.users?.profile_image || 'https://via.placeholder.com/40x40/333/fff?text=U' }}
-                    style={styles.userAvatar}
-                    contentFit="cover"
+                  <AvatarWithBorder
+                    imageUri={ranking.users?.profile_image}
+                    size={40}
+                    userType={ranking.users?.user_type as UserType || 'normal'}
+                    border={ranking.users?.current_avatar_border_id ? {
+                      id: ranking.users.current_avatar_border_id,
+                      name: 'Border',
+                      imageUrl: '',
+                      rarity: 'common',
+                      isPremiumOnly: false,
+                      isOfficialOnly: false
+                    } : undefined}
                   />
                   <View style={styles.rankingHeaderInfo}>
                     <Text style={styles.rankingTitle}>{ranking.title}</Text>
-                    <Text style={styles.rankingAuthor}>por @{ranking.users?.username}</Text>
+                    <View style={styles.authorRow}>
+                      <Text style={styles.rankingAuthorPrefix}>por </Text>
+                      <UserDisplayName
+                        displayName={ranking.users?.display_name || ranking.users?.username || 'Usuário'}
+                        username={ranking.users?.username}
+                        userType={ranking.users?.user_type as UserType || 'normal'}
+                        size="small"
+                        showUsername={false}
+                      />
+                    </View>
                     <View style={styles.rankingStats}>
                       <TouchableOpacity 
                         style={styles.statItem}
@@ -379,10 +398,14 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 4,
   },
-  rankingAuthor: {
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  rankingAuthorPrefix: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: 8,
   },
   rankingStats: {
     flexDirection: 'row',

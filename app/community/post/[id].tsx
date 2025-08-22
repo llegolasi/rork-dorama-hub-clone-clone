@@ -18,6 +18,8 @@ import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 import InstagramStyleComments from '@/components/InstagramStyleComments';
+import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
+import { UserType } from '@/types/user';
 
 const PostDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -158,15 +160,27 @@ const PostDetailScreen = () => {
                     style={styles.userInfo}
                     onPress={() => handleUserPress(post.user_id)}
                   >
-                    <Image
-                      source={{
-                        uri: post.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-                      }}
-                      style={styles.userAvatar}
+                    <AvatarWithBorder
+                      imageUri={post.users?.profile_image}
+                      size={40}
+                      userType={post.users?.user_type as UserType || 'normal'}
+                      border={post.users?.current_avatar_border_id ? {
+                        id: post.users.current_avatar_border_id,
+                        name: 'Border',
+                        imageUrl: '',
+                        rarity: 'common',
+                        isPremiumOnly: false,
+                        isOfficialOnly: false
+                      } : undefined}
                     />
                     <View style={styles.userDetails}>
-                      <Text style={styles.userName}>{post.users?.display_name}</Text>
-                      <Text style={styles.userHandle}>@{post.users?.username}</Text>
+                      <UserDisplayName
+                        displayName={post.users?.display_name || 'Usuário'}
+                        username={post.users?.username}
+                        userType={post.users?.user_type as UserType || 'normal'}
+                        size="medium"
+                        showUsername={true}
+                      />
                     </View>
                   </TouchableOpacity>
                   <View style={styles.postHeaderRight}>

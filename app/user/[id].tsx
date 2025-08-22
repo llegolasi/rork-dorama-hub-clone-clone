@@ -25,6 +25,8 @@ import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import UserStatsDisplay from '@/components/UserStatsDisplay';
 import { ProfileSkeleton } from '@/components/SkeletonLoader';
+import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
+import { UserType } from '@/types/user';
 
 
 type TabType = 'posts' | 'dramas';
@@ -179,16 +181,27 @@ const UserProfileScreen = () => {
         <View style={styles.rankingContent}>
           <View style={styles.rankingHeaderProfile}>
             <View style={styles.userInfo}>
-              <Image
-                source={{
-                  uri: userProfile?.profile_image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-                }}
-                style={styles.userAvatar}
-                contentFit="cover"
+              <AvatarWithBorder
+                imageUri={userProfile?.profile_image}
+                size={40}
+                userType={userProfile?.user_type as UserType || 'normal'}
+                border={userProfile?.current_avatar_border_id ? {
+                  id: userProfile.current_avatar_border_id,
+                  name: 'Border',
+                  imageUrl: '',
+                  rarity: 'common',
+                  isPremiumOnly: false,
+                  isOfficialOnly: false
+                } : undefined}
               />
               <View style={styles.userDetails}>
-                <Text style={styles.userName}>{userProfile?.display_name || userProfile?.username}</Text>
-                <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+                <UserDisplayName
+                  displayName={userProfile?.display_name || userProfile?.username || 'Usuário'}
+                  username={userProfile?.username}
+                  userType={userProfile?.user_type as UserType || 'normal'}
+                  size="small"
+                  showUsername={true}
+                />
               </View>
             </View>
           </View>
@@ -223,16 +236,27 @@ const UserProfileScreen = () => {
     >
       <View style={styles.publicationHeader}>
         <View style={styles.userInfo}>
-          <Image
-            source={{
-              uri: userProfile?.profile_image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-            }}
-            style={styles.userAvatar}
-            contentFit="cover"
+          <AvatarWithBorder
+            imageUri={userProfile?.profile_image}
+            size={40}
+            userType={userProfile?.user_type as UserType || 'normal'}
+            border={userProfile?.current_avatar_border_id ? {
+              id: userProfile.current_avatar_border_id,
+              name: 'Border',
+              imageUrl: '',
+              rarity: 'common',
+              isPremiumOnly: false,
+              isOfficialOnly: false
+            } : undefined}
           />
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userProfile?.display_name || userProfile?.username}</Text>
-            <Text style={styles.userHandle}>@{userProfile?.username}</Text>
+            <UserDisplayName
+              displayName={userProfile?.display_name || userProfile?.username || 'Usuário'}
+              username={userProfile?.username}
+              userType={userProfile?.user_type as UserType || 'normal'}
+              size="small"
+              showUsername={true}
+            />
           </View>
         </View>
       </View>
@@ -341,16 +365,29 @@ const UserProfileScreen = () => {
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <View style={styles.profileImageContainer}>
-              <Image
-                source={{ uri: userProfile.profile_image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }}
-                style={styles.profileImage}
-                contentFit="cover"
+              <AvatarWithBorder
+                imageUri={userProfile.profile_image}
+                size={80}
+                userType={userProfile.user_type as UserType || 'normal'}
+                border={userProfile.current_avatar_border_id ? {
+                  id: userProfile.current_avatar_border_id,
+                  name: 'Border',
+                  imageUrl: '',
+                  rarity: 'common',
+                  isPremiumOnly: false,
+                  isOfficialOnly: false
+                } : undefined}
               />
             </View>
             
             <View style={styles.profileInfo}>
-              <Text style={styles.displayName}>{userProfile.display_name}</Text>
-              <Text style={styles.username}>@{userProfile.username}</Text>
+              <UserDisplayName
+                displayName={userProfile.display_name || userProfile.username || 'Usuário'}
+                username={userProfile.username}
+                userType={userProfile.user_type as UserType || 'normal'}
+                size="large"
+                showUsername={true}
+              />
               
               <View style={styles.socialStats}>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowersPress}>
