@@ -349,10 +349,10 @@ export const getCommunityPostsProcedure = publicProcedure
       return processedPosts;
     } catch (error) {
       console.error('Error fetching community posts:', error);
-      if (error instanceof Error) {
-        throw new Error(`Failed to fetch community posts: ${error.message}`);
-      }
-      throw new Error('Failed to fetch community posts');
+      
+      // Return empty array instead of throwing to prevent crashes
+      console.warn('Returning empty array due to error:', error);
+      return [];
     }
   });
 
