@@ -11,7 +11,6 @@ import {
   ActionSheetIOS,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Heart, MessageCircle, MoreVertical } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
@@ -22,7 +21,7 @@ import InstagramStyleComments from '@/components/InstagramStyleComments';
 
 const PostDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const insets = useSafeAreaInsets();
+
   const { user } = useAuth();
 
   // Fetch post details
@@ -127,13 +126,11 @@ const PostDetailScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Publicação',
-          headerStyle: { 
-            backgroundColor: COLORS.background,
-          },
+          headerStyle: { backgroundColor: COLORS.background },
           headerTintColor: COLORS.text,
         }}
       />

@@ -73,7 +73,7 @@ export default function NewsDetailScreen() {
             },
           }} 
         />
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
           {renderLoadingState()}
         </View>
       </>
@@ -95,7 +95,7 @@ export default function NewsDetailScreen() {
             },
           }} 
         />
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
           {renderErrorState()}
         </View>
       </>
@@ -301,7 +301,7 @@ export default function NewsDetailScreen() {
         }} 
       />
       
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
         <InstagramStyleComments 
           articleId={post.id} 
           renderContent={() => (
