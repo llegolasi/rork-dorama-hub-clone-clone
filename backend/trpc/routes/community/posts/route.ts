@@ -162,7 +162,9 @@ export const getCommunityPostsProcedure = publicProcedure
 
         if (error) {
           console.error('Supabase error (rankings):', error);
-          throw error;
+          // Return empty array instead of throwing to prevent crashes
+          console.warn('Error fetching ranking posts, returning empty array:', error.message);
+          return [];
         }
 
         console.log('Fetched ranking posts count:', posts?.length ?? 0);
@@ -330,7 +332,9 @@ export const getCommunityPostsProcedure = publicProcedure
 
       if (error) {
         console.error('Supabase error:', error);
-        throw error;
+        // Return empty array instead of throwing to prevent crashes
+        console.warn('Error fetching posts, returning empty array:', error.message);
+        return [];
       }
 
       // Process posts to add engagement counts and sort if needed

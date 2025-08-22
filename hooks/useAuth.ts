@@ -174,6 +174,11 @@ export const [AuthContext, useAuth] = createContextHook(() => {
                 profileImage: profile.profile_image,
                 userProfileCover: profile.user_profile_cover,
                 isOnboardingComplete: profile.is_onboarding_complete,
+                userType: profile.user_type || 'normal',
+                isVerified: profile.is_verified || false,
+                verificationType: profile.verification_type,
+                dailySwipeLimit: profile.user_type === 'premium' ? 50 : 20,
+                isPremiumActive: false,
                 createdAt: profile.created_at
               };
               setUser(authUser);
@@ -223,6 +228,11 @@ export const [AuthContext, useAuth] = createContextHook(() => {
               profileImage: profile.profile_image,
               userProfileCover: profile.user_profile_cover,
               isOnboardingComplete: profile.is_onboarding_complete,
+              userType: profile.user_type || 'normal',
+              isVerified: profile.is_verified || false,
+              verificationType: profile.verification_type,
+              dailySwipeLimit: profile.user_type === 'premium' ? 50 : 20,
+              isPremiumActive: false,
               createdAt: profile.created_at
             };
             setUser(authUser);
@@ -334,6 +344,10 @@ export const [AuthContext, useAuth] = createContextHook(() => {
               email: credentials.email,
               displayName: credentials.username,
               isOnboardingComplete: false,
+              userType: 'normal',
+              isVerified: false,
+              dailySwipeLimit: 20,
+              isPremiumActive: false,
               createdAt: new Date().toISOString()
             };
 
@@ -375,6 +389,10 @@ export const [AuthContext, useAuth] = createContextHook(() => {
           email: credentials.email,
           displayName: credentials.username,
           isOnboardingComplete: false,
+          userType: 'normal',
+          isVerified: false,
+          dailySwipeLimit: 20,
+          isPremiumActive: false,
           createdAt: new Date().toISOString()
         };
 
@@ -424,6 +442,11 @@ export const [AuthContext, useAuth] = createContextHook(() => {
               profileImage: profile.profile_image,
               userProfileCover: profile.user_profile_cover,
               isOnboardingComplete: profile.is_onboarding_complete,
+              userType: profile.user_type || 'normal',
+              isVerified: profile.is_verified || false,
+              verificationType: profile.verification_type,
+              dailySwipeLimit: profile.user_type === 'premium' ? 50 : 20,
+              isPremiumActive: false,
               createdAt: profile.created_at
             };
             
@@ -440,6 +463,10 @@ export const [AuthContext, useAuth] = createContextHook(() => {
             email: email,
             displayName: 'Demo User',
             isOnboardingComplete: true,
+            userType: 'normal',
+            isVerified: false,
+            dailySwipeLimit: 20,
+            isPremiumActive: false,
             createdAt: new Date().toISOString()
           };
           
@@ -478,6 +505,10 @@ export const [AuthContext, useAuth] = createContextHook(() => {
           email: 'google@example.com',
           displayName: 'Google User',
           isOnboardingComplete: false,
+          userType: 'normal',
+          isVerified: false,
+          dailySwipeLimit: 20,
+          isPremiumActive: false,
           createdAt: new Date().toISOString()
         };
         
