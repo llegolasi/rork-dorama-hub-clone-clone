@@ -122,7 +122,13 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
       <View style={[
         styles.inputContainer, 
         Platform.OS === 'android' && styles.inputContainerAndroid,
-        { paddingBottom: bottomPadding }
+        { 
+          paddingBottom: Platform.OS === 'android' ? 8 : bottomPadding,
+          position: Platform.OS === 'android' ? 'absolute' : 'relative',
+          bottom: Platform.OS === 'android' ? insets.bottom : undefined,
+          left: Platform.OS === 'android' ? 0 : undefined,
+          right: Platform.OS === 'android' ? 0 : undefined
+        }
       ]}>
         <TextInput
           style={[
