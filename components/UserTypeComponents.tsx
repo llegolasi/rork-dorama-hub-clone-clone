@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Image } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { UserBadge, AvatarBorder, UserType } from '@/types/user';
 
-// SVG Icons as components
 const VerifiedBrandSolid = (props: any) => (
   <Svg width={props.size || 16} height={props.size || 16} viewBox="0 0 2048 2048" {...props}>
     <Path
@@ -42,7 +41,7 @@ export const UserBadgeDisplay: React.FC<UserBadgeDisplayProps> = ({
     small: { fontSize: 12, padding: 2 },
     medium: { fontSize: 14, padding: 4 },
     large: { fontSize: 16, padding: 6 }
-  };
+  } as const;
 
   return (
     <View style={[styles.badgeContainer, { backgroundColor: badge.color + '20' }]}>
@@ -61,16 +60,35 @@ interface AvatarWithBorderProps {
   border?: AvatarBorder;
   size?: number;
   userType?: UserType;
+  showBorder?: boolean;
 }
 
 export const AvatarWithBorder: React.FC<AvatarWithBorderProps> = ({ 
   imageUri, 
   border, 
   size = 50,
-  userType = 'normal'
+  userType = 'normal',
+  showBorder = true,
 }) => {
   const borderWidth = size * 0.08;
   const innerSize = size - (borderWidth * 2);
+
+  const renderPlainAvatar = () => (
+    imageUri ? (
+      <Image 
+        source={{ uri: imageUri }} 
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+      />
+    ) : (
+      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#9CA3AF', fontSize: size * 0.4 }}>👤</Text>
+      </View>
+    )
+  );
+
+  if (!showBorder) {
+    return renderPlainAvatar();
+  }
 
   const getBorderColor = () => {
     if (border) {
@@ -83,7 +101,6 @@ export const AvatarWithBorder: React.FC<AvatarWithBorderProps> = ({
         default: return '#9CA3AF';
       }
     }
-    
     switch (userType) {
       case 'premium': return '#FFD700';
       case 'official': return '#1DA1F2';
@@ -91,11 +108,9 @@ export const AvatarWithBorder: React.FC<AvatarWithBorderProps> = ({
     }
   };
 
-  // If user has a custom avatar border with image, render it differently
   if (border && border.imageUrl) {
     return (
       <View style={[styles.avatarWithBorderContainer, { width: size, height: size }]}>
-        {/* Border Image */}
         <Image 
           source={{ uri: border.imageUrl }}
           style={[
@@ -110,7 +125,6 @@ export const AvatarWithBorder: React.FC<AvatarWithBorderProps> = ({
           ]}
           resizeMode="contain"
         />
-        {/* Avatar */}
         <View style={[
           styles.avatarInnerContainer,
           {
@@ -148,7 +162,6 @@ export const AvatarWithBorder: React.FC<AvatarWithBorderProps> = ({
     );
   }
 
-  // Default border rendering (solid color)
   return (
     <View style={[
       styles.avatarContainer,
@@ -209,7 +222,7 @@ export const UserDisplayName: React.FC<UserDisplayNameProps> = ({
     small: { displayName: 14, username: 12 },
     medium: { displayName: 16, username: 14 },
     large: { displayName: 18, username: 16 }
-  };
+  } as const;
 
   const getVerificationBadge = () => {
     if (userType === 'official') {
@@ -305,6 +318,7 @@ const styles = StyleSheet.create({
   displayNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   displayName: {
     fontWeight: '700' as const,
@@ -312,7 +326,7 @@ const styles = StyleSheet.create({
   },
   username: {
     color: '#6B7280',
-    marginTop: 2,
+    marginTop: 0,
   },
   verificationBadge: {
     marginLeft: 4,

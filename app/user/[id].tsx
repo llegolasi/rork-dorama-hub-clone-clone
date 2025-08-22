@@ -185,6 +185,7 @@ const UserProfileScreen = () => {
                 imageUri={userProfile?.profile_image}
                 size={40}
                 userType={userProfile?.user_type as UserType || 'normal'}
+                showBorder={false}
                 border={userProfile?.current_avatar_border_id ? {
                   id: userProfile.current_avatar_border_id,
                   name: 'Border',
@@ -240,6 +241,7 @@ const UserProfileScreen = () => {
             imageUri={userProfile?.profile_image}
             size={40}
             userType={userProfile?.user_type as UserType || 'normal'}
+            showBorder={false}
             border={userProfile?.current_avatar_border_id ? {
               id: userProfile.current_avatar_border_id,
               name: 'Border',
@@ -369,6 +371,7 @@ const UserProfileScreen = () => {
                 imageUri={userProfile.profile_image}
                 size={80}
                 userType={userProfile.user_type as UserType || 'normal'}
+                showBorder={false}
                 border={userProfile.current_avatar_border_id ? {
                   id: userProfile.current_avatar_border_id,
                   name: 'Border',
@@ -564,8 +567,6 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: 'hidden',
-    borderWidth: 4,
-    borderColor: COLORS.background,
     marginRight: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -587,12 +588,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 2,
+    marginBottom: 0,
   },
   username: {
     fontSize: 16,
     color: COLORS.textSecondary,
-    marginBottom: 12,
+    marginTop: 2,
+    marginBottom: 8,
   },
   socialStats: {
     flexDirection: 'row',

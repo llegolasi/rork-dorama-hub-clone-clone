@@ -334,6 +334,7 @@ const CommunityScreen = () => {
                 imageUri={post.users?.profile_image}
                 size={40}
                 userType={post.users?.user_type as UserType || 'normal'}
+                showBorder={false}
                 border={post.users?.current_avatar_border_id ? {
                   id: post.users.current_avatar_border_id,
                   name: 'Border',
@@ -415,6 +416,7 @@ const CommunityScreen = () => {
             imageUri={post.users?.profile_image}
             size={40}
             userType={post.users?.user_type as UserType || 'normal'}
+            showBorder={false}
             border={post.users?.current_avatar_border_id ? {
               id: post.users.current_avatar_border_id,
               name: 'Border',
