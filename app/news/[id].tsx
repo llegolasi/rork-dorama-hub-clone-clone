@@ -301,7 +301,7 @@ export default function NewsDetailScreen() {
         }} 
       />
       
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.container}>
         <InstagramStyleComments 
           articleId={post.id} 
           renderContent={() => (

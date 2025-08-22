@@ -285,7 +285,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingBottom: 32,
-    paddingTop: 12,
   },
   titleSection: {
     padding: 16,
