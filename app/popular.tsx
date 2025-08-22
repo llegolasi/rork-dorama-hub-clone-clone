@@ -1,35 +1,58 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { FlatList, StyleSheet, Text, View, ActivityIndicator, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { COLORS } from '@/constants/colors';
 import { getPopularDramas } from '@/services/api';
 import DramaCard from '@/components/DramaCard';
-import { Drama } from '@/types/drama';
+import { Drama, DramaResponse } from '@/types/drama';
 import { getResponsiveCardDimensions } from '@/constants/utils';
 
 export default function PopularScreen() {
-  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   
   // Calcular dimensões responsivas
   const { numColumns, cardWidth, itemPadding } = useMemo(() => getResponsiveCardDimensions('medium'), []);
 
-  const popularQuery = useQuery({
-    queryKey: ['popular-dramas-full'],
-    queryFn: getPopularDramas,
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch
+  } = useInfiniteQuery<DramaResponse, Error>({
+    queryKey: ['popular-dramas-infinite'],
+    queryFn: ({ pageParam = 1 }) => getPopularDramas(pageParam as number),
+    getNextPageParam: (lastPage: DramaResponse) => {
+      if (lastPage.page < lastPage.total_pages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
     retry: 3,
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000,
   });
 
+  // Flatten all pages data
+  const allDramas = useMemo(() => {
+    return data?.pages.flatMap((page: DramaResponse) => page.results) || [];
+  }, [data]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    await popularQuery.refetch();
+    await refetch();
     setRefreshing(false);
   };
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderDrama = ({ item }: { item: Drama }) => (
     <View style={[styles.dramaContainer, { padding: itemPadding }]}>
@@ -50,6 +73,17 @@ export default function PopularScreen() {
     </View>
   );
 
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={COLORS.accent} />
+        <Text style={styles.footerText}>Carregando mais...</Text>
+      </View>
+    );
+  };
+
   return (
     <>
       <Stack.Screen 
@@ -61,16 +95,18 @@ export default function PopularScreen() {
           headerTintColor: COLORS.text,
           headerTitleStyle: {
             fontWeight: '700',
+            fontSize: 20,
           },
+          headerShadowVisible: false,
         }} 
       />
       
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {popularQuery.isLoading ? (
+      <View style={styles.container}>
+        {isLoading ? (
           renderLoading()
         ) : (
           <FlatList
-            data={popularQuery.data || []}
+            data={allDramas}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderDrama}
             numColumns={numColumns}
@@ -79,6 +115,9 @@ export default function PopularScreen() {
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={renderEmpty}
+            ListFooterComponent={renderFooter}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.3}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -132,5 +171,14 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 16,
     textAlign: 'center',
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  footerText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginTop: 8,
   },
 });
