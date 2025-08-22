@@ -15,6 +15,7 @@ import ProfileCustomization from "@/components/ProfileCustomization";
 import UserStatsDisplay from "@/components/UserStatsDisplay";
 import CoverPhotoModal from "@/components/CoverPhotoModal";
 import PremiumCoverModal from "@/components/PremiumCoverModal";
+import { ProfileSkeleton } from "@/components/SkeletonLoader";
 import { ACHIEVEMENTS } from "@/constants/achievements";
 
 import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures } from "@/types/user";
@@ -123,11 +124,7 @@ export default function ProfileScreen() {
   const [currentBorder, setCurrentBorder] = useState('default');
   
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-      </View>
-    );
+    return <ProfileSkeleton />;
   }
 
 
@@ -457,7 +454,7 @@ export default function ProfileScreen() {
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
           </View>
           
-          {/* Camera icon for all users */}
+          {/* Camera icon - only show for own profile */}
           <View style={styles.cameraIconContainer}>
             <View style={styles.cameraIcon}>
               <Camera size={20} color="white" />

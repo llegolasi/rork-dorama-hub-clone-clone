@@ -204,6 +204,88 @@ export function HeaderSkeleton() {
   );
 }
 
+export function ProfileSkeleton() {
+  return (
+    <View style={styles.profileSkeletonContainer}>
+      {/* Cover Photo Skeleton */}
+      <View style={styles.profileCoverSkeleton}>
+        <SkeletonLoader width="100%" height={280} borderRadius={0} />
+      </View>
+      
+      {/* Profile Info Skeleton */}
+      <View style={styles.profileInfoSkeleton}>
+        <View style={styles.profileHeaderSkeleton}>
+          <View style={styles.profileImageSkeleton}>
+            <SkeletonLoader width={80} height={80} borderRadius={40} />
+          </View>
+          <View style={styles.profileDetailsSkeleton}>
+            <SkeletonLoader width={150} height={20} style={{ marginBottom: 8 }} />
+            <SkeletonLoader width={120} height={16} style={{ marginBottom: 12 }} />
+            <View style={styles.profileStatsSkeleton}>
+              <View style={styles.profileStatSkeleton}>
+                <SkeletonLoader width={40} height={18} style={{ marginBottom: 4 }} />
+                <SkeletonLoader width={60} height={12} />
+              </View>
+              <View style={styles.profileStatSkeleton}>
+                <SkeletonLoader width={40} height={18} style={{ marginBottom: 4 }} />
+                <SkeletonLoader width={60} height={12} />
+              </View>
+            </View>
+          </View>
+        </View>
+        
+        {/* Bio Skeleton */}
+        <SkeletonLoader width="90%" height={16} style={{ marginBottom: 8 }} />
+        <SkeletonLoader width="70%" height={16} style={{ marginBottom: 16 }} />
+        
+        {/* Action Button Skeleton */}
+        <SkeletonLoader width="100%" height={40} borderRadius={8} style={{ marginBottom: 20 }} />
+      </View>
+      
+      {/* Stats Component Skeleton */}
+      <View style={styles.profileStatsSectionSkeleton}>
+        <SkeletonLoader width={200} height={20} style={{ marginBottom: 16, marginHorizontal: 20 }} />
+        <View style={styles.profileStatsGridSkeleton}>
+          {[1, 2, 3, 4].map((item) => (
+            <View key={item} style={styles.profileStatsCardSkeleton}>
+              <SkeletonLoader width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} />
+              <SkeletonLoader width={60} height={16} style={{ marginBottom: 4 }} />
+              <SkeletonLoader width={80} height={12} />
+            </View>
+          ))}
+        </View>
+      </View>
+      
+      {/* Tabs Skeleton */}
+      <View style={styles.profileTabsSkeleton}>
+        <SkeletonLoader width={120} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+        <SkeletonLoader width={140} height={40} borderRadius={20} />
+      </View>
+      
+      {/* Content Skeleton */}
+      <View style={styles.profileContentSkeleton}>
+        {[1, 2, 3].map((item) => (
+          <View key={item} style={styles.profilePostSkeleton}>
+            <View style={styles.profilePostHeaderSkeleton}>
+              <SkeletonLoader width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+              <View style={styles.profilePostUserSkeleton}>
+                <SkeletonLoader width={100} height={16} style={{ marginBottom: 4 }} />
+                <SkeletonLoader width={80} height={12} />
+              </View>
+            </View>
+            <SkeletonLoader width="100%" height={16} style={{ marginBottom: 8 }} />
+            <SkeletonLoader width="80%" height={16} style={{ marginBottom: 12 }} />
+            <View style={styles.profilePostActionsSkeleton}>
+              <SkeletonLoader width={60} height={16} style={{ marginRight: 16 }} />
+              <SkeletonLoader width={60} height={16} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
@@ -338,5 +420,79 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
+  },
+  profileSkeletonContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  profileCoverSkeleton: {
+    height: 280,
+    width: '100%',
+  },
+  profileInfoSkeleton: {
+    padding: 20,
+    marginTop: -80,
+    zIndex: 10,
+  },
+  profileHeaderSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  profileImageSkeleton: {
+    marginRight: 16,
+  },
+  profileDetailsSkeleton: {
+    flex: 1,
+  },
+  profileStatsSkeleton: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  profileStatSkeleton: {
+    alignItems: 'center',
+  },
+  profileStatsSectionSkeleton: {
+    marginBottom: 20,
+  },
+  profileStatsGridSkeleton: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+  },
+  profileStatsCardSkeleton: {
+    width: (screenWidth - 60) / 2 - 8,
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  profileTabsSkeleton: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  profileContentSkeleton: {
+    paddingHorizontal: 16,
+  },
+  profilePostSkeleton: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  profilePostHeaderSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  profilePostUserSkeleton: {
+    flex: 1,
+  },
+  profilePostActionsSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

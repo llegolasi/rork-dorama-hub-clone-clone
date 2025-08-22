@@ -17,14 +17,14 @@ import {
   UserPlus, 
   UserMinus,
   ArrowLeft,
-  Trophy,
-  Camera 
+  Trophy
 } from 'lucide-react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
 import { trpc } from '@/lib/trpc';
 import UserStatsDisplay from '@/components/UserStatsDisplay';
+import { ProfileSkeleton } from '@/components/SkeletonLoader';
 
 
 type TabType = 'posts' | 'dramas';
@@ -76,11 +76,7 @@ const UserProfileScreen = () => {
 
   
   if (profileLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-      </View>
-    );
+    return <ProfileSkeleton />;
   }
   
   if (!userProfile) {
@@ -331,12 +327,7 @@ const UserProfileScreen = () => {
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
           </View>
           
-          {/* Camera icon for visual indication */}
-          <View style={styles.cameraIconContainer}>
-            <View style={styles.cameraIcon}>
-              <Camera size={20} color="white" />
-            </View>
-          </View>
+          {/* Camera icon removed for other users' profiles */}
           
           {/* Back Button */}
           <TouchableOpacity 
@@ -994,19 +985,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  cameraIconContainer: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-  },
-  cameraIcon: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
 });
 
 export default UserProfileScreen;
