@@ -21,7 +21,6 @@ import { formatTimeAgo } from '@/constants/utils';
 import { trpc, trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 import { CommunitySkeleton } from '@/components/SkeletonLoader';
-import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
 
 type TabType = 'rankings' | 'publications' | 'following';
 type SortType = 'recent' | 'popular';
@@ -329,21 +328,14 @@ const CommunityScreen = () => {
               style={styles.userInfo}
               onPress={() => handleUserPress(post.user_id)}
             >
-              <AvatarWithBorder
-                imageUri={post.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face'}
-                size={40}
-                userType={post.users?.user_type || 'normal'}
-                border={post.users?.current_avatar_border}
+              <Image
+                source={{
+                  uri: post.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
+                }}
+                style={styles.userAvatar}
               />
               <View style={styles.userDetails}>
-                <UserDisplayName
-                  displayName={post.users?.display_name || 'Usuário'}
-                  username={post.users?.username || 'usuario'}
-                  userType={post.users?.user_type || 'normal'}
-                  badge={post.users?.current_badge}
-                  size="small"
-                  showUsername={false}
-                />
+                <Text style={styles.userName}>{post.users?.display_name}</Text>
                 <View style={styles.userMetaRow}>
                   <Text style={styles.userHandle}>@{post.users?.username}</Text>
                   <Text style={styles.timestampDot}>•</Text>
@@ -404,21 +396,14 @@ const CommunityScreen = () => {
           style={styles.userInfo}
           onPress={() => handleUserPress(post.user_id)}
         >
-          <AvatarWithBorder
-            imageUri={post.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face'}
-            size={40}
-            userType={post.users?.user_type || 'normal'}
-            border={post.users?.current_avatar_border}
+          <Image
+            source={{
+              uri: post.users?.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
+            }}
+            style={styles.userAvatar}
           />
           <View style={styles.userDetails}>
-            <UserDisplayName
-              displayName={post.users?.display_name || 'Usuário'}
-              username={post.users?.username || 'usuario'}
-              userType={post.users?.user_type || 'normal'}
-              badge={post.users?.current_badge}
-              size="small"
-              showUsername={false}
-            />
+            <Text style={styles.userName}>{post.users?.display_name}</Text>
             <View style={styles.userMetaRow}>
               <Text style={styles.userHandle}>@{post.users?.username}</Text>
               <Text style={styles.timestampDot}>•</Text>
