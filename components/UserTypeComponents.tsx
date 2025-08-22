@@ -68,6 +68,64 @@ export const AvatarWithBorder: React.FC<AvatarWithBorderProps> = ({
     }
   };
 
+  // If user has a custom avatar border with image, render it differently
+  if (border && border.imageUrl) {
+    return (
+      <View style={[styles.avatarWithBorderContainer, { width: size, height: size }]}>
+        {/* Border Image */}
+        <Image 
+          source={{ uri: border.imageUrl }}
+          style={[
+            styles.borderImage,
+            {
+              width: size,
+              height: size,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            }
+          ]}
+          resizeMode="contain"
+        />
+        {/* Avatar */}
+        <View style={[
+          styles.avatarInnerContainer,
+          {
+            width: innerSize,
+            height: innerSize,
+            borderRadius: innerSize / 2,
+          }
+        ]}>
+          {imageUri ? (
+            <Image 
+              source={{ uri: imageUri }} 
+              style={[
+                styles.avatar,
+                {
+                  width: innerSize,
+                  height: innerSize,
+                  borderRadius: innerSize / 2,
+                }
+              ]}
+            />
+          ) : (
+            <View style={[
+              styles.avatarPlaceholder,
+              {
+                width: innerSize,
+                height: innerSize,
+                borderRadius: innerSize / 2,
+              }
+            ]}>
+              <Text style={[styles.avatarPlaceholderText, { fontSize: innerSize * 0.4 }]}>👤</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // Default border rendering (solid color)
   return (
     <View style={[
       styles.avatarContainer,
@@ -187,6 +245,20 @@ const styles = StyleSheet.create({
   avatarContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarWithBorderContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  borderImage: {
+    zIndex: 2,
+  },
+  avatarInnerContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    zIndex: 1,
   },
   avatar: {
     resizeMode: 'cover' as const,
