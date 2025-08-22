@@ -179,7 +179,7 @@ export default function NewsScreen() {
         }} 
       />
       
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
         {newsQuery.isLoading ? (
           renderLoadingState()
         ) : (
@@ -189,10 +189,7 @@ export default function NewsScreen() {
             renderItem={renderNewsItem}
             ListHeaderComponent={renderHeader}
             ListEmptyComponent={renderEmptyState}
-            contentContainerStyle={[
-              styles.listContent,
-              { paddingTop: Platform.OS === 'android' ? insets.top + 16 : 0 }
-            ]}
+            contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl

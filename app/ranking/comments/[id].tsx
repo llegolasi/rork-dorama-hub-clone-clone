@@ -10,7 +10,6 @@ import {
   ActionSheetIOS,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Heart, MessageCircle, MoreVertical } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '@/constants/colors';
@@ -22,7 +21,6 @@ import InstagramStyleComments from '@/components/InstagramStyleComments';
 
 export default function RankingCommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
   // Fetch ranking details
@@ -105,10 +103,7 @@ export default function RankingCommentsScreen() {
 
 
   return (
-    <View style={[
-      styles.container,
-      Platform.OS === 'android' && { paddingTop: insets.top }
-    ]}>
+    <View style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Comentários',
