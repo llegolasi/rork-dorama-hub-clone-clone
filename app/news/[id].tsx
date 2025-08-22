@@ -70,6 +70,7 @@ export default function NewsDetailScreen() {
             headerTintColor: COLORS.text,
             headerTitleStyle: {
               fontWeight: '700',
+              marginTop: 20,
             },
           }} 
         />
@@ -92,6 +93,7 @@ export default function NewsDetailScreen() {
             headerTintColor: COLORS.text,
             headerTitleStyle: {
               fontWeight: '700',
+              marginTop: 20,
             },
           }} 
         />
@@ -297,6 +299,7 @@ export default function NewsDetailScreen() {
           headerTintColor: COLORS.text,
           headerTitleStyle: {
             fontWeight: '700',
+            marginTop: 20,
           },
         }} 
       />

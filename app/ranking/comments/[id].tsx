@@ -107,8 +107,13 @@ export default function RankingCommentsScreen() {
       <Stack.Screen
         options={{
           title: 'Comentários',
-          headerStyle: { backgroundColor: COLORS.background },
+          headerStyle: { 
+            backgroundColor: COLORS.background
+          },
           headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            marginTop: 20
+          },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <ArrowLeft color={COLORS.text} size={24} />

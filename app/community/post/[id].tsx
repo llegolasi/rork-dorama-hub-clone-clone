@@ -130,8 +130,13 @@ const PostDetailScreen = () => {
       <Stack.Screen
         options={{
           title: 'Publicação',
-          headerStyle: { backgroundColor: COLORS.background },
+          headerStyle: { 
+            backgroundColor: COLORS.background
+          },
           headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            marginTop: 20
+          },
         }}
       />
 
