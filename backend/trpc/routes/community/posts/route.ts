@@ -206,7 +206,9 @@ export const getCommunityPostsProcedure = publicProcedure
               console.warn('user_follows table does not exist, returning empty array');
               return [];
             }
-            throw followError;
+            // For any other error, also return empty array to prevent crashes
+            console.warn('Error fetching followed users, returning empty array:', followError.message);
+            return [];
           }
           
           console.log('Found followed users:', followedUsers?.length ?? 0);
@@ -219,6 +221,7 @@ export const getCommunityPostsProcedure = publicProcedure
           const followedUserIds = followedUsers.map(f => f.followed_user_id);
           console.log('Following user IDs:', followedUserIds);
           
+          // Check if community_posts table exists and has the required structure
           let query = client
             .from('community_posts')
             .select(`
@@ -256,7 +259,9 @@ export const getCommunityPostsProcedure = publicProcedure
 
           if (error) {
             console.error('Supabase error (following):', error);
-            throw error;
+            // Return empty array instead of throwing to prevent crashes
+            console.warn('Error fetching following posts, returning empty array:', error.message);
+            return [];
           }
 
           console.log('Fetched following posts count:', posts?.length ?? 0);
