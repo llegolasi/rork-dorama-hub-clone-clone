@@ -84,8 +84,9 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   useEffect(() => {
     const keyboardWillShow = (event: any) => {
       if (Platform.OS === 'android') {
-        // On Android, use a smaller offset to prevent input from going too high
-        const androidKeyboardHeight = Math.max(event.endCoordinates.height - 50, 0);
+        // On Android, adjust the keyboard height to position input correctly
+        // Use the full keyboard height but account for safe area
+        const androidKeyboardHeight = event.endCoordinates.height;
         setKeyboardHeight(androidKeyboardHeight);
       } else {
         // iOS behavior remains the same
@@ -693,8 +694,10 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
         style={[
           styles.fixedInputContainer,
           {
-            bottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom,
-            paddingBottom: Platform.OS === 'android' ? 12 : 8,
+            bottom: keyboardHeight > 0 
+              ? (Platform.OS === 'android' ? keyboardHeight - insets.bottom : keyboardHeight)
+              : insets.bottom,
+            paddingBottom: Platform.OS === 'android' ? 8 : 8,
           }
         ]}
       >
