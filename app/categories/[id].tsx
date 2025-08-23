@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { COLORS } from "@/constants/colors";
 import { getDramasByGenre, getTopRatedDramas, getLatestDramas, getTrendingDramasWithPagination } from "@/services/api";
@@ -34,6 +35,7 @@ const GENRES = [
 
 export default function CategoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
   
   const categoryId = id as string;
   
@@ -106,8 +108,13 @@ export default function CategoryScreen() {
   };
   
   return (
-    <View style={styles.container} testID="category-screen">
-      <Stack.Screen options={{ title }} />
+    <View style={[styles.container, { paddingTop: insets.top }]} testID="category-screen">
+      <Stack.Screen options={{ 
+        title,
+        headerStyle: { backgroundColor: COLORS.background },
+        headerTintColor: COLORS.text,
+        headerShadowVisible: false
+      }} />
       
       {isLoading ? (
         <View style={styles.loadingContainer}>

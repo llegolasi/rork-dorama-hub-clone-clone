@@ -176,6 +176,7 @@ export default function NewsScreen() {
           headerTitleStyle: {
             fontWeight: '700',
           },
+          headerShadowVisible: false,
         }} 
       />
       

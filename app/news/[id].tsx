@@ -70,8 +70,8 @@ export default function NewsDetailScreen() {
             headerTintColor: COLORS.text,
             headerTitleStyle: {
               fontWeight: '700',
-              marginTop: 20,
             },
+            headerShadowVisible: false,
           }} 
         />
         <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
@@ -93,8 +93,8 @@ export default function NewsDetailScreen() {
             headerTintColor: COLORS.text,
             headerTitleStyle: {
               fontWeight: '700',
-              marginTop: 20,
             },
+            headerShadowVisible: false,
           }} 
         />
         <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
@@ -299,8 +299,8 @@ export default function NewsDetailScreen() {
           headerTintColor: COLORS.text,
           headerTitleStyle: {
             fontWeight: '700',
-            marginTop: 20,
           },
+          headerShadowVisible: false,
         }} 
       />
       

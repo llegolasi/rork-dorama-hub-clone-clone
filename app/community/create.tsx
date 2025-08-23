@@ -123,6 +123,7 @@ const CreatePostScreen = () => {
           title: 'Nova Publicação',
           headerStyle: { backgroundColor: COLORS.background },
           headerTintColor: COLORS.text,
+          headerShadowVisible: false,
           headerRight: () => (
             <TouchableOpacity
               style={[styles.submitButton, !content.trim() && styles.submitButtonDisabled]}

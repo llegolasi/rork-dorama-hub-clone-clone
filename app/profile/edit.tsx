@@ -19,12 +19,14 @@ import {
 } from 'lucide-react-native';
 import { router, Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 
 const EditProfileScreen = () => {
   const { user, updateProfile } = useAuth();
+  const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState<string>('');
   const [bio, setBio] = useState<string>('');
   const [profileImage, setProfileImage] = useState<string>('');
@@ -131,14 +133,16 @@ const EditProfileScreen = () => {
       <Stack.Screen
         options={{
           title: 'Editar Perfil',
-          headerStyle: { backgroundColor: COLORS.background },
+          headerStyle: { 
+            backgroundColor: COLORS.background
+          },
           headerTintColor: COLORS.text,
+          headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <ArrowLeft size={24} color={COLORS.text} />
             </TouchableOpacity>
           ),
-
         }}
       />
       

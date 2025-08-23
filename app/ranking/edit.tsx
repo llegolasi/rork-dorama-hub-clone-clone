@@ -164,7 +164,13 @@ const RankingEditScreen = () => {
       await saveRankingMutation.mutateAsync({
         title: rankingTitle,
         description: '',
-        dramaIds: selectedDramas.map(item => item.drama.id),
+        items: selectedDramas.map((item) => ({
+          dramaId: item.drama.id,
+          dramaTitle: item.drama.name,
+          posterImage: item.drama.poster_path ? `https://image.tmdb.org/t/p/w500${item.drama.poster_path}` : null,
+          coverImage: null,
+          dramaYear: item.drama.first_air_date ? new Date(item.drama.first_air_date).getFullYear() : null,
+        })),
         isPublic: true
       });
     } catch (error) {
@@ -257,6 +263,9 @@ const RankingEditScreen = () => {
       <Stack.Screen
         options={{
           title: 'Editar Ranking',
+          headerStyle: { backgroundColor: COLORS.background },
+          headerTintColor: COLORS.text,
+          headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <ArrowLeft size={24} color={COLORS.text} />

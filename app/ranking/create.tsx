@@ -175,6 +175,9 @@ export default function RankingCreateScreen() {
       <Stack.Screen
         options={{
           title: 'Criar Ranking',
+          headerStyle: { backgroundColor: COLORS.background },
+          headerTintColor: COLORS.text,
+          headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} testID="back-button">
               <ArrowLeft size={24} color={COLORS.text} />
