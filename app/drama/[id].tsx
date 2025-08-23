@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { Image } from "expo-image";
+
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, Star, Play } from "lucide-react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -50,12 +50,17 @@ export default function DramaDetailScreen() {
     { enabled: !!dramaId }
   );
   
-  // Os dados de credits, providers, images e videos já vêm junto com o drama do cache
+  // Os dados de credits, images e videos já vêm junto com o drama do cache
   const credits = drama ? { cast: drama.cast || [] } : null;
-  const providers = null; // Será implementado no cache posteriormente
   const images = drama?.images || null;
   const videos = drama?.videos || null;
   const isLoadingCredits = isLoadingDrama;
+  
+  // Buscar streaming providers
+  const { data: providers, isLoading: isLoadingProviders } = trpc.dramas.getProviders.useQuery(
+    { id: dramaId },
+    { enabled: !!dramaId }
+  );
   
 
 
@@ -163,34 +168,34 @@ export default function DramaDetailScreen() {
   
   const mainCast = credits?.cast.slice(0, 10) || [];
   
-  // Get streaming providers for Brazil (BR) - temporariamente desabilitado
-  const streamingProviders: any[] = [];
+
   
   const renderStreamingSection = () => {
-    if (!streamingProviders || streamingProviders.length === 0) {
+    if (isLoadingProviders) {
       return (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Onde Assistir</Text>
           <View style={styles.streamingContainer}>
-            <View style={styles.streamingPlatform}>
-              <View style={styles.netflixLogo}>
-                <Text style={styles.netflixText}>N</Text>
-              </View>
-              <Text style={styles.platformName}>Netflix</Text>
-            </View>
-            
-            <View style={styles.streamingPlatform}>
-              <View style={styles.vikiBadge}>
-                <Text style={styles.vikiText}>V</Text>
-              </View>
-              <Text style={styles.platformName}>Viki</Text>
-            </View>
-            
-            <View style={styles.streamingPlatform}>
-              <View style={styles.wetVBadge}>
-                <Text style={styles.wetVText}>W</Text>
-              </View>
-              <Text style={styles.platformName}>WeTV</Text>
+            <ActivityIndicator size="small" color={COLORS.accent} />
+          </View>
+        </View>
+      );
+    }
+    
+    // Combinar todos os providers disponíveis
+    const allProviders = [
+      ...(providers?.flatrate || []),
+      ...(providers?.rent || []),
+      ...(providers?.buy || [])
+    ];
+    
+    if (!providers || allProviders.length === 0) {
+      return (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Onde Assistir</Text>
+          <View style={styles.streamingContainer}>
+            <View style={styles.noProvidersContainer}>
+              <Text style={styles.noProvidersText}>Informações de streaming não disponíveis</Text>
             </View>
           </View>
         </View>
@@ -200,18 +205,69 @@ export default function DramaDetailScreen() {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Onde Assistir</Text>
-        <View style={styles.streamingContainer}>
-          {streamingProviders.slice(0, 4).map((provider: any) => (
-            <View key={provider.provider_id} style={styles.streamingPlatform}>
-              <Image
-                source={{ uri: `https://image.tmdb.org/t/p/w92${provider.logo_path}` }}
-                style={styles.providerLogo}
-                contentFit="contain"
-              />
-              <Text style={styles.platformName}>{provider.provider_name}</Text>
+        {providers.country && (
+          <Text style={styles.countryText}>Disponível em: {providers.country === 'BR' ? 'Brasil' : providers.country}</Text>
+        )}
+        
+        {providers.flatrate && providers.flatrate.length > 0 && (
+          <View style={styles.providerSection}>
+            <Text style={styles.providerTypeTitle}>Streaming</Text>
+            <View style={styles.streamingContainer}>
+              {providers.flatrate.slice(0, 6).map((provider: any) => (
+                <View key={provider.provider_id} style={styles.streamingPlatform}>
+                  <OptimizedImage
+                    source={{ uri: `https://image.tmdb.org/t/p/w92${provider.logo_path}` }}
+                    style={styles.providerLogo}
+                    contentFit="contain"
+                    priority="low"
+                    cachePolicy="disk"
+                  />
+                  <Text style={styles.platformName} numberOfLines={2}>{provider.provider_name}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </View>
+        )}
+        
+        {providers.rent && providers.rent.length > 0 && (
+          <View style={styles.providerSection}>
+            <Text style={styles.providerTypeTitle}>Aluguel</Text>
+            <View style={styles.streamingContainer}>
+              {providers.rent.slice(0, 4).map((provider: any) => (
+                <View key={provider.provider_id} style={styles.streamingPlatform}>
+                  <OptimizedImage
+                    source={{ uri: `https://image.tmdb.org/t/p/w92${provider.logo_path}` }}
+                    style={styles.providerLogo}
+                    contentFit="contain"
+                    priority="low"
+                    cachePolicy="disk"
+                  />
+                  <Text style={styles.platformName} numberOfLines={2}>{provider.provider_name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+        
+        {providers.buy && providers.buy.length > 0 && (
+          <View style={styles.providerSection}>
+            <Text style={styles.providerTypeTitle}>Compra</Text>
+            <View style={styles.streamingContainer}>
+              {providers.buy.slice(0, 4).map((provider: any) => (
+                <View key={provider.provider_id} style={styles.streamingPlatform}>
+                  <OptimizedImage
+                    source={{ uri: `https://image.tmdb.org/t/p/w92${provider.logo_path}` }}
+                    style={styles.providerLogo}
+                    contentFit="contain"
+                    priority="low"
+                    cachePolicy="disk"
+                  />
+                  <Text style={styles.platformName} numberOfLines={2}>{provider.provider_name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </View>
     );
   };
@@ -721,37 +777,50 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 20,
   },
-  streamingLabel: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
   streamingContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 16,
   },
   streamingPlatform: {
     alignItems: "center",
-  },
-  netflixLogo: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: "#E50914",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  netflixText: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: "700",
+    width: 80,
   },
   platformName: {
     color: COLORS.text,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
+    textAlign: "center",
+    marginTop: 6,
+  },
+  providerLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+  },
+  countryText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  providerSection: {
+    marginBottom: 16,
+  },
+  providerTypeTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  noProvidersContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  noProvidersText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    textAlign: "center",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -783,40 +852,7 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     paddingRight: 8,
   },
-  vikiBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: "#00C9A7",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  vikiText: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  wetVBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: "#FF6B35",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  wetVText: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  providerLogo: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
+
   seasonsContainer: {
     flexDirection: 'row',
     paddingLeft: 20,

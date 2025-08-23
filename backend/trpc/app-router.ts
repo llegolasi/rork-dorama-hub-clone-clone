@@ -90,7 +90,8 @@ import {
   getPopularDramas,
   getTrendingDramas,
   syncSeriesCache,
-  cleanupCache
+  cleanupCache,
+  getDramaProviders
 } from "./routes/dramas/cache/route";
 
 export const appRouter = createTRPCRouter({
@@ -184,6 +185,7 @@ export const appRouter = createTRPCRouter({
     getTrending: getTrendingDramas,
     syncCache: syncSeriesCache,
     cleanupCache: cleanupCache,
+    getProviders: getDramaProviders,
   }),
 });
 

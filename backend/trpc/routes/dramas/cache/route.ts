@@ -981,3 +981,49 @@ export const cleanupCache = protectedProcedure
       throw new Error('Erro ao limpar cache');
     }
   });
+
+// Procedure para buscar streaming providers
+export const getDramaProviders = publicProcedure
+  .input(z.object({ id: z.number() }))
+  .query(async ({ input }: { input: { id: number } }) => {
+    const { id } = input;
+    
+    try {
+      console.log(`[PROVIDERS] Buscando providers para drama ${id}`);
+      
+      // Buscar providers do TMDb
+      const data = await fetchFromTMDb(`/tv/${id}/watch/providers`);
+      console.log(`[PROVIDERS] TMDb retornou providers:`, Object.keys(data.results || {}));
+      
+      // Focar no Brasil (BR) primeiro, depois outros países
+      const brProviders = data.results?.BR;
+      const usProviders = data.results?.US;
+      const providers = brProviders || usProviders || {};
+      
+      console.log(`[PROVIDERS] Providers encontrados:`, {
+        flatrate: providers.flatrate?.length || 0,
+        rent: providers.rent?.length || 0,
+        buy: providers.buy?.length || 0
+      });
+      
+      // Retornar providers organizados por tipo
+      return {
+        country: brProviders ? 'BR' : (usProviders ? 'US' : null),
+        flatrate: providers.flatrate || [], // Streaming (Netflix, Prime Video, etc.)
+        rent: providers.rent || [], // Aluguel
+        buy: providers.buy || [], // Compra
+        link: providers.link || null
+      };
+      
+    } catch (error) {
+      console.error(`[PROVIDERS] Erro ao buscar providers para drama ${id}:`, error);
+      // Retornar vazio em caso de erro
+      return {
+        country: null,
+        flatrate: [],
+        rent: [],
+        buy: [],
+        link: null
+      };
+    }
+  });
