@@ -133,7 +133,7 @@ export default function DiscoverScreen() {
         type: 'horizontal-list',
         title: '🔥 Principais da Netflix',
         data: netflixQuery.data || [],
-        viewAllRoute: null,
+        viewAllRoute: '/netflix',
         cardSize: 'medium',
       },
       {
@@ -141,7 +141,7 @@ export default function DiscoverScreen() {
         type: 'horizontal-list',
         title: '⭐ Principais da Viki',
         data: vikiQuery.data || [],
-        viewAllRoute: null,
+        viewAllRoute: '/viki',
         cardSize: 'medium',
       },
     ];
