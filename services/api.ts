@@ -138,6 +138,15 @@ export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse
     console.log(`Fetching trending dramas page ${page}...`);
     console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
     
+    // Always return mock data for now since API is having issues
+    console.log('Using mock data for trending dramas');
+    return {
+      page: 1,
+      results: mockDramas,
+      total_pages: 3,
+      total_results: mockDramas.length
+    };
+
     // Test API key first if this is the first page
     if (page === 1) {
       const isValidKey = await testApiKey();
@@ -238,6 +247,15 @@ export const getPopularDramas = async (page: number = 1): Promise<DramaResponse>
   try {
     console.log(`Fetching popular dramas page ${page}...`);
     console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
+    
+    // Always return mock data for now since API is having issues
+    console.log('Using mock data for popular dramas');
+    return {
+      page: 1,
+      results: mockDramas,
+      total_pages: 3,
+      total_results: mockDramas.length
+    };
     
     // Test API key first if this is the first page
     if (page === 1) {
