@@ -5,6 +5,7 @@ import { Drama, DramaCredits, DramaDetails, DramaResponse, DramaImages, DramaVid
 // Test API key validity
 const testApiKey = async (): Promise<boolean> => {
   try {
+    console.log('Testing TMDB API key...');
     const response = await fetch(
       `${TMDB_BASE_URL}/configuration`,
       {
@@ -14,9 +15,17 @@ const testApiKey = async (): Promise<boolean> => {
         }
       }
     );
-    return response.ok;
+    
+    if (response.ok) {
+      console.log('✅ TMDB API key is valid');
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.error(`❌ TMDB API key test failed: ${response.status} ${response.statusText}`, errorText);
+      return false;
+    }
   } catch (error) {
-    console.error('API key test failed:', error);
+    console.error('❌ TMDB API key test failed with error:', error);
     return false;
   }
 };
@@ -138,15 +147,6 @@ export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse
     console.log(`Fetching trending dramas page ${page}...`);
     console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
     
-    // Always return mock data for now since API is having issues
-    console.log('Using mock data for trending dramas');
-    return {
-      page: 1,
-      results: mockDramas,
-      total_pages: 3,
-      total_results: mockDramas.length
-    };
-
     // Test API key first if this is the first page
     if (page === 1) {
       const isValidKey = await testApiKey();
@@ -247,15 +247,6 @@ export const getPopularDramas = async (page: number = 1): Promise<DramaResponse>
   try {
     console.log(`Fetching popular dramas page ${page}...`);
     console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
-    
-    // Always return mock data for now since API is having issues
-    console.log('Using mock data for popular dramas');
-    return {
-      page: 1,
-      results: mockDramas,
-      total_pages: 3,
-      total_results: mockDramas.length
-    };
     
     // Test API key first if this is the first page
     if (page === 1) {
