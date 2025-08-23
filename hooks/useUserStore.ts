@@ -16,6 +16,10 @@ const initialUserProfile: UserProfile = {
   profileImage: '',
   followersCount: 0,
   followingCount: 0,
+  userType: 'normal',
+  isVerified: false,
+  dailySwipeLimit: 20,
+  isPremiumActive: false,
   lists: {
     watching: [],
     watchlist: [],
@@ -155,8 +159,14 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           displayName: userData.display_name,
           bio: userData.bio,
           profileImage: userData.profile_image,
+          userProfileCover: userData.user_profile_cover,
           followersCount: userData.followers_count || 0,
           followingCount: userData.following_count || 0,
+          userType: userData.user_type || 'normal',
+          isVerified: userData.is_verified || false,
+          verificationType: userData.verification_type,
+          dailySwipeLimit: userData.user_type === 'premium' ? 50 : 20,
+          isPremiumActive: userData.user_type === 'premium',
           lists,
           rankings,
           achievements: [],
@@ -166,7 +176,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
             monthlyWatchTime: {}
           },
           premium: {
-            isSubscribed: false,
+            isSubscribed: userData.user_type === 'premium',
             customReactions: false,
             advancedFilters: false,
             multipleRankings: false,
@@ -602,6 +612,9 @@ export const [UserContext, useUserStore] = createContextHook(() => {
 
   // Check if drama is in a specific list
   const isInList = (dramaId: number, listType: ListType): boolean => {
+    if (!userProfile?.lists?.[listType]) {
+      return false;
+    }
     const result = userProfile.lists[listType].some(item => item.dramaId === dramaId);
     console.log(`isInList - dramaId: ${dramaId}, listType: ${listType}, result: ${result}`);
     console.log(`isInList - ${listType} list:`, userProfile.lists[listType].map(item => item.dramaId));
@@ -610,6 +623,9 @@ export const [UserContext, useUserStore] = createContextHook(() => {
 
   // Get drama's current list (if any)
   const getCurrentList = (dramaId: number): ListType | null => {
+    if (!userProfile?.lists) {
+      return null;
+    }
     if (isInList(dramaId, "watching")) return "watching";
     if (isInList(dramaId, "watchlist")) return "watchlist";
     if (isInList(dramaId, "completed")) return "completed";
@@ -824,8 +840,14 @@ export const [UserContext, useUserStore] = createContextHook(() => {
         displayName: userData.display_name,
         bio: userData.bio,
         profileImage: userData.profile_image,
+        userProfileCover: userData.user_profile_cover,
         followersCount: userData.followers_count || 0,
         followingCount: userData.following_count || 0,
+        userType: userData.user_type || 'normal',
+        isVerified: userData.is_verified || false,
+        verificationType: userData.verification_type,
+        dailySwipeLimit: userData.user_type === 'premium' ? 50 : 20,
+        isPremiumActive: userData.user_type === 'premium',
         lists,
         rankings,
         achievements: [],
@@ -835,7 +857,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
           monthlyWatchTime: {}
         },
         premium: {
-          isSubscribed: false,
+          isSubscribed: userData.user_type === 'premium',
           customReactions: false,
           advancedFilters: false,
           multipleRankings: false,
@@ -867,7 +889,7 @@ export const [UserContext, useUserStore] = createContextHook(() => {
 export function useUserLists() {
   const { userProfile, addToList, removeFromList, updateProgress, isInList, getCurrentList, deleteUserReview, refreshUserProfile } = useUserStore();
   return {
-    lists: userProfile.lists,
+    lists: userProfile?.lists || { watching: [], watchlist: [], completed: [] },
     addToList,
     removeFromList,
     updateProgress,
@@ -881,7 +903,7 @@ export function useUserLists() {
 export function useUserRankings() {
   const { userProfile, updateRanking, removeFromRankings } = useUserStore();
   return {
-    rankings: userProfile.rankings,
+    rankings: userProfile?.rankings || [],
     updateRanking,
     removeFromRankings
   };
