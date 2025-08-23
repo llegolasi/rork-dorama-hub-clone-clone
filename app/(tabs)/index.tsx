@@ -8,7 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Play, Star, Users, Film, X, Bookmark, BookmarkCheck, Plus } from "lucide-react-native";
 
 import { COLORS } from "@/constants/colors";
-import { getPopularDramas, getTrendingDramas } from "@/services/api";
+import { getPopularDramas, getTrendingDramas, getNetflixDramas, getVikiDramas } from "@/services/api";
 import { TMDB_IMAGE_BASE_URL, BACKDROP_SIZE, POSTER_SIZE } from "@/constants/config";
 import HorizontalList from "@/components/HorizontalList";
 import UpcomingReleasesCard from "@/components/UpcomingReleasesCard";
@@ -52,15 +52,33 @@ export default function DiscoverScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const netflixQuery = useQuery({
+    queryKey: ["netflix-dramas"],
+    queryFn: getNetflixDramas,
+    retry: 3,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const vikiQuery = useQuery({
+    queryKey: ["viki-dramas"],
+    queryFn: getVikiDramas,
+    retry: 3,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const handleRefresh = useCallback(() => {
     trendingQuery.refetch();
     popularQuery.refetch();
+    netflixQuery.refetch();
+    vikiQuery.refetch();
     newsQuery.refetch();
-  }, [trendingQuery, popularQuery, newsQuery]);
+  }, [trendingQuery, popularQuery, netflixQuery, vikiQuery, newsQuery]);
 
-  const isLoading = trendingQuery.isLoading || popularQuery.isLoading;
-  const isRefreshing = trendingQuery.isFetching || popularQuery.isFetching;
-  const hasError = !!trendingQuery.error || !!popularQuery.error;
+  const isLoading = trendingQuery.isLoading || popularQuery.isLoading || netflixQuery.isLoading || vikiQuery.isLoading;
+  const isRefreshing = trendingQuery.isFetching || popularQuery.isFetching || netflixQuery.isFetching || vikiQuery.isFetching;
+  const hasError = !!trendingQuery.error || !!popularQuery.error || !!netflixQuery.error || !!vikiQuery.error;
 
   const featuredDrama = trendingQuery.data?.[0] || popularQuery.data?.[0];
 
@@ -76,6 +94,8 @@ export default function DiscoverScreen() {
         { id: 'upcoming-skeleton', type: 'upcoming-skeleton' },
         { id: 'trending-skeleton', type: 'horizontal-list-skeleton' },
         { id: 'popular-skeleton', type: 'horizontal-list-skeleton' },
+        { id: 'netflix-skeleton', type: 'horizontal-list-skeleton' },
+        { id: 'viki-skeleton', type: 'horizontal-list-skeleton' },
       ];
     }
     
@@ -108,8 +128,24 @@ export default function DiscoverScreen() {
         viewAllRoute: '/popular',
         cardSize: 'medium',
       },
+      {
+        id: 'netflix',
+        type: 'horizontal-list',
+        title: '🔥 Principais da Netflix',
+        data: netflixQuery.data || [],
+        viewAllRoute: null,
+        cardSize: 'medium',
+      },
+      {
+        id: 'viki',
+        type: 'horizontal-list',
+        title: '⭐ Principais da Viki',
+        data: vikiQuery.data || [],
+        viewAllRoute: null,
+        cardSize: 'medium',
+      },
     ];
-  }, [isLoading, hasError, trendingQuery.data, popularQuery.data]);
+  }, [isLoading, hasError, trendingQuery.data, popularQuery.data, netflixQuery.data, vikiQuery.data]);
 
   const handleAddToList = useCallback(async (listType: 'watchlist' | 'watching') => {
     if (!featuredDrama) return;

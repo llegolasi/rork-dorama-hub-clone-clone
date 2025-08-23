@@ -699,6 +699,105 @@ export const getUpcomingDramasPreview = async (): Promise<Drama[]> => {
   }
 };
 
+// Get top Netflix K-dramas sorted by rating
+export const getNetflixDramas = async (): Promise<Drama[]> => {
+  try {
+    console.log('Fetching top Netflix K-dramas...');
+    
+    // Netflix provider ID is 8
+    const response = await fetch(
+      `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&with_watch_providers=8&watch_region=BR&sort_by=vote_average.desc&vote_count.gte=50`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      console.error(`TMDB API error for Netflix dramas: ${response.status} ${response.statusText}`);
+      // Fallback to general Korean dramas with high ratings
+      return getTopRatedDramas().then(data => data.results.slice(0, 10));
+    }
+    
+    const data = await response.json() as DramaResponse;
+    console.log(`TMDB returned ${data.results?.length || 0} Netflix results`);
+    
+    const filteredResults = filterKoreanDramas(data.results || []);
+    console.log(`Filtered to ${filteredResults.length} Netflix Korean dramas`);
+    
+    // If no results, use fallback
+    if (filteredResults.length === 0) {
+      console.log('No Netflix Korean dramas found, using top rated as fallback');
+      const fallback = await getTopRatedDramas();
+      return fallback.results.slice(0, 10);
+    }
+    
+    return filteredResults.slice(0, 10);
+  } catch (error) {
+    console.error('Error fetching Netflix dramas:', error);
+    // Fallback to top rated dramas
+    try {
+      const fallback = await getTopRatedDramas();
+      return fallback.results.slice(0, 10);
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      return mockDramas.slice(0, 3);
+    }
+  }
+};
+
+// Get top Viki K-dramas sorted by rating
+export const getVikiDramas = async (): Promise<Drama[]> => {
+  try {
+    console.log('Fetching top Viki K-dramas...');
+    
+    // Since Viki might not be in TMDB providers, we'll get highly rated Korean dramas
+    // and filter by those that are likely on Viki (recent, popular Korean content)
+    const response = await fetch(
+      `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=vote_average.desc&vote_count.gte=30&first_air_date.gte=2018-01-01`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      console.error(`TMDB API error for Viki dramas: ${response.status} ${response.statusText}`);
+      // Fallback to general Korean dramas with high ratings
+      return getTopRatedDramas().then(data => data.results.slice(0, 10));
+    }
+    
+    const data = await response.json() as DramaResponse;
+    console.log(`TMDB returned ${data.results?.length || 0} Viki-style results`);
+    
+    const filteredResults = filterKoreanDramas(data.results || []);
+    console.log(`Filtered to ${filteredResults.length} Viki-style Korean dramas`);
+    
+    // If no results, use fallback
+    if (filteredResults.length === 0) {
+      console.log('No Viki-style Korean dramas found, using top rated as fallback');
+      const fallback = await getTopRatedDramas();
+      return fallback.results.slice(0, 10);
+    }
+    
+    return filteredResults.slice(0, 10);
+  } catch (error) {
+    console.error('Error fetching Viki dramas:', error);
+    // Fallback to top rated dramas
+    try {
+      const fallback = await getTopRatedDramas();
+      return fallback.results.slice(0, 10);
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      return mockDramas.slice(0, 3);
+    }
+  }
+};
+
 // Calculate total runtime for a drama (all seasons and episodes)
 export const calculateDramaTotalRuntime = async (seriesId: number): Promise<number> => {
   try {
