@@ -1,37 +1,61 @@
-import React, { useState, useCallback } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View, Platform } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, View, Platform, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { COLORS } from '@/constants/colors';
 import { getVikiDramas } from '@/services/api';
 import DramaCard from '@/components/DramaCard';
-import { Drama } from '@/types/drama';
+import { Drama, DramaResponse } from '@/types/drama';
+import { getResponsiveCardDimensions } from '@/constants/utils';
 
 export default function VikiScreen() {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  
+  // Calcular dimensões responsivas
+  const { numColumns, cardWidth, itemPadding } = useMemo(() => getResponsiveCardDimensions('medium'), []);
 
-  const vikiQuery = useQuery({
+  const vikiQuery = useInfiniteQuery<DramaResponse, Error>({
     queryKey: ['viki-dramas-full'],
-    queryFn: getVikiDramas,
+    queryFn: ({ pageParam = 1 }) => getVikiDramas(pageParam as number),
+    getNextPageParam: (lastPage: DramaResponse) => {
+      if (lastPage.page < lastPage.total_pages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
     retry: 3,
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data, isLoading, isFetching, isFetchingNextPage, hasNextPage, refetch, fetchNextPage } = vikiQuery;
+
+  // Flatten all pages into a single array
+  const allDramas = useMemo(() => {
+    return data?.pages.flatMap((page: DramaResponse) => page.results) || [];
+  }, [data]);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await vikiQuery.refetch();
+    await refetch();
     setRefreshing(false);
-  }, [vikiQuery.refetch]);
+  }, [refetch]);
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderDrama = useCallback(({ item }: { item: Drama }) => (
-    <View style={styles.dramaContainer}>
-      <DramaCard drama={item} size="medium" />
+    <View style={[styles.dramaContainer, { padding: itemPadding }]}>
+      <DramaCard drama={item} size="medium" width={cardWidth} />
     </View>
-  ), []);
+  ), [itemPadding, cardWidth]);
 
   const renderHeader = useCallback(() => (
     <View style={styles.header}>
@@ -72,16 +96,30 @@ export default function VikiScreen() {
           styles.content,
           { paddingTop: 16, paddingBottom: insets.bottom + 24 }
         ]}
-        data={vikiQuery.data || []}
+        data={allDramas}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderDrama}
         ListHeaderComponent={renderHeader}
-        ListEmptyComponent={!vikiQuery.isLoading ? renderEmpty : null}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
+        ListEmptyComponent={!isLoading ? renderEmpty : null}
+        ListFooterComponent={() => {
+          if (isFetchingNextPage) {
+            return (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator size="small" color={COLORS.accent} />
+                <Text style={styles.loadingMoreText}>Carregando mais...</Text>
+              </View>
+            );
+          }
+          return null;
+        }}
+        numColumns={numColumns}
+        key={numColumns}
+        columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing || vikiQuery.isFetching}
+            refreshing={refreshing || isFetching}
             onRefresh={handleRefresh}
             tintColor={COLORS.accent}
             colors={[COLORS.accent]}
@@ -128,7 +166,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dramaContainer: {
-    width: '48%',
+    // padding será definido dinamicamente
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingMoreText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginLeft: 8,
   },
   emptyContainer: {
     flex: 1,

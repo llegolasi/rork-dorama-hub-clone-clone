@@ -699,16 +699,16 @@ export const getUpcomingDramasPreview = async (): Promise<Drama[]> => {
   }
 };
 
-// Get top Netflix K-dramas sorted by rating
-export const getNetflixDramas = async (): Promise<Drama[]> => {
+// Get top Netflix K-dramas sorted by rating with pagination
+export const getNetflixDramas = async (page: number = 1): Promise<DramaResponse> => {
   try {
-    console.log('Fetching top Netflix K-dramas...');
+    console.log(`Fetching Netflix K-dramas page ${page}...`);
     
     // Try multiple approaches to get Netflix content
-    const [netflixResponse, popularResponse] = await Promise.all([
+    const [netflixResponse, popularResponse, recentResponse] = await Promise.all([
       // Netflix provider ID is 8
       fetch(
-        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&with_watch_providers=8&watch_region=BR&sort_by=vote_average.desc&vote_count.gte=30`,
+        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&with_watch_providers=8&watch_region=BR&sort_by=vote_average.desc&vote_count.gte=30&page=${page}`,
         {
           headers: {
             'Authorization': `Bearer ${TMDB_API_KEY}`,
@@ -716,9 +716,19 @@ export const getNetflixDramas = async (): Promise<Drama[]> => {
           }
         }
       ),
-      // Fallback: Popular Korean dramas (likely on Netflix)
+      // Popular recent Korean dramas (likely on Netflix)
       fetch(
-        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&vote_count.gte=100&first_air_date.gte=2020-01-01`,
+        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&vote_count.gte=50&first_air_date.gte=2020-01-01&page=${page}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${TMDB_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      ),
+      // High-rated recent dramas
+      fetch(
+        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=vote_average.desc&vote_count.gte=100&first_air_date.gte=2019-01-01&page=${page}`,
         {
           headers: {
             'Authorization': `Bearer ${TMDB_API_KEY}`,
@@ -729,58 +739,103 @@ export const getNetflixDramas = async (): Promise<Drama[]> => {
     ]);
     
     let results: Drama[] = [];
+    let totalPages = 1;
+    let totalResults = 0;
     
     // Try Netflix provider results first
     if (netflixResponse.ok) {
       const netflixData = await netflixResponse.json() as DramaResponse;
       console.log(`TMDB returned ${netflixData.results?.length || 0} Netflix provider results`);
-      results = filterKoreanDramas(netflixData.results || []);
+      const filtered = filterKoreanDramas(netflixData.results || []);
+      results = [...results, ...filtered];
+      totalPages = Math.max(totalPages, netflixData.total_pages || 1);
+      totalResults = Math.max(totalResults, netflixData.total_results || 0);
     }
     
-    // If not enough Netflix results, supplement with popular dramas
-    if (results.length < 8 && popularResponse.ok) {
+    // Add popular recent dramas
+    if (popularResponse.ok) {
       const popularData = await popularResponse.json() as DramaResponse;
       const popularFiltered = filterKoreanDramas(popularData.results || []);
       
-      // Add popular dramas that aren't already in results
+      // Add dramas that aren't already in results
       const existingIds = new Set(results.map(d => d.id));
       const additionalDramas = popularFiltered.filter(d => !existingIds.has(d.id));
       results = [...results, ...additionalDramas];
+      totalPages = Math.max(totalPages, popularData.total_pages || 1);
+      totalResults = Math.max(totalResults, popularData.total_results || 0);
+    }
+    
+    // Add high-rated recent dramas
+    if (recentResponse.ok) {
+      const recentData = await recentResponse.json() as DramaResponse;
+      const recentFiltered = filterKoreanDramas(recentData.results || []);
+      
+      // Add dramas that aren't already in results
+      const existingIds = new Set(results.map(d => d.id));
+      const additionalRecent = recentFiltered.filter(d => !existingIds.has(d.id));
+      results = [...results, ...additionalRecent];
+      totalPages = Math.max(totalPages, recentData.total_pages || 1);
+      totalResults = Math.max(totalResults, recentData.total_results || 0);
     }
     
     console.log(`Final Netflix results: ${results.length} dramas`);
     
-    // If still no results, use fallback
+    // If no results, use fallback
     if (results.length === 0) {
       console.log('No Netflix Korean dramas found, using top rated as fallback');
-      const fallback = await getTopRatedDramas();
-      return fallback.results.slice(0, 10);
+      const fallback = await getTopRatedDramas(page);
+      return {
+        page,
+        results: fallback.results.slice(0, 20),
+        total_pages: fallback.total_pages,
+        total_results: fallback.total_results
+      };
     }
     
-    return results.slice(0, 10);
+    // Sort by vote_average descending and limit to 20 per page
+    const sortedResults = results
+      .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
+      .slice(0, 20);
+    
+    return {
+      page,
+      results: sortedResults,
+      total_pages: totalPages,
+      total_results: totalResults
+    };
   } catch (error) {
     console.error('Error fetching Netflix dramas:', error);
     // Fallback to top rated dramas
     try {
-      const fallback = await getTopRatedDramas();
-      return fallback.results.slice(0, 10);
+      const fallback = await getTopRatedDramas(page);
+      return {
+        page,
+        results: fallback.results.slice(0, 20),
+        total_pages: fallback.total_pages,
+        total_results: fallback.total_results
+      };
     } catch (fallbackError) {
       console.error('Fallback also failed:', fallbackError);
-      return mockDramas.slice(0, 3);
+      return {
+        page,
+        results: mockDramas.slice(0, 3),
+        total_pages: 1,
+        total_results: 3
+      };
     }
   }
 };
 
-// Get top Viki K-dramas sorted by rating
-export const getVikiDramas = async (): Promise<Drama[]> => {
+// Get top Viki K-dramas sorted by rating with pagination
+export const getVikiDramas = async (page: number = 1): Promise<DramaResponse> => {
   try {
-    console.log('Fetching top Viki K-dramas...');
+    console.log(`Fetching Viki K-dramas page ${page}...`);
     
-    // Try multiple approaches to get diverse Viki-style content
-    const [recentResponse, classicResponse] = await Promise.all([
-      // Recent highly-rated Korean dramas (typical Viki content)
+    // Viki focuses on romance, melodrama, and classic Korean content
+    const [romanceResponse, classicResponse, melodramaResponse] = await Promise.all([
+      // Romance Korean dramas (Viki's specialty)
       fetch(
-        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=vote_average.desc&vote_count.gte=50&first_air_date.gte=2019-01-01&first_air_date.lte=2023-12-31`,
+        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&with_genres=10749&sort_by=vote_average.desc&vote_count.gte=30&page=${page}`,
         {
           headers: {
             'Authorization': `Bearer ${TMDB_API_KEY}`,
@@ -788,9 +843,19 @@ export const getVikiDramas = async (): Promise<Drama[]> => {
           }
         }
       ),
-      // Classic/older Korean dramas (also common on Viki)
+      // Classic/older Korean dramas (2010-2020, common on Viki)
       fetch(
-        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=vote_average.desc&vote_count.gte=80&first_air_date.gte=2015-01-01&first_air_date.lte=2019-12-31`,
+        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=vote_average.desc&vote_count.gte=50&first_air_date.gte=2010-01-01&first_air_date.lte=2020-12-31&page=${page}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${TMDB_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      ),
+      // Drama/Melodrama genre (Viki's other specialty)
+      fetch(
+        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&with_genres=18&sort_by=vote_average.desc&vote_count.gte=40&page=${page}`,
         {
           headers: {
             'Authorization': `Bearer ${TMDB_API_KEY}`,
@@ -801,33 +866,54 @@ export const getVikiDramas = async (): Promise<Drama[]> => {
     ]);
     
     let results: Drama[] = [];
+    let totalPages = 1;
+    let totalResults = 0;
     
-    // Combine recent and classic results
-    if (recentResponse.ok) {
-      const recentData = await recentResponse.json() as DramaResponse;
-      console.log(`TMDB returned ${recentData.results?.length || 0} recent Viki-style results`);
-      const recentFiltered = filterKoreanDramas(recentData.results || []);
-      results = [...results, ...recentFiltered.slice(0, 6)];
+    // Combine romance results
+    if (romanceResponse.ok) {
+      const romanceData = await romanceResponse.json() as DramaResponse;
+      console.log(`TMDB returned ${romanceData.results?.length || 0} romance Viki results`);
+      const romanceFiltered = filterKoreanDramas(romanceData.results || []);
+      results = [...results, ...romanceFiltered];
+      totalPages = Math.max(totalPages, romanceData.total_pages || 1);
+      totalResults = Math.max(totalResults, romanceData.total_results || 0);
     }
     
+    // Add classic dramas
     if (classicResponse.ok) {
       const classicData = await classicResponse.json() as DramaResponse;
-      console.log(`TMDB returned ${classicData.results?.length || 0} classic Viki-style results`);
+      console.log(`TMDB returned ${classicData.results?.length || 0} classic Viki results`);
       const classicFiltered = filterKoreanDramas(classicData.results || []);
       
       // Add classic dramas that aren't already in results
       const existingIds = new Set(results.map(d => d.id));
-      const additionalClassics = classicFiltered.filter(d => !existingIds.has(d.id)).slice(0, 4);
+      const additionalClassics = classicFiltered.filter(d => !existingIds.has(d.id));
       results = [...results, ...additionalClassics];
+      totalPages = Math.max(totalPages, classicData.total_pages || 1);
+      totalResults = Math.max(totalResults, classicData.total_results || 0);
+    }
+    
+    // Add melodrama results
+    if (melodramaResponse.ok) {
+      const melodramaData = await melodramaResponse.json() as DramaResponse;
+      console.log(`TMDB returned ${melodramaData.results?.length || 0} melodrama Viki results`);
+      const melodramaFiltered = filterKoreanDramas(melodramaData.results || []);
+      
+      // Add melodrama that aren't already in results
+      const existingIds = new Set(results.map(d => d.id));
+      const additionalMelodrama = melodramaFiltered.filter(d => !existingIds.has(d.id));
+      results = [...results, ...additionalMelodrama];
+      totalPages = Math.max(totalPages, melodramaData.total_pages || 1);
+      totalResults = Math.max(totalResults, melodramaData.total_results || 0);
     }
     
     console.log(`Final Viki results: ${results.length} dramas`);
     
-    // If no results, use fallback with different criteria than Netflix
+    // If no results, use fallback with romance/melodrama focus
     if (results.length === 0) {
       console.log('No Viki-style Korean dramas found, using romance/melodrama fallback');
       const fallback = await fetch(
-        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&with_genres=18,10749&sort_by=vote_average.desc&vote_count.gte=30`,
+        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&with_genres=18,10749&sort_by=vote_average.desc&vote_count.gte=20&page=${page}`,
         {
           headers: {
             'Authorization': `Bearer ${TMDB_API_KEY}`,
@@ -838,24 +924,62 @@ export const getVikiDramas = async (): Promise<Drama[]> => {
       
       if (fallback.ok) {
         const fallbackData = await fallback.json() as DramaResponse;
-        return filterKoreanDramas(fallbackData.results || []).slice(0, 10);
+        const fallbackFiltered = filterKoreanDramas(fallbackData.results || []);
+        return {
+          page,
+          results: fallbackFiltered.slice(0, 20),
+          total_pages: fallbackData.total_pages || 1,
+          total_results: fallbackData.total_results || 0
+        };
       }
       
       // Last resort fallback
-      const lastResort = await getTopRatedDramas();
-      return lastResort.results.slice(5, 15); // Different slice than Netflix
+      const lastResort = await getTopRatedDramas(page);
+      return {
+        page,
+        results: lastResort.results.slice(0, 20),
+        total_pages: lastResort.total_pages,
+        total_results: lastResort.total_results
+      };
     }
     
-    return results.slice(0, 10);
+    // Sort by vote_average descending and limit to 20 per page
+    // Prioritize older dramas (Viki's strength) by giving slight boost to pre-2021 content
+    const sortedResults = results
+      .sort((a, b) => {
+        const aYear = a.first_air_date ? new Date(a.first_air_date).getFullYear() : 2025;
+        const bYear = b.first_air_date ? new Date(b.first_air_date).getFullYear() : 2025;
+        const aBoost = aYear <= 2020 ? 0.2 : 0; // Boost for classic content
+        const bBoost = bYear <= 2020 ? 0.2 : 0;
+        return ((b.vote_average || 0) + bBoost) - ((a.vote_average || 0) + aBoost);
+      })
+      .slice(0, 20);
+    
+    return {
+      page,
+      results: sortedResults,
+      total_pages: totalPages,
+      total_results: totalResults
+    };
   } catch (error) {
     console.error('Error fetching Viki dramas:', error);
     // Fallback to different slice of top rated dramas than Netflix
     try {
-      const fallback = await getTopRatedDramas();
-      return fallback.results.slice(5, 15); // Different range than Netflix
+      const fallback = await getTopRatedDramas(page);
+      return {
+        page,
+        results: fallback.results.slice(0, 20),
+        total_pages: fallback.total_pages,
+        total_results: fallback.total_results
+      };
     } catch (fallbackError) {
       console.error('Fallback also failed:', fallbackError);
-      return mockDramas.slice(1, 4); // Different slice of mock data
+      return {
+        page,
+        results: mockDramas.slice(1, 4),
+        total_pages: 1,
+        total_results: 3
+      };
     }
   }
 };

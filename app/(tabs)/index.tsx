@@ -54,7 +54,7 @@ export default function DiscoverScreen() {
 
   const netflixQuery = useQuery({
     queryKey: ["netflix-dramas"],
-    queryFn: getNetflixDramas,
+    queryFn: () => getNetflixDramas(1),
     retry: 3,
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000,
@@ -62,7 +62,7 @@ export default function DiscoverScreen() {
 
   const vikiQuery = useQuery({
     queryKey: ["viki-dramas"],
-    queryFn: getVikiDramas,
+    queryFn: () => getVikiDramas(1),
     retry: 3,
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000,
@@ -132,7 +132,7 @@ export default function DiscoverScreen() {
         id: 'netflix',
         type: 'horizontal-list',
         title: '🔥 Principais da Netflix',
-        data: netflixQuery.data || [],
+        data: netflixQuery.data?.results || [],
         viewAllRoute: '/netflix',
         cardSize: 'medium',
       },
@@ -140,7 +140,7 @@ export default function DiscoverScreen() {
         id: 'viki',
         type: 'horizontal-list',
         title: '⭐ Principais da Viki',
-        data: vikiQuery.data || [],
+        data: vikiQuery.data?.results || [],
         viewAllRoute: '/viki',
         cardSize: 'medium',
       },
