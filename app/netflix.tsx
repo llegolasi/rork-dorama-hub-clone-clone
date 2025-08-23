@@ -34,9 +34,14 @@ export default function NetflixScreen() {
 
   const { data, isLoading, isFetching, isFetchingNextPage, hasNextPage, refetch, fetchNextPage } = netflixQuery;
 
-  // Flatten all pages into a single array
+  // Flatten all pages into a single array and deduplicate
   const allDramas = useMemo(() => {
-    return data?.pages.flatMap((page: DramaResponse) => page.results) || [];
+    const flattened = data?.pages.flatMap((page: DramaResponse) => page.results) || [];
+    // Remove duplicates based on ID
+    const uniqueDramas = flattened.filter((drama, index, self) => 
+      drama && drama.id && index === self.findIndex(d => d && d.id === drama.id)
+    );
+    return uniqueDramas;
   }, [data]);
 
   const handleRefresh = useCallback(async () => {
@@ -97,7 +102,7 @@ export default function NetflixScreen() {
           { paddingTop: 16, paddingBottom: insets.bottom + 24 }
         ]}
         data={allDramas}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => item?.id ? `netflix-${item.id}` : `netflix-fallback-${index}`}
         renderItem={renderDrama}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={!isLoading ? renderEmpty : null}
