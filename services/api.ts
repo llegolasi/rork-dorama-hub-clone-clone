@@ -192,16 +192,20 @@ export const getPopularDramas = async (): Promise<Drama[]> => {
   }
 };
 
-// Get drama details by ID with retry logic
+// Get drama details by ID with improved retry logic
 export const getDramaDetails = async (id: number, retryCount: number = 0): Promise<DramaDetails> => {
-  const maxRetries = 2;
+  const maxRetries = 3;
   
   try {
     console.log(`getDramaDetails called with ID: ${id} (attempt ${retryCount + 1})`);
     
-    // Create AbortController with generous timeout
+    // Create AbortController with progressive timeout (longer for retries)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    const timeoutDuration = 10000 + (retryCount * 5000); // 10s, 15s, 20s, 25s
+    const timeoutId = setTimeout(() => {
+      console.log(`Timeout triggered for drama ${id} after ${timeoutDuration}ms`);
+      controller.abort();
+    }, timeoutDuration);
     
     const response = await fetch(
       `${TMDB_BASE_URL}/tv/${id}?language=pt-BR`,
@@ -234,12 +238,22 @@ export const getDramaDetails = async (id: number, retryCount: number = 0): Promi
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn(`Request timeout for drama ${id} (attempt ${retryCount + 1})`);
       
-      // Retry without timeout if we haven't exceeded max retries
+      // Retry if we haven't exceeded max retries
       if (retryCount < maxRetries) {
-        console.log(`Retrying drama ${id} without timeout...`);
+        console.log(`Retrying drama ${id} in ${1000 * (retryCount + 1)}ms...`);
         await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Progressive delay
         return getDramaDetails(id, retryCount + 1);
+      } else {
+        console.error(`Max retries exceeded for drama ${id}. Giving up.`);
+        throw new Error(`Request timeout after ${maxRetries + 1} attempts`);
       }
+    }
+    
+    // For other errors, retry once if it's the first attempt
+    if (retryCount === 0 && error instanceof Error) {
+      console.log(`Non-timeout error for drama ${id}, retrying once:`, error.message);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return getDramaDetails(id, retryCount + 1);
     }
     
     console.error(`Error fetching drama details for ID ${id} (attempt ${retryCount + 1}):`, error);
@@ -984,7 +998,7 @@ export const getVikiDramas = async (page: number = 1): Promise<DramaResponse> =>
   }
 };
 
-// Calculate total runtime for a drama (all seasons and episodes)
+// Calculate total runtime for a drama (all seasons and episodes) with better error handling
 export const calculateDramaTotalRuntime = async (seriesId: number): Promise<number> => {
   try {
     console.log(`Calculating total runtime for series ID: ${seriesId}`);
@@ -1050,7 +1064,15 @@ export const calculateDramaTotalRuntime = async (seriesId: number): Promise<numb
   } catch (error) {
     console.error(`Error calculating detailed runtime for series ${seriesId}:`, error);
     
-    // Fallback: estimate based on series details or defaults
+    // Improved fallback: don't call getDramaDetails again if it already failed
+    if (error instanceof Error && (error.message.includes('timeout') || error.message.includes('AbortError'))) {
+      console.log('Using default estimation due to timeout/abort error');
+      const defaultRuntime = 16 * 60; // 16 episodes * 60 minutes
+      console.log(`Using default estimation for timeout: ${defaultRuntime} minutes`);
+      return defaultRuntime;
+    }
+    
+    // For other errors, try fallback with series details
     try {
       const seriesDetails = await getDramaDetails(seriesId);
       const totalEpisodes = seriesDetails.number_of_episodes || 16;
