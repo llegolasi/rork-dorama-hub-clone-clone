@@ -2,35 +2,7 @@ import { TMDB_API_KEY, TMDB_BASE_URL } from "@/constants/config";
 import { ActorCredits, ActorDetails } from "@/types/actor";
 import { Drama, DramaCredits, DramaDetails, DramaResponse, DramaImages, DramaVideos, SeasonDetails } from "@/types/drama";
 
-// Test API key validity
-const testApiKey = async (): Promise<boolean> => {
-  try {
-    console.log('Testing TMDB API key...');
-    const response = await fetch(
-      `${TMDB_BASE_URL}/configuration`,
-      {
-        headers: {
-          'Authorization': `Bearer ${TMDB_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    if (response.ok) {
-      console.log('✅ TMDB API key is valid');
-      return true;
-    } else {
-      const errorText = await response.text();
-      console.error(`❌ TMDB API key test failed: ${response.status} ${response.statusText}`, errorText);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ TMDB API key test failed with error:', error);
-    return false;
-  }
-};
-
-// Enhanced mock data for fallback when API fails
+// Mock data for fallback when API fails
 const mockDramas: Drama[] = [
   {
     id: 1,
@@ -73,48 +45,6 @@ const mockDramas: Drama[] = [
     popularity: 876.543,
     genre_ids: [18, 27, 10759],
     origin_country: ["KR"]
-  },
-  {
-    id: 4,
-    name: "Vincenzo",
-    original_name: "빈센조",
-    overview: "An Italian lawyer and Mafia consigliere moves his operations to South Korea.",
-    poster_path: "/dvXJgEDQXhL9Ouot2WkBHpQiHGd.jpg",
-    backdrop_path: "/h7dZpJkBY9JCTKlTMc5IIIKLbkS.jpg",
-    first_air_date: "2021-02-20",
-    vote_average: 8.4,
-    vote_count: 1567,
-    popularity: 1890.234,
-    genre_ids: [18, 35, 80],
-    origin_country: ["KR"]
-  },
-  {
-    id: 5,
-    name: "Hotel del Luna",
-    original_name: "호텔 델루나",
-    overview: "When he's invited to manage a hotel for dead souls, an elite hotelier gets to know the establishment's ancient owner and her strange world.",
-    poster_path: "/q1bRGvnh8fB1dCjhbNjJvOVEqNa.jpg",
-    backdrop_path: "/3H8ZyPpHjHvKNNBKlGkKhQVKhxL.jpg",
-    first_air_date: "2019-07-13",
-    vote_average: 8.1,
-    vote_count: 892,
-    popularity: 1456.789,
-    genre_ids: [18, 14, 10749],
-    origin_country: ["KR"]
-  },
-  {
-    id: 6,
-    name: "Goblin",
-    original_name: "도깨비",
-    overview: "In his quest to find his bride to break his immortal curse, Dokkaebi, a 939-year-old guardian of souls, meets a grim reaper and a sprightly student with a tragic past.",
-    poster_path: "/rN6oPTl2dIOSNbOx6qOgVKPeNMu.jpg",
-    backdrop_path: "/qGWKKKNqpgK4q6itZKs7SxVNRgR.jpg",
-    first_air_date: "2016-12-02",
-    vote_average: 8.6,
-    vote_count: 2134,
-    popularity: 2345.678,
-    genre_ids: [18, 14, 10749],
-    origin_country: ["KR"]
   }
 ];
 
@@ -141,28 +71,13 @@ const filterKoreanDramas = (dramas: Drama[]): Drama[] => {
   });
 };
 
-// Get trending K-dramas with pagination
-export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse> => {
+// Get trending K-dramas
+export const getTrendingDramas = async (): Promise<Drama[]> => {
   try {
-    console.log(`Fetching trending dramas page ${page}...`);
-    console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
-    
-    // Test API key first if this is the first page
-    if (page === 1) {
-      const isValidKey = await testApiKey();
-      if (!isValidKey) {
-        console.warn('API key appears to be invalid, using mock data');
-        return {
-          page: 1,
-          results: mockDramas,
-          total_pages: 3,
-          total_results: mockDramas.length
-        };
-      }
-    }
+    console.log('Fetching trending dramas (primary: trending/day)...');
 
     const trendingRes = await fetch(
-      `${TMDB_BASE_URL}/trending/tv/day?language=pt-BR&page=${page}`,
+      `${TMDB_BASE_URL}/trending/tv/day?language=pt-BR`,
       {
         headers: {
           'Authorization': `Bearer ${TMDB_API_KEY}`,
@@ -171,99 +86,78 @@ export const getTrendingDramas = async (page: number = 1): Promise<DramaResponse
       }
     );
 
+    let trendingResults: Drama[] = [];
     if (trendingRes.ok) {
       const data = await trendingRes.json() as DramaResponse;
-      console.log(`TMDB returned ${data.results?.length || 0} trending results for page ${page}`);
-      data.results = filterKoreanDramas(data.results || []);
-      console.log(`After KR filter: ${data.results.length}`);
-      return data;
+      console.log(`TMDB returned ${data.results?.length || 0} trending/day results`);
+      trendingResults = filterKoreanDramas(data.results || []);
+      console.log(`After KR filter: ${trendingResults.length}`);
     } else {
-      const errorText = await trendingRes.text();
-      console.error(`TMDB trending error: ${trendingRes.status}`, errorText);
-      
-      // Fallback to discover endpoint
-      console.log('Trying fallback discover endpoint...');
-      const discoverRes = await fetch(
-        `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=${page}`,
-        {
+      console.error(`TMDB trending error: ${trendingRes.status} ${trendingRes.statusText}`);
+    }
+
+    // If too few items, backfill with discover endpoints scoped to KR and KO
+    let backfillResults: Drama[] = [];
+    if (!trendingResults || trendingResults.length < 10) {
+      console.log('Backfilling trending with discover endpoints...');
+
+      const [discoverOriginRes, discoverLangRes] = await Promise.all([
+        fetch(`${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=1`, {
           headers: {
             'Authorization': `Bearer ${TMDB_API_KEY}`,
             'Content-Type': 'application/json'
           }
-        }
-      );
-      
-      if (discoverRes.ok) {
-        const data = await discoverRes.json() as DramaResponse;
-        data.results = filterKoreanDramas(data.results || []);
-        console.log(`Fallback successful: ${data.results.length} dramas`);
-        return data;
+        }),
+        fetch(`${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_original_language=ko&sort_by=popularity.desc&page=1`, {
+          headers: {
+            'Authorization': `Bearer ${TMDB_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
+
+      if (discoverOriginRes.ok) {
+        const d = await discoverOriginRes.json() as DramaResponse;
+        backfillResults = backfillResults.concat(filterKoreanDramas(d.results || []));
       } else {
-        const fallbackError = await discoverRes.text();
-        console.error(`Fallback discover error: ${discoverRes.status}`, fallbackError);
+        console.error(`Discover (origin KR) error: ${discoverOriginRes.status} ${discoverOriginRes.statusText}`);
+      }
+
+      if (discoverLangRes.ok) {
+        const d2 = await discoverLangRes.json() as DramaResponse;
+        backfillResults = backfillResults.concat(filterKoreanDramas(d2.results || []));
+      } else {
+        console.error(`Discover (lang ko) error: ${discoverLangRes.status} ${discoverLangRes.statusText}`);
       }
     }
 
-    // Return mock data for first page only
-    if (page === 1) {
-      console.log('Using mock data as fallback');
-      return {
-        page: 1,
-        results: mockDramas,
-        total_pages: 1,
-        total_results: mockDramas.length
-      };
+    // Deduplicate and limit
+    const byId: Record<number, Drama> = {};
+    [...(trendingResults || []), ...(backfillResults || [])].forEach((item) => {
+      if (item && typeof item.id === 'number') byId[item.id] = item;
+    });
+    const merged = Object.values(byId).slice(0, 20);
+
+    if (merged.length === 0) {
+      console.log('No results after merge, using mock data');
+      return mockDramas;
     }
-    
-    return {
-      page,
-      results: [],
-      total_pages: 1,
-      total_results: 0
-    };
+
+    console.log(`Trending final count: ${merged.length}`);
+    return merged;
   } catch (error) {
     console.error('Error fetching trending dramas:', error);
-    if (page === 1) {
-      console.log('Using mock data as fallback due to error');
-      return {
-        page: 1,
-        results: mockDramas,
-        total_pages: 1,
-        total_results: mockDramas.length
-      };
-    }
-    
-    return {
-      page,
-      results: [],
-      total_pages: 1,
-      total_results: 0
-    };
+    console.log('Using mock data as fallback due to error');
+    return mockDramas;
   }
 };
 
-// Get popular K-dramas with pagination
-export const getPopularDramas = async (page: number = 1): Promise<DramaResponse> => {
+// Get popular K-dramas
+export const getPopularDramas = async (): Promise<Drama[]> => {
   try {
-    console.log(`Fetching popular dramas page ${page}...`);
-    console.log(`Using API key: ${TMDB_API_KEY ? 'Present' : 'Missing'}`);
-    
-    // Test API key first if this is the first page
-    if (page === 1) {
-      const isValidKey = await testApiKey();
-      if (!isValidKey) {
-        console.warn('API key appears to be invalid, using mock data');
-        return {
-          page: 1,
-          results: mockDramas,
-          total_pages: 3,
-          total_results: mockDramas.length
-        };
-      }
-    }
-    
+    console.log('Fetching popular dramas...');
     const response = await fetch(
-      `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=${page}`,
+      `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc`,
       {
         headers: {
           'Authorization': `Bearer ${TMDB_API_KEY}`,
@@ -273,64 +167,28 @@ export const getPopularDramas = async (page: number = 1): Promise<DramaResponse>
     );
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`TMDB API error: ${response.status}`, errorText);
-      
-      if (page === 1) {
-        console.log('Using mock data as fallback for popular dramas');
-        return {
-          page: 1,
-          results: mockDramas,
-          total_pages: 1,
-          total_results: mockDramas.length
-        };
-      }
-      
-      return {
-        page,
-        results: [],
-        total_pages: 1,
-        total_results: 0
-      };
+      console.error(`TMDB API error: ${response.status} ${response.statusText}`);
+      console.log('Using mock data as fallback for popular dramas');
+      return mockDramas;
     }
     
     const data = await response.json() as DramaResponse;
-    console.log(`TMDB returned ${data.results?.length || 0} popular results for page ${page}`);
+    console.log(`TMDB returned ${data.results?.length || 0} popular results`);
     
-    data.results = filterKoreanDramas(data.results || []);
-    console.log(`Filtered to ${data.results.length} Korean dramas`);
+    const filteredResults = filterKoreanDramas(data.results || []);
+    console.log(`Filtered to ${filteredResults.length} Korean dramas`);
     
-    // If no Korean dramas found on first page, use mock data
-    if (data.results.length === 0 && page === 1) {
+    // If no Korean dramas found, use mock data
+    if (filteredResults.length === 0) {
       console.log('No Korean dramas found, using mock data');
-      return {
-        page: 1,
-        results: mockDramas,
-        total_pages: 1,
-        total_results: mockDramas.length
-      };
+      return mockDramas;
     }
     
-    return data;
+    return filteredResults;
   } catch (error) {
     console.error("Error fetching popular dramas:", error);
-    
-    if (page === 1) {
-      console.log('Using mock data as fallback due to error');
-      return {
-        page: 1,
-        results: mockDramas,
-        total_pages: 1,
-        total_results: mockDramas.length
-      };
-    }
-    
-    return {
-      page,
-      results: [],
-      total_pages: 1,
-      total_results: 0
-    };
+    console.log('Using mock data as fallback due to error');
+    return mockDramas;
   }
 };
 
@@ -713,11 +571,11 @@ export const getSeasonDetails = async (seriesId: number, seasonNumber: number): 
 export const getRandomDrama = async (): Promise<Drama> => {
   try {
     // First get a list of popular dramas
-    const response = await getPopularDramas();
+    const dramas = await getPopularDramas();
     
     // Select a random drama from the list
-    const randomIndex = Math.floor(Math.random() * response.results.length);
-    return response.results[randomIndex];
+    const randomIndex = Math.floor(Math.random() * dramas.length);
+    return dramas[randomIndex];
   } catch (error) {
     console.error("Error getting random drama:", error);
     throw error;
