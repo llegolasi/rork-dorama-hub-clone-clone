@@ -3,23 +3,14 @@ import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import { supabase } from "@/lib/supabase";
+import { getApiBaseUrl } from "@/constants/config";
 
 export const trpc = createTRPCReact<AppRouter>();
-
-const getBaseUrl = (): string => {
-  if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
-  }
-  if (typeof window !== 'undefined') {
-    return '';
-  }
-  return 'http://localhost:3000';
-};
 
 export const trpcClient = trpc.createClient({
   links: [
     httpLink({
-      url: `${getBaseUrl()}/api/trpc`,
+      url: `${getApiBaseUrl()}/api/trpc`,
       transformer: superjson,
       headers: async () => {
         try {
