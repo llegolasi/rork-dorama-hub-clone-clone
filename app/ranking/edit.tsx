@@ -201,7 +201,7 @@ const RankingEditScreen = () => {
           {item.drama.name}
         </Text>
         <Text style={styles.dramaYear}>
-          {new Date(item.drama.first_air_date).getFullYear()}
+          {item.drama.first_air_date ? new Date(item.drama.first_air_date).getFullYear() : '—'}
         </Text>
       </View>
       
@@ -245,7 +245,7 @@ const RankingEditScreen = () => {
           {drama.name}
         </Text>
         <Text style={styles.availableYear}>
-          {new Date(drama.first_air_date).getFullYear()}
+          {drama.first_air_date ? new Date(drama.first_air_date).getFullYear() : '—'}
         </Text>
       </View>
       
