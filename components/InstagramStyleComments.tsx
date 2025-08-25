@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { UserDisplayName } from '@/components/UserTypeComponents';
 import { UserType } from '@/types/user';
 import ReportCommentModal from '@/components/ReportCommentModal';
+import { router } from 'expo-router';
 
 
 
@@ -289,6 +290,15 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
     }
   };
 
+  const handleOpenProfile = (userId?: string) => {
+    if (!userId) return;
+    try {
+      router.push(`/user/${userId}`);
+    } catch (e) {
+      console.error('[InstagramComments] navigate to profile error', e);
+    }
+  };
+
   const handleReply = (comment: Comment) => {
     console.log('[InstagramComments] reply to', comment.id);
     setReplyTo(comment);
@@ -528,24 +538,28 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
       <View style={styles.commentItem} testID={`comment-${comment.id}`}>
         <View style={styles.commentHeader}>
           <View style={styles.commentUserInfo}>
-            {comment.avatar_url ? (
-              <Image source={{ uri: comment.avatar_url }} style={styles.commentAvatar} />
-            ) : (
-              <View style={styles.commentAvatarPlaceholder}>
-                <Text style={styles.commentAvatarText}>
-                  {(comment.full_name || comment.username || 'U')?.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
+            <TouchableOpacity onPress={() => handleOpenProfile(comment.user_id)} testID={`avatar-${comment.user_id}`}>
+              {comment.avatar_url ? (
+                <Image source={{ uri: comment.avatar_url }} style={styles.commentAvatar} />
+              ) : (
+                <View style={styles.commentAvatarPlaceholder}>
+                  <Text style={styles.commentAvatarText}>
+                    {(comment.full_name || comment.username || 'U')?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
             <View style={styles.commentContent}>
               <View style={styles.commentMeta}>
-                <UserDisplayName
-                  displayName={comment.full_name || comment.username || 'Usuário'}
-                  username={comment.username}
-                  userType={comment.user_type as UserType || 'normal'}
-                  size="small"
-                  showUsername={false}
-                />
+                <TouchableOpacity onPress={() => handleOpenProfile(comment.user_id)} testID={`name-${comment.user_id}`}>
+                  <UserDisplayName
+                    displayName={comment.full_name || comment.username || 'Usuário'}
+                    username={comment.username}
+                    userType={comment.user_type as UserType || 'normal'}
+                    size="small"
+                    showUsername={false}
+                  />
+                </TouchableOpacity>
                 <Text style={styles.commentTime}>{formatDate(comment.created_at)}</Text>
               </View>
               <Text style={styles.commentText}>{comment.content}</Text>
@@ -608,24 +622,28 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
                 <View key={reply.id} style={styles.replyItem} testID={`reply-${reply.id}`}>
                   <View style={styles.commentHeader}>
                     <View style={styles.commentUserInfo}>
-                      {reply.avatar_url ? (
-                        <Image source={{ uri: reply.avatar_url }} style={styles.commentAvatarSmall} />
-                      ) : (
-                        <View style={styles.commentAvatarPlaceholderSmall}>
-                          <Text style={styles.commentAvatarTextSmall}>
-                            {(reply.full_name || reply.username || 'U')?.charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                      )}
+                      <TouchableOpacity onPress={() => handleOpenProfile(reply.user_id)} testID={`avatar-${reply.user_id}`}>
+                        {reply.avatar_url ? (
+                          <Image source={{ uri: reply.avatar_url }} style={styles.commentAvatarSmall} />
+                        ) : (
+                          <View style={styles.commentAvatarPlaceholderSmall}>
+                            <Text style={styles.commentAvatarTextSmall}>
+                              {(reply.full_name || reply.username || 'U')?.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
                       <View style={styles.commentContent}>
                         <View style={styles.commentMeta}>
-                          <UserDisplayName
-                            displayName={reply.full_name || reply.username || 'Usuário'}
-                            username={reply.username}
-                            userType={reply.user_type as UserType || 'normal'}
-                            size="small"
-                            showUsername={false}
-                          />
+                          <TouchableOpacity onPress={() => handleOpenProfile(reply.user_id)} testID={`name-${reply.user_id}`}>
+                            <UserDisplayName
+                              displayName={reply.full_name || reply.username || 'Usuário'}
+                              username={reply.username}
+                              userType={reply.user_type as UserType || 'normal'}
+                              size="small"
+                              showUsername={false}
+                            />
+                          </TouchableOpacity>
                           <Text style={styles.commentTime}>{formatDate(reply.created_at)}</Text>
                         </View>
                         <Text style={styles.commentText}>{reply.content}</Text>
@@ -843,6 +861,7 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
             setCommentToReport(null);
           }}
           commentId={commentToReport.id}
+          commentType={type as 'news' | 'post' | 'ranking'}
           commentContent={commentToReport.content}
         />
       )}
