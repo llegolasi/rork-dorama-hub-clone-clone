@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   FlatList,
+  RefreshControl,
 } from 'react-native';
 
 import { Image } from 'expo-image';
@@ -35,16 +36,17 @@ const UserProfileScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabType>('posts');
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Fetch user profile from database
-  const { data: userProfileData, isLoading: profileLoading, refetch } = trpc.users.getUserProfile.useQuery({
+  const { data: userProfileData, isLoading: profileLoading, refetch: refetchProfile } = trpc.users.getUserProfile.useQuery({
     userId: id || ''
   }, {
     enabled: !!id
   });
   
   // Fetch user's community posts
-  const { data: userPosts = [], isLoading: postsLoading } = trpc.community.getPosts.useQuery({
+  const { data: userPosts = [], isLoading: postsLoading, refetch: refetchPosts } = trpc.community.getPosts.useQuery({
     type: 'all',
     limit: 20,
     offset: 0
@@ -56,17 +58,33 @@ const UserProfileScreen = () => {
   // Follow/unfollow mutation
   const followMutation = trpc.users.toggleFollowUser.useMutation({
     onSuccess: () => {
-      refetch();
+      refetchProfile();
     },
     onError: (error) => {
       console.error('Error toggling follow:', error);
     }
   });
+
+  // Pull to refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchProfile(),
+        refetchPosts(),
+        refetchDramas()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   
   const isFollowing = userProfileData?.user?.isFollowing || false;
 
   // Fetch completed dramas from database
-  const { data: completedDramas = [], isLoading: completedLoading } = trpc.users.getUserCompletedDramas.useQuery({
+  const { data: completedDramas = [], isLoading: completedLoading, refetch: refetchDramas } = trpc.users.getUserCompletedDramas.useQuery({
     userId: id || '',
     limit: 10,
     offset: 0
@@ -331,7 +349,18 @@ const UserProfileScreen = () => {
         }}
       />
       
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.accent}
+            colors={[COLORS.accent]}
+          />
+        }
+      >
         {/* Cover Photo Section */}
         <View style={styles.coverSection}>
           <Image
