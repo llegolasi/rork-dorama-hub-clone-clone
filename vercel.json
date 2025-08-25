@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "backend/hono.ts": {
-      "runtime": "vercel-nodejs@3"
+      "runtime": "nodejs20.x"
     }
   },
   "rewrites": [
