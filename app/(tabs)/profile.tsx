@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, ScrollView, Alert, FlatList } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, ScrollView, Alert, FlatList, RefreshControl } from "react-native";
 import { Image } from "expo-image";
 import { BookOpen, Check, Eye, Heart, MessageCircle, Edit3, Award, Crown, BarChart3, Settings, Menu, LogOut, Trophy, Camera, Plus } from "lucide-react-native";
 import { router, Stack, useFocusEffect } from "expo-router";
@@ -30,6 +30,9 @@ export default function ProfileScreen() {
   const [showMenu, setShowMenu] = useState(false);
   const [showCoverModal, setShowCoverModal] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [followersCount, setFollowersCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
   
   // Fetch user's community posts
   const { data: userPosts = [], isLoading: postsLoading, refetch: refetchPosts } = trpc.community.getPosts.useQuery({
@@ -59,6 +62,41 @@ export default function ProfileScreen() {
     enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
   });
   
+  // Get followers count
+  const { data: followers = [], refetch: refetchFollowers } = trpc.users.getUserFollowers.useQuery({
+    userId: userProfile?.id || '',
+    limit: 1,
+    offset: 0
+  }, {
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
+  });
+  
+  // Get following count
+  const { data: following = [], refetch: refetchFollowing } = trpc.users.getUserFollowing.useQuery({
+    userId: userProfile?.id || '',
+    limit: 1,
+    offset: 0
+  }, {
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
+  });
+  
+  // Get actual counts from database
+  const { data: followersData = [], refetch: refetchFollowersData } = trpc.users.getUserFollowers.useQuery({
+    userId: userProfile?.id || '',
+    limit: 50,
+    offset: 0
+  }, {
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
+  });
+  
+  const { data: followingData = [], refetch: refetchFollowingData } = trpc.users.getUserFollowing.useQuery({
+    userId: userProfile?.id || '',
+    limit: 50,
+    offset: 0
+  }, {
+    enabled: !!userProfile?.id && userProfile.id !== '' && userProfile.id.length > 0
+  });
+  
   // Update profile cover mutation
   const updateCoverMutation = trpc.users.updateProfileCover.useMutation({
     onSuccess: () => {
@@ -77,8 +115,37 @@ export default function ProfileScreen() {
       refetchPosts();
       refetchCompletedDramas();
       refetchStats();
-    }, [refetchPosts, refetchCompletedDramas, refetchStats])
+      refetchFollowersData();
+      refetchFollowingData();
+    }, [refetchPosts, refetchCompletedDramas, refetchStats, refetchFollowersData, refetchFollowingData])
   );
+  
+  // Update followers and following counts when data changes
+  React.useEffect(() => {
+    setFollowersCount(followersData?.length || 0);
+  }, [followersData]);
+  
+  React.useEffect(() => {
+    setFollowingCount(followingData?.length || 0);
+  }, [followingData]);
+  
+  // Pull to refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchPosts(),
+        refetchCompletedDramas(),
+        refetchStats(),
+        refetchFollowersData(),
+        refetchFollowingData()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing profile data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchPosts, refetchCompletedDramas, refetchStats, refetchFollowersData, refetchFollowingData]);
   
   // Filter posts by current user
   const currentUserPosts = userPosts.filter(post => post.user_id === userProfile?.id);
@@ -434,7 +501,18 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.accent}
+            colors={[COLORS.accent]}
+          />
+        }
+      >
         {/* Cover Photo Section */}
         <TouchableOpacity 
           style={styles.coverSection}
@@ -509,11 +587,11 @@ export default function ProfileScreen() {
               
               <View style={styles.socialStats}>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowersPress}>
-                  <Text style={styles.socialStatNumber}>{userProfile?.followersCount || 0}</Text>
+                  <Text style={styles.socialStatNumber}>{followersCount}</Text>
                   <Text style={styles.socialStatLabel}>seguidores</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialStat} onPress={handleFollowingPress}>
-                  <Text style={styles.socialStatNumber}>{userProfile?.followingCount || 0}</Text>
+                  <Text style={styles.socialStatNumber}>{followingCount}</Text>
                   <Text style={styles.socialStatLabel}>seguindo</Text>
                 </TouchableOpacity>
               </View>
