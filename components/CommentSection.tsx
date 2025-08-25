@@ -8,21 +8,18 @@ import {
   TextInput, 
   TouchableOpacity, 
   View, 
-  ScrollView,
-  Image
+  ScrollView
 } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Send, Flag } from "lucide-react-native";
-import { router } from 'expo-router';
 import ReportCommentModal from './ReportCommentModal';
 
 import { COLORS } from "@/constants/colors";
 
+// Mock data for comments
 interface Comment {
   id: string;
-  userId: string;
   username: string;
-  profileImage?: string;
   text: string;
   timestamp: string;
   isOwnComment?: boolean;
@@ -31,27 +28,21 @@ interface Comment {
 const MOCK_COMMENTS: Comment[] = [
   {
     id: "1",
-    userId: "user1",
     username: "k_drama_lover",
-    profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
     text: "This is one of my all-time favorites! The chemistry between the leads is incredible.",
     timestamp: "2 days ago",
     isOwnComment: false
   },
   {
     id: "2",
-    userId: "user2",
     username: "seoul_searcher",
-    profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     text: "I couldn't stop watching this one. Binged it in two days!",
     timestamp: "1 week ago",
     isOwnComment: false
   },
   {
     id: "3",
-    userId: "user3",
     username: "drama_queen",
-    profileImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
     text: "The soundtrack is amazing. I've been listening to it on repeat.",
     timestamp: "2 weeks ago",
     isOwnComment: false
@@ -75,6 +66,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
     return Platform.OS === 'ios' ? insets.bottom : 0;
   }, [insets.bottom]);
   
+  // Android-specific optimizations
   const androidInputProps = Platform.OS === 'android' ? {
     underlineColorAndroid: 'transparent',
     selectionColor: COLORS.accent,
@@ -87,10 +79,10 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
     
     setIsSubmitting(true);
     
+    // Simulate API call
     setTimeout(() => {
       const comment: Comment = {
         id: Date.now().toString(),
-        userId: "current-user",
         username: "you",
         text: newComment.trim(),
         timestamp: "Just now",
@@ -113,10 +105,6 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
     setSelectedComment(null);
   };
 
-  const handleProfilePress = (userId: string) => {
-    router.push(`/user/${userId}`);
-  };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -134,40 +122,22 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
           <View style={styles.commentsContainer}>
             {comments.map((comment) => (
               <View key={comment.id} style={styles.commentItem}>
-                <View style={styles.commentRow}>
-                  <TouchableOpacity
-                    onPress={() => handleProfilePress(comment.userId)}
-                    style={styles.profileImageContainer}
-                  >
-                    <Image
-                      source={{
-                        uri: comment.profileImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-                      }}
-                      style={styles.profileImage}
-                    />
-                  </TouchableOpacity>
-                  
-                  <View style={styles.commentContent}>
-                    <View style={styles.commentHeader}>
-                      <View style={styles.commentHeaderLeft}>
-                        <TouchableOpacity onPress={() => handleProfilePress(comment.userId)}>
-                          <Text style={styles.username}>{comment.username}</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.timestamp}>{comment.timestamp}</Text>
-                      </View>
-                      {!comment.isOwnComment && (
-                        <TouchableOpacity
-                          style={styles.moreButton}
-                          onPress={() => handleReportComment(comment)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <Flag size={16} color={COLORS.textSecondary} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    <Text style={styles.commentText}>{comment.text}</Text>
+                <View style={styles.commentHeader}>
+                  <View style={styles.commentHeaderLeft}>
+                    <Text style={styles.username}>{comment.username}</Text>
+                    <Text style={styles.timestamp}>{comment.timestamp}</Text>
                   </View>
+                  {!comment.isOwnComment && (
+                    <TouchableOpacity
+                      style={styles.moreButton}
+                      onPress={() => handleReportComment(comment)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Flag size={16} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
+                <Text style={styles.commentText}>{comment.text}</Text>
               </View>
             ))}
           </View>
@@ -187,6 +157,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
           bottom: Platform.OS === 'android' ? insets.bottom : undefined,
           left: Platform.OS === 'android' ? 0 : undefined,
           right: Platform.OS === 'android' ? 0 : undefined,
+          // Ensure input container has proper background and shadow
           backgroundColor: COLORS.card,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -312,31 +283,13 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   commentsContainer: {
-    gap: 12,
-  },
-  commentRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  profileImageContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  commentContent: {
-    flex: 1,
+    paddingHorizontal: 16,
   },
   commentItem: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 12,
+    marginBottom: 12,
   },
   commentHeader: {
     flexDirection: "row",
