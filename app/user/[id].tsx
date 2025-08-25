@@ -373,12 +373,18 @@ const UserProfileScreen = () => {
           {/* Gradient overlay */}
           <View style={styles.coverGradient}>
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0 }]} />
-            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.1 }]} />
-            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.2 }]} />
-            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.3 }]} />
-            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.5 }]} />
-            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.7 }]} />
-            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.9 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.02 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.05 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.08 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.12 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.18 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.25 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.35 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.45 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.58 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.72 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.85 }]} />
+            <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 0.95 }]} />
             <View style={[styles.gradientLayer, { backgroundColor: COLORS.background, opacity: 1 }]} />
           </View>
           
@@ -562,7 +568,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 120,
+    height: 140,
     flexDirection: 'column',
   },
   gradientLayer: {
