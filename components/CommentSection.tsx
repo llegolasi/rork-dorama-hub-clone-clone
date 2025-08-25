@@ -11,7 +11,8 @@ import {
   ScrollView
 } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Send } from "lucide-react-native";
+import { Send, Flag } from "lucide-react-native";
+import ReportCommentModal from './ReportCommentModal';
 
 import { COLORS } from "@/constants/colors";
 
@@ -21,6 +22,7 @@ interface Comment {
   username: string;
   text: string;
   timestamp: string;
+  isOwnComment?: boolean;
 }
 
 const MOCK_COMMENTS: Comment[] = [
@@ -28,19 +30,22 @@ const MOCK_COMMENTS: Comment[] = [
     id: "1",
     username: "k_drama_lover",
     text: "This is one of my all-time favorites! The chemistry between the leads is incredible.",
-    timestamp: "2 days ago"
+    timestamp: "2 days ago",
+    isOwnComment: false
   },
   {
     id: "2",
     username: "seoul_searcher",
     text: "I couldn't stop watching this one. Binged it in two days!",
-    timestamp: "1 week ago"
+    timestamp: "1 week ago",
+    isOwnComment: false
   },
   {
     id: "3",
     username: "drama_queen",
     text: "The soundtrack is amazing. I've been listening to it on repeat.",
-    timestamp: "2 weeks ago"
+    timestamp: "2 weeks ago",
+    isOwnComment: false
   }
 ];
 
@@ -53,6 +58,8 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>(MOCK_COMMENTS);
   const [newComment, setNewComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [reportModalVisible, setReportModalVisible] = useState<boolean>(false);
+  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardOffset = useMemo(() => {
@@ -78,13 +85,24 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
         id: Date.now().toString(),
         username: "you",
         text: newComment.trim(),
-        timestamp: "Just now"
+        timestamp: "Just now",
+        isOwnComment: true
       };
       
       setComments([comment, ...comments]);
       setNewComment("");
       setIsSubmitting(false);
     }, 500);
+  };
+
+  const handleReportComment = (comment: Comment) => {
+    setSelectedComment(comment);
+    setReportModalVisible(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setReportModalVisible(false);
+    setSelectedComment(null);
   };
 
   return (
@@ -105,8 +123,19 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
             {comments.map((comment) => (
               <View key={comment.id} style={styles.commentItem}>
                 <View style={styles.commentHeader}>
-                  <Text style={styles.username}>{comment.username}</Text>
-                  <Text style={styles.timestamp}>{comment.timestamp}</Text>
+                  <View style={styles.commentHeaderLeft}>
+                    <Text style={styles.username}>{comment.username}</Text>
+                    <Text style={styles.timestamp}>{comment.timestamp}</Text>
+                  </View>
+                  {!comment.isOwnComment && (
+                    <TouchableOpacity
+                      style={styles.moreButton}
+                      onPress={() => handleReportComment(comment)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Flag size={16} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
                 <Text style={styles.commentText}>{comment.text}</Text>
               </View>
@@ -172,6 +201,19 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
           )}
         </TouchableOpacity>
       </View>
+
+      {selectedComment && (
+        <ReportCommentModal
+          visible={reportModalVisible}
+          onClose={handleCloseReportModal}
+          commentId={selectedComment.id}
+          commentType="ranking"
+          commentContent={selectedComment.text}
+          onReportSubmitted={() => {
+            console.log('Comment reported successfully');
+          }}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -254,6 +296,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,
+  },
+  commentHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  moreButton: {
+    padding: 4,
+    borderRadius: 4,
   },
   username: {
     color: COLORS.text,

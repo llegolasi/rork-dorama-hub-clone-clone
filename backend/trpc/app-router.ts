@@ -197,10 +197,12 @@ export const appRouter = createTRPCRouter({
   }),
   
   comments: createTRPCRouter({
-    createReport: createCommentReportProcedure,
-    getReports: getCommentReportsProcedure,
-    checkUserReported: checkUserReportedCommentProcedure,
-    getReportCount: getCommentReportCountProcedure,
+    reports: createTRPCRouter({
+      create: createCommentReportProcedure,
+      getAll: getCommentReportsProcedure,
+      checkUserReported: checkUserReportedCommentProcedure,
+      getCount: getCommentReportCountProcedure,
+    }),
   }),
 });
 

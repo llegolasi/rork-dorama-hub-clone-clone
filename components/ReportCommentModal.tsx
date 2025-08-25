@@ -17,7 +17,9 @@ interface ReportCommentModalProps {
   visible: boolean;
   onClose: () => void;
   commentId: string;
+  commentType: 'ranking' | 'post' | 'news' | 'review';
   commentContent: string;
+  onReportSubmitted?: () => void;
 }
 
 type ReportReason = 'spam' | 'harassment' | 'hate_speech' | 'inappropriate_content' | 'misinformation' | 'other';
@@ -59,21 +61,24 @@ export default function ReportCommentModal({
   visible,
   onClose,
   commentId,
-  commentContent
+  commentType,
+  commentContent,
+  onReportSubmitted
 }: ReportCommentModalProps) {
   const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
   const [description, setDescription] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const createReportMutation = trpc.comments.createReport.useMutation({
+  const createReportMutation = trpc.comments.reports.create.useMutation({
     onSuccess: () => {
       Alert.alert(
         'Denúncia Enviada',
         'Sua denúncia foi enviada com sucesso. Nossa equipe irá analisá-la em breve.',
         [{ text: 'OK', onPress: handleClose }]
       );
+      onReportSubmitted?.();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       Alert.alert(
         'Erro',
         error.message || 'Erro ao enviar denúncia. Tente novamente.',
@@ -106,9 +111,10 @@ export default function ReportCommentModal({
     setIsSubmitting(true);
     createReportMutation.mutate({
       commentId,
+      commentType,
       reason: selectedReason,
       description: description.trim() || undefined
-    });
+    } as any);
   };
 
   return (
