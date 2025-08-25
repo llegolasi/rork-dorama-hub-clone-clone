@@ -16,7 +16,6 @@
       ]
     }
   ],
-  "buildCommand": "npx expo export -p web",
-  "outputDirectory": "dist",
+  "buildCommand": "npm install && echo 'API ready'",
   "installCommand": "npm install"
 }
