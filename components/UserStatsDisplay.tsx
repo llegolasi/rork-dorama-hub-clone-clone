@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { BarChart3, Clock, Trophy, Eye, BookOpen, TrendingUp, ArrowRight } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { BarChart3, Clock, Trophy, Eye, BookOpen, ArrowRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import { COLORS } from '@/constants/colors';
@@ -26,19 +26,7 @@ export default function UserStatsDisplay({ userId, isOwnProfile = false }: UserS
   
 
   
-  const updateStatsMutation = trpc.users.updateStats.useMutation({
-    onSuccess: () => {
-      refetch();
-      Alert.alert('Sucesso', 'Estatísticas atualizadas com sucesso!');
-    },
-    onError: (error) => {
-      Alert.alert('Erro', `Falha ao atualizar estatísticas: ${error.message}`);
-    }
-  });
 
-  const handleUpdateStats = () => {
-    updateStatsMutation.mutate();
-  };
 
   const formatWatchTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
@@ -86,26 +74,13 @@ export default function UserStatsDisplay({ userId, isOwnProfile = false }: UserS
           <Text style={styles.title}>Estatísticas</Text>
         </View>
         {isOwnProfile && (
-          <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.updateButton}
-              onPress={handleUpdateStats}
-              disabled={updateStatsMutation.isPending}
-            >
-              <TrendingUp size={16} color={COLORS.accent} />
-              <Text style={styles.updateButtonText}>
-                {updateStatsMutation.isPending ? 'Atualizando...' : 'Atualizar'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.viewCompleteButton}
-              onPress={() => router.push('/statistics')}
-            >
-              <Text style={styles.viewCompleteButtonText}>Ver Completo</Text>
-              <ArrowRight size={16} color={COLORS.accent} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={styles.viewCompleteButton}
+            onPress={() => router.push('/statistics')}
+          >
+            <Text style={styles.viewCompleteButtonText}>Ver Completo</Text>
+            <ArrowRight size={16} color={COLORS.accent} />
+          </TouchableOpacity>
         )}
       </View>
 
@@ -155,11 +130,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -170,22 +141,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
-  updateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  updateButtonText: {
-    fontSize: 12,
-    color: COLORS.accent,
-    fontWeight: '500',
-  },
+
   viewCompleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
