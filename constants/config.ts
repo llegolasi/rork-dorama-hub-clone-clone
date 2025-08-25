@@ -1,10 +1,12 @@
 // API Configuration
 export const getApiBaseUrl = (): string => {
-  if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
-  }
+  // On web, always use same-origin relative path so Vercel rewrites work
   if (typeof window !== 'undefined') {
     return '';
+  }
+  // On native/SSR, use env if provided, otherwise localhost
+  if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
+    return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   }
   return 'http://localhost:3000';
 };
