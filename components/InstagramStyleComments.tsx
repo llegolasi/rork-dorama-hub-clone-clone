@@ -14,13 +14,14 @@ import {
   Keyboard,
 } from 'react-native';
 
-import { Heart, MessageCircle, MoreVertical, X, Send } from 'lucide-react-native';
+import { Heart, MessageCircle, MoreVertical, X, Send, Flag } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/useAuth';
 import { UserDisplayName } from '@/components/UserTypeComponents';
 import { UserType } from '@/types/user';
+import ReportCommentModal from '@/components/ReportCommentModal';
 
 
 
@@ -73,6 +74,8 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [hasMoreComments, setHasMoreComments] = useState<boolean>(true);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [reportModalVisible, setReportModalVisible] = useState<boolean>(false);
+  const [commentToReport, setCommentToReport] = useState<Comment | null>(null);
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
@@ -337,9 +340,72 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
   };
 
   const handleCommentMenu = (comment: Comment) => {
-    if (comment.user_id === user?.id) {
-      handleDeleteComment(comment.id);
+    const isOwnComment = comment.user_id === user?.id;
+    
+    if (Platform.OS === 'ios') {
+      const options = isOwnComment 
+        ? ['Cancelar', 'Deletar comentário', 'Denunciar']
+        : ['Cancelar', 'Denunciar'];
+      const destructiveButtonIndex = isOwnComment ? 1 : -1;
+      const cancelButtonIndex = 0;
+      
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          destructiveButtonIndex,
+          cancelButtonIndex,
+        },
+        (buttonIndex) => {
+          if (isOwnComment) {
+            if (buttonIndex === 1) {
+              handleDeleteComment(comment.id);
+            } else if (buttonIndex === 2) {
+              handleReportComment(comment);
+            }
+          } else {
+            if (buttonIndex === 1) {
+              handleReportComment(comment);
+            }
+          }
+        }
+      );
+    } else {
+      if (isOwnComment) {
+        Alert.alert(
+          'Opções do comentário',
+          'O que você gostaria de fazer?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Deletar',
+              style: 'destructive',
+              onPress: () => handleDeleteComment(comment.id)
+            },
+            {
+              text: 'Denunciar',
+              onPress: () => handleReportComment(comment)
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Denunciar comentário',
+          'Você gostaria de denunciar este comentário?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Denunciar',
+              onPress: () => handleReportComment(comment)
+            }
+          ]
+        );
+      }
     }
+  };
+  
+  const handleReportComment = (comment: Comment) => {
+    setCommentToReport(comment);
+    setReportModalVisible(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -510,15 +576,13 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
               </View>
             </View>
           </View>
-          {comment.user_id === user?.id && (
-            <TouchableOpacity 
-              style={styles.commentMenuButton}
-              onPress={() => handleCommentMenu(comment)}
-              testID={`comment-menu-${comment.id}`}
-            >
-              <MoreVertical size={16} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={styles.commentMenuButton}
+            onPress={() => handleCommentMenu(comment)}
+            testID={`comment-menu-${comment.id}`}
+          >
+            <MoreVertical size={16} color={COLORS.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         {Array.isArray(comment.replies) && comment.replies.length > 0 && (
@@ -588,15 +652,13 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
                         </View>
                       </View>
                     </View>
-                    {reply.user_id === user?.id && (
-                      <TouchableOpacity 
-                        style={styles.commentMenuButton}
-                        onPress={() => handleCommentMenu({ ...reply, replies_count: 0, parent_comment_id: null, replies: [] })}
-                        testID={`comment-menu-${reply.id}`}
-                      >
-                        <MoreVertical size={16} color={COLORS.textSecondary} />
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity 
+                      style={styles.commentMenuButton}
+                      onPress={() => handleCommentMenu({ ...reply, replies_count: 0, parent_comment_id: null, replies: [] })}
+                      testID={`comment-menu-${reply.id}`}
+                    >
+                      <MoreVertical size={16} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
                   </View>
                 </View>
               );
@@ -771,6 +833,19 @@ export default function InstagramStyleComments(props: CommentSectionProps) {
           )}
         </View>
       </View>
+      
+      {/* Report Modal */}
+      {commentToReport && (
+        <ReportCommentModal
+          visible={reportModalVisible}
+          onClose={() => {
+            setReportModalVisible(false);
+            setCommentToReport(null);
+          }}
+          commentId={commentToReport.id}
+          commentContent={commentToReport.content}
+        />
+      )}
     </View>
   );
 }

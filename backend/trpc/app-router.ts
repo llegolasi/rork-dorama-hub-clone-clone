@@ -94,6 +94,14 @@ import {
   getDramaProviders
 } from "./routes/dramas/cache/route";
 
+// Comment reports routes
+import {
+  createCommentReportProcedure,
+  getCommentReportsProcedure,
+  checkUserReportedCommentProcedure,
+  getCommentReportCountProcedure
+} from "./routes/comments/reports/route";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -186,6 +194,13 @@ export const appRouter = createTRPCRouter({
     syncCache: syncSeriesCache,
     cleanupCache: cleanupCache,
     getProviders: getDramaProviders,
+  }),
+  
+  comments: createTRPCRouter({
+    createReport: createCommentReportProcedure,
+    getReports: getCommentReportsProcedure,
+    checkUserReported: checkUserReportedCommentProcedure,
+    getReportCount: getCommentReportCountProcedure,
   }),
 });
 
