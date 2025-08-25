@@ -18,7 +18,6 @@ import ReportCommentModal from './ReportCommentModal';
 
 import { COLORS } from "@/constants/colors";
 
-// Mock data for comments
 interface Comment {
   id: string;
   userId: string;
@@ -76,7 +75,6 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
     return Platform.OS === 'ios' ? insets.bottom : 0;
   }, [insets.bottom]);
   
-  // Android-specific optimizations
   const androidInputProps = Platform.OS === 'android' ? {
     underlineColorAndroid: 'transparent',
     selectionColor: COLORS.accent,
@@ -89,7 +87,6 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
     
     setIsSubmitting(true);
     
-    // Simulate API call
     setTimeout(() => {
       const comment: Comment = {
         id: Date.now().toString(),
@@ -172,7 +169,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
                   </View>
                 </View>
               </View>
-            ))
+            ))}
           </View>
         ) : (
           <View style={styles.emptyContainer}>
@@ -190,7 +187,6 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
           bottom: Platform.OS === 'android' ? insets.bottom : undefined,
           left: Platform.OS === 'android' ? 0 : undefined,
           right: Platform.OS === 'android' ? 0 : undefined,
-          // Ensure input container has proper background and shadow
           backgroundColor: COLORS.card,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -316,13 +312,31 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   commentsContainer: {
-    paddingHorizontal: 16,
+    gap: 12,
+  },
+  commentRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  profileImageContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  commentContent: {
+    flex: 1,
   },
   commentItem: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 12,
-    marginBottom: 12,
   },
   commentHeader: {
     flexDirection: "row",
