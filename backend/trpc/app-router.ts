@@ -54,7 +54,11 @@ import {
   completeDramaWithDateRangeProcedure,
   updateUserProfileCoverProcedure,
   checkUserPremiumStatusProcedure,
-  getProfileAvatarsProcedure
+  getProfileAvatarsProcedure,
+  blockUserProcedure,
+  unblockUserProcedure,
+  isUserBlockedProcedure,
+  getBlockedUsersProcedure
 } from "./routes/users/route";
 
 // Discover routes
@@ -157,6 +161,10 @@ export const appRouter = createTRPCRouter({
     updateProfileCover: updateUserProfileCoverProcedure,
     checkPremiumStatus: checkUserPremiumStatusProcedure,
     getProfileAvatars: getProfileAvatarsProcedure,
+    blockUser: blockUserProcedure,
+    unblockUser: unblockUserProcedure,
+    isUserBlocked: isUserBlockedProcedure,
+    getBlockedUsers: getBlockedUsersProcedure,
   }),
   
   discover: createTRPCRouter({

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure, protectedProcedure } from '../../create-context';
+import { blockUserProcedure, unblockUserProcedure, isUserBlockedProcedure, getBlockedUsersProcedure } from './blocks/route';
 
 // Get user profile
 export const getUserProfileProcedure = protectedProcedure
@@ -1034,6 +1035,9 @@ export const getProfileAvatarsProcedure = publicProcedure
       return [];
     }
   });
+
+// Export block-related procedures
+export { blockUserProcedure, unblockUserProcedure, isUserBlockedProcedure, getBlockedUsersProcedure };
 
 // Check if user has premium subscription
 export const checkUserPremiumStatusProcedure = protectedProcedure
