@@ -14,6 +14,7 @@ const reportReasonSchema = z.enum([
 export const createCommentReportProcedure = protectedProcedure
   .input(z.object({
     commentId: z.string().uuid(),
+    commentType: z.enum(['ranking', 'post', 'news', 'review']),
     reason: reportReasonSchema,
     description: z.string().optional()
   }))
@@ -25,6 +26,7 @@ export const createCommentReportProcedure = protectedProcedure
         .from('comment_reports')
         .insert({
           comment_id: input.commentId,
+          comment_type: input.commentType,
           reporter_id: user.id,
           reason: input.reason,
           description: input.description
@@ -104,7 +106,8 @@ export const getCommentReportsProcedure = protectedProcedure
 
 export const checkUserReportedCommentProcedure = protectedProcedure
   .input(z.object({
-    commentId: z.string().uuid()
+    commentId: z.string().uuid(),
+    commentType: z.enum(['ranking', 'post', 'news', 'review'])
   }))
   .query(async ({ input, ctx }: { input: any; ctx: Context & { user: NonNullable<Context['user']> } }) => {
     const { supabase, user } = ctx;
@@ -114,6 +117,7 @@ export const checkUserReportedCommentProcedure = protectedProcedure
         .from('comment_reports')
         .select('id')
         .eq('comment_id', input.commentId)
+        .eq('comment_type', input.commentType)
         .eq('reporter_id', user.id)
         .single();
 
@@ -130,14 +134,18 @@ export const checkUserReportedCommentProcedure = protectedProcedure
 
 export const getCommentReportCountProcedure = publicProcedure
   .input(z.object({
-    commentId: z.string().uuid()
+    commentId: z.string().uuid(),
+    commentType: z.enum(['ranking', 'post', 'news', 'review'])
   }))
   .query(async ({ input, ctx }: { input: any; ctx: Context }) => {
     const { supabase } = ctx;
     
     try {
       const { data, error } = await supabase
-        .rpc('get_comment_report_count', { comment_uuid: input.commentId });
+        .rpc('get_comment_report_count', { 
+          comment_uuid: input.commentId,
+          comment_type_param: input.commentType
+        });
 
       if (error) {
         throw new Error('Erro ao contar denúncias: ' + error.message);
