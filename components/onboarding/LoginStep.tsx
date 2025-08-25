@@ -93,8 +93,6 @@ export default function LoginStep({ onSwitchToSignup }: LoginStepProps) {
           </View>
         )}
 
-
-
         {/* Email Field */}
         <View style={styles.inputContainer}>
           <View style={styles.inputWrapper}>
