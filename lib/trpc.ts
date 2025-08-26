@@ -10,7 +10,7 @@ export const trpc = createTRPCReact<AppRouter>();
 export const trpcClient = trpc.createClient({
   links: [
     httpLink({
-      url: `${getApiBaseUrl()}/api/trpc`,
+      url: `${getApiBaseUrl()}/trpc`,
       transformer: superjson,
       headers: async () => {
         try {
