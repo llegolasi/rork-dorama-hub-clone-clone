@@ -77,14 +77,7 @@
         }
       ],
       "expo-font",
-      "expo-web-browser",
-      [
-        "expo-ads-admob",
-        {
-          "androidAppId": "ca-app-pub-2720532297693900~1234567890",
-          "iosAppId": "ca-app-pub-2720532297693900~1234567890"
-        }
-      ]
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

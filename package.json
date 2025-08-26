@@ -22,7 +22,6 @@
     "@trpc/server": "^11.4.4",
     "@vercel/speed-insights": "^1.2.0",
     "expo": "53.0.22",
-    "expo-ads-admob": "^13.0.0",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.7",
     "expo-file-system": "~18.1.11",
@@ -71,6 +70,9 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": false
+      },
+      "supportPackageVersionsCheck": {
+        "enabled": false
       }
     }
   },
