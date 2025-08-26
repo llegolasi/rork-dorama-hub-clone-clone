@@ -3,12 +3,12 @@ export const getApiBaseUrl = (): string => {
   const prefer = process.env.EXPO_PUBLIC_API_URL ?? process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? '';
   if (prefer) {
     const trimmed = prefer.replace(/\/$/, '');
-    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+    return trimmed;
   }
   if (typeof window !== 'undefined') {
     return '';
   }
-  return 'http://localhost:3000/api';
+  return 'http://localhost:3000';
 };
 
 // TMDB Configuration
