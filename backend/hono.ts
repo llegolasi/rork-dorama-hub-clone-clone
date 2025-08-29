@@ -13,6 +13,15 @@ app.get("/", (c) => c.json({ status: "ok", message: "API is running" }));
 app.get("/api", (c) => c.json({ status: "ok", message: "API is running" }));
 
 // Mount tRPC under /api/trpc to match vercel.json rewrite
+// Ensure both "/api/trpc" and "/api/trpc/*" are handled to avoid 404 on the base endpoint
+app.use(
+  "/api/trpc",
+  trpcServer({
+    router: appRouter,
+    createContext,
+    endpoint: "/api/trpc",
+  })
+);
 app.use(
   "/api/trpc/*",
   trpcServer({
