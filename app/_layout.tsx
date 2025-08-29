@@ -9,7 +9,6 @@ import { UserContext } from "@/hooks/useUserStore";
 import { AuthContext, useAuth } from "@/hooks/useAuth";
 import { trpc, trpcClient } from "@/lib/trpc";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -86,8 +85,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <AuthContext>
           <UserContext>
             <GestureHandlerRootView style={{ flex: 1 }}>
@@ -96,7 +95,7 @@ export default function RootLayout() {
             </GestureHandlerRootView>
           </UserContext>
         </AuthContext>
-      </QueryClientProvider>
-    </trpc.Provider>
+      </trpc.Provider>
+    </QueryClientProvider>
   );
 }

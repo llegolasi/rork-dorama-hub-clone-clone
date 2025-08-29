@@ -1,16 +1,24 @@
 // API Configuration
 export const getApiBaseUrl = (): string => {
-  // Use your Vercel backend URL
   const vercelUrl = 'https://dorama-hub-backend-3q2k.vercel.app';
-  
-  // Check for environment override first
-  const prefer = process.env.EXPO_PUBLIC_API_URL ?? process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? '';
-  if (prefer) {
-    const trimmed = prefer.replace(/\/$/, '');
-    console.log('Using environment API base URL:', trimmed);
-    return trimmed;
+
+  const envCandidate = (process.env.EXPO_PUBLIC_API_URL ?? process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? '').replace(/\/$/, '');
+
+  if (envCandidate) {
+    try {
+      const url = new URL(envCandidate);
+      const host = url.host;
+      const isAllowed = host.includes('dorama-hub-backend-3q2k.vercel.app');
+      if (isAllowed) {
+        console.log('Using environment API base URL:', envCandidate);
+        return envCandidate;
+      }
+      console.warn('Ignoring non-approved API URL from env:', envCandidate, '— falling back to Vercel');
+    } catch {
+      console.warn('Invalid API URL in env:', envCandidate, '— falling back to Vercel');
+    }
   }
-  
+
   console.log('Using Vercel API base URL:', vercelUrl);
   return vercelUrl;
 };
@@ -25,7 +33,7 @@ export const testApiConnection = async (): Promise<boolean> => {
         'Content-Type': 'application/json',
       },
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       console.log('API connection test successful:', data);
