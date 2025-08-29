@@ -1,5 +1,5 @@
-import { createTRPCReact } from "@trpc/react-query";
-import { httpLink } from "@trpc/client";
+// Importe httpBatchLink em vez de httpLink
+import { httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import { supabase } from "@/lib/supabase";
@@ -18,7 +18,8 @@ testApiConnection().then(isConnected => {
 
 export const trpcClient = trpc.createClient({
   links: [
-    httpLink({
+    // Use httpBatchLink aqui, mantendo todo o seu código interno
+    httpBatchLink({
       url: `${getApiBaseUrl()}/api/trpc`,
       transformer: superjson,
       headers: async () => {
