@@ -16,16 +16,16 @@ app.get("/", (c) => {
 
 // 3. O middleware do tRPC com o caminho CORRETO
 app.use(
-  "/api/trpc/*", // O cliente vai chamar este caminho
+  "/trpc/*", // O cliente vai chamar /api/trpc/* mas o Vercel reescreve para /trpc/*
   trpcServer({
     router: appRouter,
     createContext,
-    endpoint: "/api/trpc", // O endpoint interno precisa corresponder
+    endpoint: "/trpc", // O endpoint interno precisa corresponder
   })
 );
 
 // 4. Fallback para outras rotas da API
-app.all("/api/*", (c) => {
+app.all("*", (c) => {
   return c.json({ error: "Route not found" }, 404);
 });
 
