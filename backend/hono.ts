@@ -36,9 +36,15 @@ app.use(
     createContext,
     endpoint: "/api/trpc",
     batching: {
-      enabled: true,
+      enabled: false,
     },
   })
 );
 
-export default app;
+// For Vercel deployment
+export default {
+  fetch: app.fetch,
+};
+
+// Also export the app directly for other uses
+export { app };
