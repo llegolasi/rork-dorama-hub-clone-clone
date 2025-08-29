@@ -3,18 +3,10 @@ import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import { supabase } from "@/lib/supabase";
-import { getApiBaseUrl, testApiConnection } from "@/constants/config";
+import { getApiBaseUrl } from "@/constants/config";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-// Test API connection on startup
-void testApiConnection().then((isConnected: boolean) => {
-  if (!isConnected) {
-    console.warn('⚠️ API connection test failed. tRPC calls may not work properly.');
-  } else {
-    console.log('✅ API connection test successful.');
-  }
-});
 
 export const trpcClient = trpc.createClient({
   links: [
@@ -64,7 +56,6 @@ export const trpcClient = trpc.createClient({
           return response;
         } catch (error) {
           console.error('❌ tRPC fetch error:', error);
-
           if (error instanceof TypeError && (error.message?.includes?.('fetch') ?? false)) {
             console.error('❌ Network error: Unable to reach the API server.');
             console.error('❌ Check if the API URL is correct:', getApiBaseUrl());
