@@ -12,12 +12,32 @@ app.get("/", (c) => {
   return c.json({ status: "ok", message: "API is running" });
 });
 
-app.use(
+app.get("/api", (c) => {
+  return c.json({ status: "ok", message: "tRPC API is running" });
+});
+
+app.get("/api/debug/routes", (c) => {
+  return c.json({
+    availableRoutes: [
+      "GET /",
+      "GET /api",
+      "ALL /api/trpc/*",
+      "GET /api/debug/routes"
+    ],
+    message: "These are the available routes"
+  });
+});
+
+// Handle both GET and POST requests for tRPC
+app.all(
   "/api/trpc/*",
   trpcServer({
     router: appRouter,
     createContext,
-    endpoint: "/api/trpc", // This line was crucial for fixing routing
+    endpoint: "/api/trpc",
+    batching: {
+      enabled: true,
+    },
   })
 );
 
