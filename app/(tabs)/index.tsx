@@ -23,6 +23,33 @@ export default function DiscoverScreen() {
   const { addToList } = useUserLists();
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
+  // Test tRPC connection
+  const testQuery = trpc.example.hi.useMutation();
+  
+  React.useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log('Testing backend connection...');
+        const baseUrl = getApiBaseUrl();
+        console.log('Base URL:', baseUrl);
+        
+        // Test basic backend connectivity
+        const response = await fetch(`${baseUrl}/`);
+        console.log('Backend status response:', response.status);
+        const data = await response.json();
+        console.log('Backend status data:', data);
+        
+        // Test tRPC connection
+        console.log('Testing tRPC connection...');
+        const result = await testQuery.mutateAsync({ name: 'Test' });
+        console.log('tRPC test successful:', result);
+      } catch (error) {
+        console.error('Connection test failed:', error);
+      }
+    };
+    testConnection();
+  }, []);
+
   const newsQuery = trpc.news.getPosts.useQuery({
     limit: 5,
     offset: 0

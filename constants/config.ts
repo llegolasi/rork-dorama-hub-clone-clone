@@ -3,11 +3,18 @@ export const getApiBaseUrl = (): string => {
   const prefer = process.env.EXPO_PUBLIC_API_URL ?? process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? '';
   if (prefer) {
     const trimmed = prefer.replace(/\/$/, '');
+    console.log('Using API base URL:', trimmed);
+    console.log('Environment variables:', {
+      EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
+      EXPO_PUBLIC_RORK_API_BASE_URL: process.env.EXPO_PUBLIC_RORK_API_BASE_URL
+    });
     return trimmed;
   }
   if (typeof window !== 'undefined') {
+    console.log('Using empty base URL for web');
     return '';
   }
+  console.log('Using localhost fallback');
   return 'http://localhost:3000';
 };
 

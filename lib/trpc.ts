@@ -15,10 +15,12 @@ export const trpcClient = trpc.createClient({
       headers: async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          return {
+          const headers = {
             authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
             'Content-Type': 'application/json',
           };
+          console.log('tRPC headers:', headers);
+          return headers;
         } catch (error) {
           console.error('Error getting session for tRPC headers:', error);
           return {
@@ -27,10 +29,12 @@ export const trpcClient = trpc.createClient({
         }
       },
       fetch: async (url, options) => {
-        console.log('tRPC request:', url, options);
+        console.log('tRPC request URL:', url);
+        console.log('tRPC request options:', JSON.stringify(options, null, 2));
         try {
           const response = await fetch(url, options);
           console.log('tRPC response status:', response.status);
+          console.log('tRPC response headers:', Object.fromEntries(response.headers.entries()));
           
           if (!response.ok) {
             const text = await response.text();

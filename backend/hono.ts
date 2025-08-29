@@ -24,4 +24,9 @@ app.use(
   })
 );
 
+// 4. Fallback para outras rotas da API
+app.all("/api/*", (c) => {
+  return c.json({ error: "Route not found" }, 404);
+});
+
 export default app;
