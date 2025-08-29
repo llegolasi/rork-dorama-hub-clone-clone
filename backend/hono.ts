@@ -24,10 +24,4 @@ app.use(
   })
 );
 
-// 4. Adicionar um handler para debug
-app.all("/api/*", (c) => {
-  console.log(`Unhandled API route: ${c.req.method} ${c.req.path}`);
-  return c.json({ error: "Route not found", path: c.req.path, method: c.req.method }, 404);
-});
-
 export default app;
