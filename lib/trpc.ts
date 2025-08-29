@@ -18,19 +18,19 @@ export const trpcClient = trpc.createClient({
           const headers = {
             authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
             'Content-Type': 'application/json',
-          };
+          } as Record<string, string>;
           console.log('tRPC headers:', headers);
           return headers;
         } catch (error) {
           console.error('Error getting session for tRPC headers:', error);
           return {
             'Content-Type': 'application/json',
-          };
+          } as Record<string, string>;
         }
       },
       fetch: async (url, options) => {
         console.log('tRPC request URL:', url);
-        console.log('tRPC request options:', JSON.stringify(options, null, 2));
+        console.log('tRPC request options:', JSON.stringify(options ?? {}, null, 2));
         try {
           const response = await fetch(url, options);
           console.log('tRPC response status:', response.status);
