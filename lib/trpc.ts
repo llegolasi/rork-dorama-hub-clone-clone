@@ -1,4 +1,4 @@
-// Importe httpBatchLink em vez de httpLink
+import { createTRPCReact } from "@trpc/react-query";
 import { httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
