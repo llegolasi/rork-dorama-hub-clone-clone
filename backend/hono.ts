@@ -29,7 +29,7 @@ app.get("/api/debug/routes", (c) => {
 });
 
 // Handle both GET and POST requests for tRPC
-app.all(
+app.use(
   "/api/trpc/*",
   trpcServer({
     router: appRouter,
