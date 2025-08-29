@@ -1,21 +1,18 @@
 // API Configuration
 export const getApiBaseUrl = (): string => {
+  // Use your Vercel backend URL
+  const vercelUrl = 'https://dorama-hub-backend-3q2k.vercel.app';
+  
+  // Check for environment override first
   const prefer = process.env.EXPO_PUBLIC_API_URL ?? process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? '';
   if (prefer) {
     const trimmed = prefer.replace(/\/$/, '');
-    console.log('Using API base URL:', trimmed);
-    console.log('Environment variables:', {
-      EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
-      EXPO_PUBLIC_RORK_API_BASE_URL: process.env.EXPO_PUBLIC_RORK_API_BASE_URL
-    });
+    console.log('Using environment API base URL:', trimmed);
     return trimmed;
   }
-  if (typeof window !== 'undefined') {
-    console.log('Using empty base URL for web');
-    return '';
-  }
-  console.log('Using localhost fallback');
-  return 'http://localhost:3000';
+  
+  console.log('Using Vercel API base URL:', vercelUrl);
+  return vercelUrl;
 };
 
 // Test API connectivity
