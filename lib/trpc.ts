@@ -3,9 +3,18 @@ import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import { supabase } from "@/lib/supabase";
-import { getApiBaseUrl } from "@/constants/config";
+import { getApiBaseUrl, testApiConnection } from "@/constants/config";
 
 export const trpc = createTRPCReact<AppRouter>();
+
+// Test API connection on startup
+testApiConnection().then(isConnected => {
+  if (!isConnected) {
+    console.warn('⚠️ API connection test failed. tRPC calls may not work properly.');
+  } else {
+    console.log('✅ API connection test successful.');
+  }
+});
 
 export const trpcClient = trpc.createClient({
   links: [
@@ -29,22 +38,43 @@ export const trpcClient = trpc.createClient({
         }
       },
       fetch: async (url, options) => {
-        console.log('tRPC request URL:', url);
-        console.log('tRPC request options:', JSON.stringify(options ?? {}, null, 2));
+        console.log('🔄 tRPC request URL:', url);
+        console.log('🔄 tRPC request options:', JSON.stringify(options ?? {}, null, 2));
+        
         try {
           const response = await fetch(url, options);
-          console.log('tRPC response status:', response.status);
-          console.log('tRPC response headers:', Object.fromEntries(response.headers.entries()));
+          console.log('📡 tRPC response status:', response.status);
+          console.log('📡 tRPC response headers:', Object.fromEntries(response.headers.entries()));
           
           if (!response.ok) {
             const text = await response.text();
-            console.error('tRPC error response:', text);
+            console.error('❌ tRPC error response:', text);
+            
+            // Provide more specific error messages
+            if (response.status === 404) {
+              console.error('❌ 404 Error: The tRPC endpoint was not found. Check if the backend is deployed and the route exists.');
+              console.error('❌ Expected URL format: ${baseUrl}/api/trpc/{procedure}');
+              console.error('❌ Current URL:', url);
+            } else if (response.status === 500) {
+              console.error('❌ 500 Error: Internal server error. Check backend logs.');
+            } else if (response.status === 403) {
+              console.error('❌ 403 Error: Forbidden. Check authentication.');
+            }
+            
             throw new Error(`HTTP ${response.status}: ${text}`);
           }
           
           return response;
         } catch (error) {
-          console.error('tRPC fetch error:', error);
+          console.error('❌ tRPC fetch error:', error);
+          
+          // Additional debugging for network errors
+          if (error instanceof TypeError && error.message.includes('fetch')) {
+            console.error('❌ Network error: Unable to reach the API server.');
+            console.error('❌ Check if the API URL is correct:', getApiBaseUrl());
+            console.error('❌ Check if the backend is running and accessible.');
+          }
+          
           throw error;
         }
       },

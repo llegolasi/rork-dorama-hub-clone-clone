@@ -9,7 +9,7 @@ import { Play, Star, Users, Film, X, Bookmark, BookmarkCheck, Plus } from "lucid
 
 import { COLORS } from "@/constants/colors";
 import { getPopularDramas, getTrendingDramas, getNetflixDramas } from "@/services/api";
-import { TMDB_IMAGE_BASE_URL, BACKDROP_SIZE, POSTER_SIZE } from "@/constants/config";
+import { TMDB_IMAGE_BASE_URL, BACKDROP_SIZE, POSTER_SIZE, getApiBaseUrl } from "@/constants/config";
 import HorizontalList from "@/components/HorizontalList";
 import UpcomingReleasesCard from "@/components/UpcomingReleasesCard";
 import NewsCarousel from "@/components/NewsCarousel";

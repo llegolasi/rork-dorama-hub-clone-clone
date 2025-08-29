@@ -18,6 +18,31 @@ export const getApiBaseUrl = (): string => {
   return 'http://localhost:3000';
 };
 
+// Test API connectivity
+export const testApiConnection = async (): Promise<boolean> => {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('API connection test successful:', data);
+      return true;
+    } else {
+      console.error('API connection test failed:', response.status, response.statusText);
+      return false;
+    }
+  } catch (error) {
+    console.error('API connection test error:', error);
+    return false;
+  }
+};
+
 // TMDB Configuration
 export const TMDB_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1YWI5YzU2NzJjOGRjMDRjMzAyZDcxNzE1Y2VmZTRiYyIsIm5iZiI6MTY1ODYzODE2MS4xNTIsInN1YiI6IjYyZGNjZjUxZGMxY2I0MDA0ZmFiYWIxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.KZIhYnGp8CP2AI7obhY8mAJ9KJeqhKmfg2hq7iE7Vz8";
 export const TMDB_BASE_URL = "https://api.themoviedb.org/3";
