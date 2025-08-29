@@ -8,10 +8,6 @@
     {
       "source": "/api/(.*)",
       "destination": "/backend/hono.ts"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/backend/hono.ts"
     }
   ],
   "headers": [

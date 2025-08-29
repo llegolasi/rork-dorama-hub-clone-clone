@@ -114,7 +114,7 @@ export default function ReportCommentModal({
       commentType,
       reason: selectedReason,
       description: description.trim() || undefined
-    } as any);
+    });
   };
 
   return (
