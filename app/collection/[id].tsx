@@ -8,9 +8,10 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { trpc } from '@/lib/trpc';
-import { DramaCard } from '@/components/DramaCard';
+import { CustomCollectionDrama } from '@/types/collection';
+import DramaCard from '@/components/DramaCard';
 import { SkeletonLoader } from '@/components/SkeletonLoader';
-import { OptimizedImage } from '@/components/OptimizedImage';
+import OptimizedImage from '@/components/OptimizedImage';
 
 export default function CollectionPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -69,7 +70,7 @@ export default function CollectionPage() {
             <OptimizedImage
               source={{ uri: collection.cover_image_url }}
               style={styles.coverImage}
-              resizeMode="cover"
+              contentFit="cover"
             />
             <View style={styles.coverOverlay} />
           </View>
@@ -87,16 +88,21 @@ export default function CollectionPage() {
 
         {dramas.length > 0 ? (
           <View style={styles.dramasGrid}>
-            {dramas.map((drama) => (
+            {dramas.map((drama: CustomCollectionDrama) => (
               <View key={drama.drama_id} style={styles.dramaCardContainer}>
                 <DramaCard
                   drama={{
                     id: drama.drama_id,
-                    title: drama.drama_title,
+                    name: drama.drama_title,
+                    original_name: drama.drama_title,
                     poster_path: drama.drama_poster_url,
-                    first_air_date: drama.drama_year?.toString(),
+                    first_air_date: drama.drama_year?.toString() || '',
                     vote_average: 0,
+                    vote_count: 0,
+                    popularity: 0,
                     genre_ids: [],
+                    origin_country: [],
+                    backdrop_path: null,
                     overview: '',
                   }}
                 />

@@ -10,7 +10,7 @@ import {
 import { ChevronRight } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
 import { HomepageCollection } from '@/types/collection';
-import { OptimizedImage } from './OptimizedImage';
+import OptimizedImage from './OptimizedImage';
 import { SkeletonLoader } from './SkeletonLoader';
 import { router } from 'expo-router';
 
@@ -34,7 +34,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({ collection, onPress }) 
         <OptimizedImage
           source={{ uri: collection.cover_image_url || 'https://images.unsplash.com/photo-1489599162163-3fb4b4b5b0b3?w=800&h=400&fit=crop' }}
           style={styles.collectionImage}
-          resizeMode="cover"
+          contentFit="cover"
         />
         <View style={styles.overlay} />
         <View style={styles.collectionContent}>
@@ -58,12 +58,8 @@ const CollectionCard: React.FC<CollectionCardProps> = ({ collection, onPress }) 
   );
 };
 
-interface HomepageCollectionsProps {
-  onCollectionPress: (collection: HomepageCollection) => void;
-}
-
-export const HomepageCollections: React.FC<HomepageCollectionsProps> = ({ onCollectionPress }) => {
-  const collectionsQuery = trpc.collections.getHomepageCollections.useQuery();
+export const HomepageCollections: React.FC = () => {
+  const collectionsQuery = trpc.collections.getHomepage.useQuery();
 
   const handleCollectionPress = (collection: HomepageCollection) => {
     router.push(`/collection/${collection.id}`);
@@ -104,7 +100,7 @@ export const HomepageCollections: React.FC<HomepageCollectionsProps> = ({ onColl
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {collectionsQuery.data.map((collection) => (
+        {collectionsQuery.data.map((collection: HomepageCollection) => (
           <CollectionCard
             key={collection.id}
             collection={collection}
