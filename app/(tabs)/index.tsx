@@ -13,6 +13,7 @@ import { TMDB_IMAGE_BASE_URL, BACKDROP_SIZE, POSTER_SIZE, getApiBaseUrl } from "
 import HorizontalList from "@/components/HorizontalList";
 import UpcomingReleasesCard from "@/components/UpcomingReleasesCard";
 import NewsCarousel from "@/components/NewsCarousel";
+import { HomepageCollections } from "@/components/HomepageCollections";
 import { useUserLists } from "@/hooks/useUserStore";
 import { trpc } from '@/lib/trpc';
 import { FeaturedSkeleton, CategorySkeleton, HorizontalListSkeleton, NewsSkeleton, UpcomingReleasesSkeleton } from '@/components/SkeletonLoader';
@@ -129,6 +130,7 @@ export default function DiscoverScreen() {
       { id: 'header', type: 'header' },
       { id: 'featured', type: 'featured' },
       { id: 'news', type: 'news' },
+      { id: 'collections', type: 'collections' },
       { id: 'categories', type: 'categories' },
       { id: 'upcoming-releases', type: 'upcoming-releases' },
       {
@@ -301,6 +303,8 @@ export default function DiscoverScreen() {
       case 'news':
         console.log('Rendering news section with data:', newsQuery.data);
         return <NewsCarousel news={newsQuery.data || []} />;
+      case 'collections':
+        return <HomepageCollections />;
       case 'upcoming-releases':
         return <UpcomingReleasesCard />;
       case 'featured-skeleton':

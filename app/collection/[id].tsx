@@ -12,6 +12,7 @@ import { CustomCollectionDrama } from '@/types/collection';
 import DramaCard from '@/components/DramaCard';
 import { SkeletonLoader } from '@/components/SkeletonLoader';
 import OptimizedImage from '@/components/OptimizedImage';
+import { COLORS } from '@/constants/colors';
 
 export default function CollectionPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -122,7 +123,7 @@ export default function CollectionPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
   },
   content: {
     paddingBottom: 20,
@@ -149,18 +150,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold' as const,
-    color: '#1a1a1a',
+    color: COLORS.text,
     marginBottom: 8,
   },
   description: {
     fontSize: 16,
-    color: '#666',
+    color: COLORS.textSecondary,
     lineHeight: 24,
     marginBottom: 12,
   },
   dramaCount: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.textSecondary,
     fontWeight: '500' as const,
   },
   dramasGrid: {
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   errorContainer: {
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#ff4444',
+    color: COLORS.error || '#ff4444',
     textAlign: 'center',
   },
   titleSkeleton: {

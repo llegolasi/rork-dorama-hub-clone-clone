@@ -13,6 +13,7 @@ import { HomepageCollection } from '@/types/collection';
 import OptimizedImage from './OptimizedImage';
 import { SkeletonLoader } from './SkeletonLoader';
 import { router } from 'expo-router';
+import { COLORS } from '@/constants/colors';
 
 const { width } = Dimensions.get('window');
 const COLLECTION_WIDTH = width - 32;
@@ -93,7 +94,7 @@ export const HomepageCollections: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Featured Collections</Text>
+        <Text style={styles.sectionTitle}>🎬 Coleções Especiais</Text>
       </View>
       <ScrollView
         horizontal
@@ -114,19 +115,19 @@ export const HomepageCollections: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 20,
+    marginBottom: 32,
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold' as const,
-    color: '#1a1a1a',
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: COLORS.text,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   collectionCard: {
     width: COLLECTION_WIDTH,
