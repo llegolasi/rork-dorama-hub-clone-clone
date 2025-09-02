@@ -102,6 +102,13 @@ import {
   getCommentReportCountProcedure
 } from "./routes/comments/reports/route";
 
+// Collections routes
+import {
+  getHomepageCollections,
+  getCollectionDramas,
+  getCollectionById
+} from "./routes/collections/route";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -203,6 +210,12 @@ export const appRouter = createTRPCRouter({
       checkUserReported: checkUserReportedCommentProcedure,
       getCount: getCommentReportCountProcedure,
     }),
+  }),
+  
+  collections: createTRPCRouter({
+    getHomepage: getHomepageCollections,
+    getDramas: getCollectionDramas,
+    getById: getCollectionById,
   }),
 });
 
