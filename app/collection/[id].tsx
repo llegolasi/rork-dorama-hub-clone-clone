@@ -1,1 +1,196 @@
-import React from 'react';\nimport {\n  View,\n  Text,\n  StyleSheet,\n  ScrollView,\n  SafeAreaView,\n} from 'react-native';\nimport { Stack, useLocalSearchParams } from 'expo-router';\nimport { trpc } from '@/lib/trpc';\nimport { DramaCard } from '@/components/DramaCard';\nimport { SkeletonLoader } from '@/components/SkeletonLoader';\nimport { OptimizedImage } from '@/components/OptimizedImage';\n\nexport default function CollectionPage() {\n  const { id } = useLocalSearchParams<{ id: string }>();\n\n  const collectionQuery = trpc.collections.getById.useQuery(\n    { collectionId: id! },\n    { enabled: !!id }\n  );\n\n  const dramasQuery = trpc.collections.getDramas.useQuery(\n    { collectionId: id! },\n    { enabled: !!id }\n  );\n\n  if (collectionQuery.isLoading || dramasQuery.isLoading) {\n    return (\n      <SafeAreaView style={styles.container}>\n        <Stack.Screen options={{ title: 'Loading...' }} />\n        <ScrollView contentContainerStyle={styles.content}>\n          <View style={styles.header}>\n            <SkeletonLoader width={300} height={24} style={styles.titleSkeleton} />\n            <SkeletonLoader width={200} height={16} style={styles.descriptionSkeleton} />\n          </View>\n          <View style={styles.dramasGrid}>\n            {[1, 2, 3, 4, 5, 6].map((index) => (\n              <View key={index} style={styles.dramaCardContainer}>\n                <SkeletonLoader width={150} height={220} />\n              </View>\n            ))}\n          </View>\n        </ScrollView>\n      </SafeAreaView>\n    );\n  }\n\n  if (collectionQuery.error || dramasQuery.error || !collectionQuery.data) {\n    return (\n      <SafeAreaView style={styles.container}>\n        <Stack.Screen options={{ title: 'Error' }} />\n        <View style={styles.errorContainer}>\n          <Text style={styles.errorText}>Failed to load collection</Text>\n        </View>\n      </SafeAreaView>\n    );\n  }\n\n  const collection = collectionQuery.data;\n  const dramas = dramasQuery.data || [];\n\n  return (\n    <SafeAreaView style={styles.container}>\n      <Stack.Screen options={{ title: collection.title }} />\n      <ScrollView contentContainerStyle={styles.content}>\n        {collection.cover_image_url && (\n          <View style={styles.coverContainer}>\n            <OptimizedImage\n              source={{ uri: collection.cover_image_url }}\n              style={styles.coverImage}\n              resizeMode=\"cover\"\n            />\n            <View style={styles.coverOverlay} />\n          </View>\n        )}\n        \n        <View style={styles.header}>\n          <Text style={styles.title}>{collection.title}</Text>\n          {collection.description && (\n            <Text style={styles.description}>{collection.description}</Text>\n          )}\n          <Text style={styles.dramaCount}>\n            {dramas.length} {dramas.length === 1 ? 'drama' : 'dramas'}\n          </Text>\n        </View>\n\n        {dramas.length > 0 ? (\n          <View style={styles.dramasGrid}>\n            {dramas.map((drama) => (\n              <View key={drama.drama_id} style={styles.dramaCardContainer}>\n                <DramaCard\n                  drama={{\n                    id: drama.drama_id,\n                    title: drama.drama_title,\n                    poster_path: drama.drama_poster_url,\n                    first_air_date: drama.drama_year?.toString(),\n                    vote_average: 0,\n                    genre_ids: [],\n                    overview: '',\n                  }}\n                />\n              </View>\n            ))}\n          </View>\n        ) : (\n          <View style={styles.emptyContainer}>\n            <Text style={styles.emptyText}>No dramas in this collection yet</Text>\n          </View>\n        )}\n      </ScrollView>\n    </SafeAreaView>\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    flex: 1,\n    backgroundColor: '#fff',\n  },\n  content: {\n    paddingBottom: 20,\n  },\n  coverContainer: {\n    height: 200,\n    position: 'relative',\n  },\n  coverImage: {\n    width: '100%',\n    height: '100%',\n  },\n  coverOverlay: {\n    position: 'absolute',\n    top: 0,\n    left: 0,\n    right: 0,\n    bottom: 0,\n    backgroundColor: 'rgba(0, 0, 0, 0.3)',\n  },\n  header: {\n    padding: 20,\n  },\n  title: {\n    fontSize: 28,\n    fontWeight: 'bold' as const,\n    color: '#1a1a1a',\n    marginBottom: 8,\n  },\n  description: {\n    fontSize: 16,\n    color: '#666',\n    lineHeight: 24,\n    marginBottom: 12,\n  },\n  dramaCount: {\n    fontSize: 14,\n    color: '#999',\n    fontWeight: '500' as const,\n  },\n  dramasGrid: {\n    flexDirection: 'row',\n    flexWrap: 'wrap',\n    paddingHorizontal: 10,\n    justifyContent: 'space-between',\n  },\n  dramaCardContainer: {\n    width: '48%',\n    marginBottom: 20,\n  },\n  emptyContainer: {\n    padding: 40,\n    alignItems: 'center',\n  },\n  emptyText: {\n    fontSize: 16,\n    color: '#999',\n    textAlign: 'center',\n  },\n  errorContainer: {\n    flex: 1,\n    justifyContent: 'center',\n    alignItems: 'center',\n    padding: 20,\n  },\n  errorText: {\n    fontSize: 16,\n    color: '#ff4444',\n    textAlign: 'center',\n  },\n  titleSkeleton: {\n    marginBottom: 8,\n  },\n  descriptionSkeleton: {\n    marginBottom: 12,\n  },\n});
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+} from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { trpc } from '@/lib/trpc';
+import { DramaCard } from '@/components/DramaCard';
+import { SkeletonLoader } from '@/components/SkeletonLoader';
+import { OptimizedImage } from '@/components/OptimizedImage';
+
+export default function CollectionPage() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
+  const collectionQuery = trpc.collections.getById.useQuery(
+    { collectionId: id! },
+    { enabled: !!id }
+  );
+
+  const dramasQuery = trpc.collections.getDramas.useQuery(
+    { collectionId: id! },
+    { enabled: !!id }
+  );
+
+  if (collectionQuery.isLoading || dramasQuery.isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ title: 'Loading...' }} />
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.header}>
+            <SkeletonLoader width={300} height={24} style={styles.titleSkeleton} />
+            <SkeletonLoader width={200} height={16} style={styles.descriptionSkeleton} />
+          </View>
+          <View style={styles.dramasGrid}>
+            {[1, 2, 3, 4, 5, 6].map((index) => (
+              <View key={index} style={styles.dramaCardContainer}>
+                <SkeletonLoader width={150} height={220} />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (collectionQuery.error || dramasQuery.error || !collectionQuery.data) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ title: 'Error' }} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load collection</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const collection = collectionQuery.data;
+  const dramas = dramasQuery.data || [];
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen options={{ title: collection.title }} />
+      <ScrollView contentContainerStyle={styles.content}>
+        {collection.cover_image_url && (
+          <View style={styles.coverContainer}>
+            <OptimizedImage
+              source={{ uri: collection.cover_image_url }}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+            <View style={styles.coverOverlay} />
+          </View>
+        )}
+        
+        <View style={styles.header}>
+          <Text style={styles.title}>{collection.title}</Text>
+          {collection.description && (
+            <Text style={styles.description}>{collection.description}</Text>
+          )}
+          <Text style={styles.dramaCount}>
+            {dramas.length} {dramas.length === 1 ? 'drama' : 'dramas'}
+          </Text>
+        </View>
+
+        {dramas.length > 0 ? (
+          <View style={styles.dramasGrid}>
+            {dramas.map((drama) => (
+              <View key={drama.drama_id} style={styles.dramaCardContainer}>
+                <DramaCard
+                  drama={{
+                    id: drama.drama_id,
+                    title: drama.drama_title,
+                    poster_path: drama.drama_poster_url,
+                    first_air_date: drama.drama_year?.toString(),
+                    vote_average: 0,
+                    genre_ids: [],
+                    overview: '',
+                  }}
+                />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No dramas in this collection yet</Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    paddingBottom: 20,
+  },
+  coverContainer: {
+    height: 200,
+    position: 'relative',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  coverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  header: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  dramaCount: {
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '500' as const,
+  },
+  dramasGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+  },
+  dramaCardContainer: {
+    width: '48%',
+    marginBottom: 20,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ff4444',
+    textAlign: 'center',
+  },
+  titleSkeleton: {
+    marginBottom: 8,
+  },
+  descriptionSkeleton: {
+    marginBottom: 12,
+  },
+});
