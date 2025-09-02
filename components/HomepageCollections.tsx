@@ -1,2 +1,204 @@
-import React from "react";
-import React from 'react';\nimport {\n  View,\n  Text,\n  StyleSheet,\n  ScrollView,\n  TouchableOpacity,\n  Dimensions,\n} from 'react-native';\nimport { ChevronRight } from 'lucide-react-native';\nimport { trpc } from '@/lib/trpc';\nimport { HomepageCollection } from '@/types/collection';\nimport { OptimizedImage } from './OptimizedImage';\nimport { SkeletonLoader } from './SkeletonLoader';\n\nconst { width } = Dimensions.get('window');\nconst COLLECTION_WIDTH = width - 32;\nconst COLLECTION_HEIGHT = 200;\n\ninterface CollectionCardProps {\n  collection: HomepageCollection;\n  onPress: (collection: HomepageCollection) => void;\n}\n\nconst CollectionCard: React.FC<CollectionCardProps> = ({ collection, onPress }) => {\n  return (\n    <TouchableOpacity\n      style={styles.collectionCard}\n      onPress={() => onPress(collection)}\n      activeOpacity={0.8}\n    >\n      <View style={styles.imageContainer}>\n        <OptimizedImage\n          source={{ uri: collection.cover_image_url || 'https://images.unsplash.com/photo-1489599162163-3fb4b4b5b0b3?w=800&h=400&fit=crop' }}\n          style={styles.collectionImage}\n          resizeMode=\"cover\"\n        />\n        <View style={styles.overlay} />\n        <View style={styles.collectionContent}>\n          <View style={styles.collectionHeader}>\n            <Text style={styles.collectionTitle} numberOfLines={2}>\n              {collection.title}\n            </Text>\n            <ChevronRight size={20} color=\"#fff\" />\n          </View>\n          {collection.description && (\n            <Text style={styles.collectionDescription} numberOfLines={2}>\n              {collection.description}\n            </Text>\n          )}\n          <Text style={styles.dramaCount}>\n            {collection.drama_count} {collection.drama_count === 1 ? 'drama' : 'dramas'}\n          </Text>\n        </View>\n      </View>\n    </TouchableOpacity>\n  );\n};\n\ninterface HomepageCollectionsProps {\n  onCollectionPress: (collection: HomepageCollection) => void;\n}\n\nexport const HomepageCollections: React.FC<HomepageCollectionsProps> = ({\n  onCollectionPress,\n}) => {\n  const collectionsQuery = trpc.collections.getHomepage.useQuery();\n\n  if (collectionsQuery.isLoading) {\n    return (\n      <View style={styles.container}>\n        <Text style={styles.sectionTitle}>Featured Collections</Text>\n        <ScrollView\n          horizontal\n          showsHorizontalScrollIndicator={false}\n          contentContainerStyle={styles.scrollContent}\n        >\n          {[1, 2, 3].map((index) => (\n            <View key={index} style={styles.collectionCard}>\n              <SkeletonLoader width={COLLECTION_WIDTH} height={COLLECTION_HEIGHT} />\n            </View>\n          ))}\n        </ScrollView>\n      </View>\n    );\n  }\n\n  if (collectionsQuery.error || !collectionsQuery.data?.length) {\n    return null;\n  }\n\n  const collections = collectionsQuery.data;\n\n  return (\n    <View style={styles.container}>\n      <Text style={styles.sectionTitle}>Featured Collections</Text>\n      <ScrollView\n        horizontal\n        showsHorizontalScrollIndicator={false}\n        contentContainerStyle={styles.scrollContent}\n        decelerationRate=\"fast\"\n        snapToInterval={COLLECTION_WIDTH + 16}\n        snapToAlignment=\"start\"\n      >\n        {collections.map((collection) => (\n          <CollectionCard\n            key={collection.id}\n            collection={collection}\n            onPress={onCollectionPress}\n          />\n        ))}\n      </ScrollView>\n    </View>\n  );\n};\n\nconst styles = StyleSheet.create({\n  container: {\n    marginVertical: 20,\n  },\n  sectionTitle: {\n    fontSize: 22,\n    fontWeight: 'bold' as const,\n    color: '#1a1a1a',\n    marginBottom: 16,\n    marginHorizontal: 16,\n  },\n  scrollContent: {\n    paddingHorizontal: 16,\n  },\n  collectionCard: {\n    width: COLLECTION_WIDTH,\n    height: COLLECTION_HEIGHT,\n    marginRight: 16,\n    borderRadius: 16,\n    overflow: 'hidden',\n    elevation: 4,\n    shadowColor: '#000',\n    shadowOffset: {\n      width: 0,\n      height: 2,\n    },\n    shadowOpacity: 0.25,\n    shadowRadius: 3.84,\n  },\n  imageContainer: {\n    flex: 1,\n    position: 'relative',\n  },\n  collectionImage: {\n    width: '100%',\n    height: '100%',\n  },\n  overlay: {\n    position: 'absolute',\n    top: 0,\n    left: 0,\n    right: 0,\n    bottom: 0,\n    backgroundColor: 'rgba(0, 0, 0, 0.4)',\n  },\n  collectionContent: {\n    position: 'absolute',\n    bottom: 0,\n    left: 0,\n    right: 0,\n    padding: 20,\n  },\n  collectionHeader: {\n    flexDirection: 'row',\n    alignItems: 'flex-start',\n    justifyContent: 'space-between',\n    marginBottom: 8,\n  },\n  collectionTitle: {\n    fontSize: 20,\n    fontWeight: 'bold' as const,\n    color: '#fff',\n    flex: 1,\n    marginRight: 12,\n  },\n  collectionDescription: {\n    fontSize: 14,\n    color: '#e0e0e0',\n    marginBottom: 8,\n    lineHeight: 20,\n  },\n  dramaCount: {\n    fontSize: 12,\n    color: '#b0b0b0',\n    fontWeight: '500' as const,\n  },\n});
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
+import { trpc } from '@/lib/trpc';
+import { HomepageCollection } from '@/types/collection';
+import { OptimizedImage } from './OptimizedImage';
+import { SkeletonLoader } from './SkeletonLoader';
+import { router } from 'expo-router';
+
+const { width } = Dimensions.get('window');
+const COLLECTION_WIDTH = width - 32;
+const COLLECTION_HEIGHT = 200;
+
+interface CollectionCardProps {
+  collection: HomepageCollection;
+  onPress: (collection: HomepageCollection) => void;
+}
+
+const CollectionCard: React.FC<CollectionCardProps> = ({ collection, onPress }) => {
+  return (
+    <TouchableOpacity
+      style={styles.collectionCard}
+      onPress={() => onPress(collection)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.imageContainer}>
+        <OptimizedImage
+          source={{ uri: collection.cover_image_url || 'https://images.unsplash.com/photo-1489599162163-3fb4b4b5b0b3?w=800&h=400&fit=crop' }}
+          style={styles.collectionImage}
+          resizeMode="cover"
+        />
+        <View style={styles.overlay} />
+        <View style={styles.collectionContent}>
+          <View style={styles.collectionHeader}>
+            <Text style={styles.collectionTitle} numberOfLines={2}>
+              {collection.title}
+            </Text>
+            <ChevronRight size={20} color="#fff" />
+          </View>
+          {collection.description && (
+            <Text style={styles.collectionDescription} numberOfLines={2}>
+              {collection.description}
+            </Text>
+          )}
+          <Text style={styles.dramaCount}>
+            {collection.drama_count} {collection.drama_count === 1 ? 'drama' : 'dramas'}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+interface HomepageCollectionsProps {
+  onCollectionPress: (collection: HomepageCollection) => void;
+}
+
+export const HomepageCollections: React.FC<HomepageCollectionsProps> = ({ onCollectionPress }) => {
+  const collectionsQuery = trpc.collections.getHomepageCollections.useQuery();
+
+  const handleCollectionPress = (collection: HomepageCollection) => {
+    router.push(`/collection/${collection.id}`);
+  };
+
+  if (collectionsQuery.isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <SkeletonLoader width={200} height={24} />
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {[1, 2, 3].map((index) => (
+            <View key={index} style={styles.skeletonCard}>
+              <SkeletonLoader width={COLLECTION_WIDTH} height={COLLECTION_HEIGHT} />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (collectionsQuery.error || !collectionsQuery.data?.length) {
+    return null;
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.sectionTitle}>Featured Collections</Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {collectionsQuery.data.map((collection) => (
+          <CollectionCard
+            key={collection.id}
+            collection={collection}
+            onPress={handleCollectionPress}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    marginVertical: 20,
+  },
+  header: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+  },
+  collectionCard: {
+    width: COLLECTION_WIDTH,
+    height: COLLECTION_HEIGHT,
+    marginRight: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  imageContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  collectionImage: {
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  collectionContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+  },
+  collectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  collectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: '#fff',
+    flex: 1,
+    marginRight: 8,
+  },
+  collectionDescription: {
+    fontSize: 14,
+    color: '#e0e0e0',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  dramaCount: {
+    fontSize: 12,
+    color: '#ccc',
+    fontWeight: '500' as const,
+  },
+  skeletonCard: {
+    width: COLLECTION_WIDTH,
+    height: COLLECTION_HEIGHT,
+    marginRight: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+});
