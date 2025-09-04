@@ -152,54 +152,94 @@ export const GENDER_OPTIONS = [
 
 export type GenderOption = typeof GENDER_OPTIONS[number]['id'];
 
-// Welcome screen features
+// Trending drama banners for hero section
+export const TRENDING_DRAMA_BANNERS = [
+  {
+    id: 'squid-game',
+    title: 'Squid Game',
+    image: 'https://image.tmdb.org/t/p/w1280/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/s16H6tpK2utvwDtzZ8Qy4qm5Emw.jpg'
+  },
+  {
+    id: 'crash-landing',
+    title: 'Crash Landing on You',
+    image: 'https://image.tmdb.org/t/p/w1280/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/wjQXZTlFM3PVEUmKf1sUajjygqT.jpg'
+  },
+  {
+    id: 'kingdom',
+    title: 'Kingdom',
+    image: 'https://image.tmdb.org/t/p/w1280/qXbqzMRhXgp4W6HZHZVVYhKqgVF.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/8ylUjrZfMWOkv5ohrGCsaEON4Xm.jpg'
+  },
+  {
+    id: 'vincenzo',
+    title: 'Vincenzo',
+    image: 'https://image.tmdb.org/t/p/w1280/dvXJgEDQXhL9Ouot2WkBHpQiHGd.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/h7dZpJkBN65VXvVkjE1Qz5EWHqg.jpg'
+  },
+  {
+    id: 'business-proposal',
+    title: 'Business Proposal',
+    image: 'https://image.tmdb.org/t/p/w1280/8kOWDBK6XlPUzckuHDdvLWOveT6.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/nVRyd8hlg0ZLxBn9RaI7mUMQLnz.jpg'
+  }
+];
+
+// Welcome screen features with drama-themed images
 export const APP_FEATURES = [
   {
     id: 'discover',
     title: 'Descubra Novos Doramas',
-    description: 'Explore milhares de doramas coreanos, japoneses e chineses com recomendações personalizadas',
+    description: 'Explore milhares de doramas coreanos, japoneses e chineses com recomendações personalizadas baseadas no seu gosto',
     icon: '🎭',
     gradient: ['#FF6B6B', '#FF8E8E'],
-    image: 'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=400&h=300&fit=crop'
+    image: 'https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/wjQXZTlFM3PVEUmKf1sUajjygqT.jpg'
   },
   {
     id: 'track',
     title: 'Organize Suas Listas',
-    description: 'Mantenha controle do que está assistindo, já assistiu e planeja assistir',
+    description: 'Mantenha controle completo do que está assistindo, já assistiu e planeja assistir com listas personalizadas',
     icon: '📝',
     gradient: ['#4ECDC4', '#44A08D'],
-    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=300&fit=crop'
+    image: 'https://image.tmdb.org/t/p/w500/1tKwjkKU2cWqbQzL8kYYNQpBbWX.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/mYsWyfiIMxx4HDm0Wck7oJ9BbIX.jpg'
   },
   {
     id: 'community',
     title: 'Conecte-se com Fãs',
-    description: 'Compartilhe opiniões, avaliações e descubra o que outros fãs estão assistindo',
+    description: 'Compartilhe opiniões, avaliações e descubra o que outros fãs estão assistindo na nossa comunidade ativa',
     icon: '👥',
     gradient: ['#A8E6CF', '#7FCDCD'],
-    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&h=300&fit=crop'
+    image: 'https://image.tmdb.org/t/p/w500/dvXJgEDQXhL9Ouot2WkBHpQiHGd.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/h7dZpJkBN65VXvVkjE1Qz5EWHqg.jpg'
   },
   {
     id: 'reviews',
     title: 'Avalie e Comente',
-    description: 'Deixe suas avaliações e leia reviews detalhadas de outros usuários',
+    description: 'Deixe suas avaliações detalhadas e leia reviews de outros usuários para descobrir sua próxima obsessão',
     icon: '⭐',
     gradient: ['#FFD93D', '#FF6B6B'],
-    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop'
+    image: 'https://image.tmdb.org/t/p/w500/8kOWDBK6XlPUzckuHDdvLWOveT6.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/nVRyd8hlg0ZLxBn9RaI7mUMQLnz.jpg'
   },
   {
     id: 'calendar',
     title: 'Calendário de Lançamentos',
-    description: 'Nunca perca um episódio com nosso calendário de lançamentos atualizado',
+    description: 'Nunca perca um episódio com nosso calendário de lançamentos sempre atualizado e notificações personalizadas',
     icon: '📅',
     gradient: ['#667eea', '#764ba2'],
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+    image: 'https://image.tmdb.org/t/p/w500/qXbqzMRhXgp4W6HZHZVVYhKqgVF.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/8ylUjrZfMWOkv5ohrGCsaEON4Xm.jpg'
   },
   {
     id: 'stats',
     title: 'Estatísticas Pessoais',
-    description: 'Acompanhe suas estatísticas de visualização e conquiste achievements',
+    description: 'Acompanhe suas estatísticas de visualização, conquiste achievements e veja seu progresso como fã de doramas',
     icon: '📊',
     gradient: ['#f093fb', '#f5576c'],
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop'
+    image: 'https://image.tmdb.org/t/p/w500/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
+    backdrop: 'https://image.tmdb.org/t/p/w1280/s16H6tpK2utvwDtzZ8Qy4qm5Emw.jpg'
   }
 ];
