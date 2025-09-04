@@ -132,6 +132,7 @@ export const getFilteredDramas = () => {
 };
 
 export const ONBOARDING_STEPS = {
+  WELCOME: 'welcome',
   LOGIN: 'login',
   CREDENTIALS: 'credentials',
   PERSONAL_INFO: 'personal_info',
@@ -150,3 +151,55 @@ export const GENDER_OPTIONS = [
 ] as const;
 
 export type GenderOption = typeof GENDER_OPTIONS[number]['id'];
+
+// Welcome screen features
+export const APP_FEATURES = [
+  {
+    id: 'discover',
+    title: 'Descubra Novos Doramas',
+    description: 'Explore milhares de doramas coreanos, japoneses e chineses com recomendações personalizadas',
+    icon: '🎭',
+    gradient: ['#FF6B6B', '#FF8E8E'],
+    image: 'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=400&h=300&fit=crop'
+  },
+  {
+    id: 'track',
+    title: 'Organize Suas Listas',
+    description: 'Mantenha controle do que está assistindo, já assistiu e planeja assistir',
+    icon: '📝',
+    gradient: ['#4ECDC4', '#44A08D'],
+    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=300&fit=crop'
+  },
+  {
+    id: 'community',
+    title: 'Conecte-se com Fãs',
+    description: 'Compartilhe opiniões, avaliações e descubra o que outros fãs estão assistindo',
+    icon: '👥',
+    gradient: ['#A8E6CF', '#7FCDCD'],
+    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&h=300&fit=crop'
+  },
+  {
+    id: 'reviews',
+    title: 'Avalie e Comente',
+    description: 'Deixe suas avaliações e leia reviews detalhadas de outros usuários',
+    icon: '⭐',
+    gradient: ['#FFD93D', '#FF6B6B'],
+    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop'
+  },
+  {
+    id: 'calendar',
+    title: 'Calendário de Lançamentos',
+    description: 'Nunca perca um episódio com nosso calendário de lançamentos atualizado',
+    icon: '📅',
+    gradient: ['#667eea', '#764ba2'],
+    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+  },
+  {
+    id: 'stats',
+    title: 'Estatísticas Pessoais',
+    description: 'Acompanhe suas estatísticas de visualização e conquiste achievements',
+    icon: '📊',
+    gradient: ['#f093fb', '#f5576c'],
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop'
+  }
+];
