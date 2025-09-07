@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { ONBOARDING_STEPS, OnboardingStep } from '@/constants/onboarding';
-import WelcomeStep from '@/components/onboarding/WelcomeStep';
 import LoginStep from '@/components/onboarding/LoginStep';
 import CredentialsStep from '@/components/onboarding/CredentialsStep';
 import PersonalInfoStep from '@/components/onboarding/PersonalInfoStep';
@@ -13,13 +12,10 @@ import ProfileInfoStep from '@/components/onboarding/ProfileInfoStep';
 import PreferencesStep from '@/components/onboarding/PreferencesStep';
 
 export default function OnboardingScreen() {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(ONBOARDING_STEPS.WELCOME);
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(ONBOARDING_STEPS.LOGIN);
 
   const handleStepComplete = (step: OnboardingStep) => {
     switch (step) {
-      case ONBOARDING_STEPS.WELCOME:
-        setCurrentStep(ONBOARDING_STEPS.LOGIN);
-        break;
       case ONBOARDING_STEPS.LOGIN:
         // Login handled in LoginStep
         break;
@@ -51,8 +47,6 @@ export default function OnboardingScreen() {
 
   const renderStep = () => {
     switch (currentStep) {
-      case ONBOARDING_STEPS.WELCOME:
-        return <WelcomeStep onGetStarted={() => handleStepComplete(ONBOARDING_STEPS.WELCOME)} />;
       case ONBOARDING_STEPS.LOGIN:
         return <LoginStep onSwitchToSignup={handleSwitchToSignup} />;
       case ONBOARDING_STEPS.CREDENTIALS:
@@ -71,7 +65,7 @@ export default function OnboardingScreen() {
       case ONBOARDING_STEPS.PREFERENCES:
         return <PreferencesStep onComplete={() => handleStepComplete(ONBOARDING_STEPS.PREFERENCES)} />;
       default:
-        return <WelcomeStep onGetStarted={() => handleStepComplete(ONBOARDING_STEPS.WELCOME)} />;
+        return <LoginStep onSwitchToSignup={handleSwitchToSignup} />;
     }
   };
 

@@ -132,7 +132,6 @@ export const getFilteredDramas = () => {
 };
 
 export const ONBOARDING_STEPS = {
-  WELCOME: 'welcome',
   LOGIN: 'login',
   CREDENTIALS: 'credentials',
   PERSONAL_INFO: 'personal_info',
@@ -151,95 +150,3 @@ export const GENDER_OPTIONS = [
 ] as const;
 
 export type GenderOption = typeof GENDER_OPTIONS[number]['id'];
-
-// Trending drama banners for hero section
-export const TRENDING_DRAMA_BANNERS = [
-  {
-    id: 'squid-game',
-    title: 'Squid Game',
-    image: 'https://image.tmdb.org/t/p/w1280/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/s16H6tpK2utvwDtzZ8Qy4qm5Emw.jpg'
-  },
-  {
-    id: 'crash-landing',
-    title: 'Crash Landing on You',
-    image: 'https://image.tmdb.org/t/p/w1280/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/wjQXZTlFM3PVEUmKf1sUajjygqT.jpg'
-  },
-  {
-    id: 'kingdom',
-    title: 'Kingdom',
-    image: 'https://image.tmdb.org/t/p/w1280/qXbqzMRhXgp4W6HZHZVVYhKqgVF.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/8ylUjrZfMWOkv5ohrGCsaEON4Xm.jpg'
-  },
-  {
-    id: 'vincenzo',
-    title: 'Vincenzo',
-    image: 'https://image.tmdb.org/t/p/w1280/dvXJgEDQXhL9Ouot2WkBHpQiHGd.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/h7dZpJkBN65VXvVkjE1Qz5EWHqg.jpg'
-  },
-  {
-    id: 'business-proposal',
-    title: 'Business Proposal',
-    image: 'https://image.tmdb.org/t/p/w1280/8kOWDBK6XlPUzckuHDdvLWOveT6.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/nVRyd8hlg0ZLxBn9RaI7mUMQLnz.jpg'
-  }
-];
-
-// Welcome screen features with drama-themed images
-export const APP_FEATURES = [
-  {
-    id: 'discover',
-    title: 'Descubra Novos Doramas',
-    description: 'Explore milhares de doramas coreanos, japoneses e chineses com recomendações personalizadas baseadas no seu gosto',
-    icon: '🎭',
-    gradient: ['#FF6B6B', '#FF8E8E'],
-    image: 'https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/wjQXZTlFM3PVEUmKf1sUajjygqT.jpg'
-  },
-  {
-    id: 'track',
-    title: 'Organize Suas Listas',
-    description: 'Mantenha controle completo do que está assistindo, já assistiu e planeja assistir com listas personalizadas',
-    icon: '📝',
-    gradient: ['#4ECDC4', '#44A08D'],
-    image: 'https://image.tmdb.org/t/p/w500/1tKwjkKU2cWqbQzL8kYYNQpBbWX.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/mYsWyfiIMxx4HDm0Wck7oJ9BbIX.jpg'
-  },
-  {
-    id: 'community',
-    title: 'Conecte-se com Fãs',
-    description: 'Compartilhe opiniões, avaliações e descubra o que outros fãs estão assistindo na nossa comunidade ativa',
-    icon: '👥',
-    gradient: ['#A8E6CF', '#7FCDCD'],
-    image: 'https://image.tmdb.org/t/p/w500/dvXJgEDQXhL9Ouot2WkBHpQiHGd.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/h7dZpJkBN65VXvVkjE1Qz5EWHqg.jpg'
-  },
-  {
-    id: 'reviews',
-    title: 'Avalie e Comente',
-    description: 'Deixe suas avaliações detalhadas e leia reviews de outros usuários para descobrir sua próxima obsessão',
-    icon: '⭐',
-    gradient: ['#FFD93D', '#FF6B6B'],
-    image: 'https://image.tmdb.org/t/p/w500/8kOWDBK6XlPUzckuHDdvLWOveT6.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/nVRyd8hlg0ZLxBn9RaI7mUMQLnz.jpg'
-  },
-  {
-    id: 'calendar',
-    title: 'Calendário de Lançamentos',
-    description: 'Nunca perca um episódio com nosso calendário de lançamentos sempre atualizado e notificações personalizadas',
-    icon: '📅',
-    gradient: ['#667eea', '#764ba2'],
-    image: 'https://image.tmdb.org/t/p/w500/qXbqzMRhXgp4W6HZHZVVYhKqgVF.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/8ylUjrZfMWOkv5ohrGCsaEON4Xm.jpg'
-  },
-  {
-    id: 'stats',
-    title: 'Estatísticas Pessoais',
-    description: 'Acompanhe suas estatísticas de visualização, conquiste achievements e veja seu progresso como fã de doramas',
-    icon: '📊',
-    gradient: ['#f093fb', '#f5576c'],
-    image: 'https://image.tmdb.org/t/p/w500/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
-    backdrop: 'https://image.tmdb.org/t/p/w1280/s16H6tpK2utvwDtzZ8Qy4qm5Emw.jpg'
-  }
-];
