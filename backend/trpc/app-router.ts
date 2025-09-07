@@ -109,6 +109,9 @@ import {
   getCollectionById
 } from "./routes/collections/route";
 
+// Episodes routes
+import { episodesRouter } from "./routes/episodes/route";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -217,6 +220,8 @@ export const appRouter = createTRPCRouter({
     getDramas: getCollectionDramas,
     getById: getCollectionById,
   }),
+  
+  episodes: episodesRouter,
 });
 
 export type AppRouter = typeof appRouter;
