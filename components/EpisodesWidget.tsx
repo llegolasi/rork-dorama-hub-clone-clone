@@ -7,8 +7,9 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { Calendar, Clock, Play, CheckCircle } from 'lucide-react-native';
+import { Calendar, Clock, Play, CheckCircle, Eye } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
+import { COLORS } from '@/constants/colors';
 
 interface EpisodesWidgetProps {
   dramaId: string;
@@ -68,11 +69,11 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Play size={20} color="#007AFF" />
+          <Play size={24} color={COLORS.accent} />
           <Text style={styles.title}>Episodes</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#007AFF" />
+          <ActivityIndicator size="large" color={COLORS.accent} />
           <Text style={styles.loadingText}>Loading episodes...</Text>
         </View>
       </View>
@@ -83,7 +84,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Play size={20} color="#007AFF" />
+          <Play size={24} color={COLORS.accent} />
           <Text style={styles.title}>Episodes</Text>
         </View>
         <View style={styles.emptyContainer}>
@@ -102,17 +103,17 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Play size={20} color="#007AFF" />
+        <Play size={24} color={COLORS.accent} />
         <Text style={styles.title}>Episodes</Text>
         <Text style={styles.subtitle}>
-          {watchedCount}/{episodes.length} watched
+          {watchedCount}/{episodes.length}
         </Text>
       </View>
 
       {upcomingEpisodes.length > 0 && (
         <View style={styles.upcomingSection}>
           <View style={styles.upcomingHeader}>
-            <Calendar size={16} color="#FF6B35" />
+            <Calendar size={20} color={COLORS.accent} />
             <Text style={styles.upcomingTitle}>Upcoming Releases</Text>
           </View>
           {upcomingEpisodes.slice(0, 3).map((episode: Episode) => (
@@ -126,7 +127,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
                 )}
               </View>
               <View style={styles.airDateContainer}>
-                <Clock size={12} color="#666" />
+                <Clock size={14} color={COLORS.textSecondary} />
                 <Text style={styles.airDate}>{formatAirDate(episode.air_date)}</Text>
               </View>
             </View>
@@ -154,7 +155,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
             <View style={styles.episodeCardHeader}>
               <Text style={styles.episodeCardNumber}>Ep {episode.episode_number}</Text>
               {episode.watched && (
-                <CheckCircle size={16} color="#34C759" />
+                <CheckCircle size={18} color={COLORS.success} />
               )}
             </View>
             
@@ -190,9 +191,9 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
               style={styles.watchButton}
               onPress={() => handleToggleWatched(selectedEpisode.episode_number)}
             >
-              <CheckCircle 
+              <Eye 
                 size={20} 
-                color={selectedEpisode.watched ? '#34C759' : '#999'} 
+                color={selectedEpisode.watched ? COLORS.success : COLORS.textSecondary} 
               />
               <Text style={[
                 styles.watchButtonText,
@@ -216,185 +217,202 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold' as const,
-    color: '#1a1a1a',
-    marginLeft: 8,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: COLORS.text,
+    marginLeft: 10,
     flex: 1,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500' as const,
+    color: COLORS.textSecondary,
+    fontWeight: '600' as const,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: 30,
   },
   loadingText: {
-    marginLeft: 8,
-    color: '#666',
+    marginLeft: 12,
+    color: COLORS.textSecondary,
+    fontSize: 16,
   },
   emptyContainer: {
-    paddingVertical: 20,
+    paddingVertical: 30,
     alignItems: 'center',
   },
   emptyText: {
-    color: '#666',
-    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontSize: 16,
   },
   upcomingSection: {
-    backgroundColor: '#FFF5F0',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.accent + '20',
   },
   upcomingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   upcomingTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#FF6B35',
-    marginLeft: 6,
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: COLORS.accent,
+    marginLeft: 8,
   },
   upcomingEpisode: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   episodeInfo: {
     flex: 1,
   },
   episodeNumber: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: COLORS.text,
   },
   episodeTitle: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   airDateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   airDate: {
-    fontSize: 11,
-    color: '#666',
+    fontSize: 12,
+    color: COLORS.textSecondary,
     marginLeft: 4,
+    fontWeight: '600' as const,
   },
   episodesList: {
-    marginVertical: 8,
+    marginVertical: 12,
   },
   episodesContent: {
-    paddingRight: 16,
+    paddingRight: 20,
   },
   episodeCard: {
-    width: 120,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
-    marginRight: 12,
+    width: 140,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginRight: 16,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: COLORS.border,
   },
   watchedEpisode: {
-    backgroundColor: '#E8F5E8',
-    borderColor: '#34C759',
+    backgroundColor: COLORS.success + '20',
+    borderColor: COLORS.success,
   },
   selectedEpisode: {
-    borderColor: '#007AFF',
+    borderColor: COLORS.accent,
     borderWidth: 2,
+    backgroundColor: COLORS.accent + '10',
   },
   episodeCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   episodeCardNumber: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: COLORS.text,
   },
   episodeCardTitle: {
-    fontSize: 11,
-    color: '#666',
-    marginBottom: 4,
-    lineHeight: 14,
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+    lineHeight: 16,
   },
   episodeCardDate: {
-    fontSize: 10,
-    color: '#999',
-    marginBottom: 2,
-  },
-  episodeCardRuntime: {
-    fontSize: 10,
-    color: '#666',
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
     fontWeight: '500' as const,
   },
+  episodeCardRuntime: {
+    fontSize: 11,
+    color: COLORS.accent,
+    fontWeight: '600' as const,
+  },
   episodeDetails: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   detailsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   detailsTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#333',
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: COLORS.text,
     flex: 1,
-    marginRight: 12,
+    marginRight: 16,
   },
   watchButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   watchButtonText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginLeft: 6,
+    fontWeight: '600' as const,
   },
   watchedText: {
-    color: '#34C759',
+    color: COLORS.success,
   },
   episodeOverview: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
   },
 });
 
