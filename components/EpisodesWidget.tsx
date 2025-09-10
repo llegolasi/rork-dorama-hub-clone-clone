@@ -61,7 +61,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
   const getUpcomingEpisodes = (episodes: Episode[]) => {
     const now = new Date();
     return episodes.filter((ep: Episode) => ep.air_date && new Date(ep.air_date) > now)
-      .sort((a, b) => new Date(a.air_date!).getTime() - new Date(b.air_date!).getTime());
+      .sort((a: Episode, b: Episode) => new Date(a.air_date!).getTime() - new Date(b.air_date!).getTime());
   };
 
   if (episodesQuery.isLoading) {
@@ -115,7 +115,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
             <Calendar size={16} color="#FF6B35" />
             <Text style={styles.upcomingTitle}>Upcoming Releases</Text>
           </View>
-          {upcomingEpisodes.slice(0, 3).map((episode) => (
+          {upcomingEpisodes.slice(0, 3).map((episode: Episode) => (
             <View key={episode.id} style={styles.upcomingEpisode}>
               <View style={styles.episodeInfo}>
                 <Text style={styles.episodeNumber}>Ep {episode.episode_number}</Text>
