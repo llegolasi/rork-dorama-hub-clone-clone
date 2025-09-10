@@ -30,18 +30,21 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
   
   const episodesQuery = trpc.episodes.getByDramaId.useQuery(
-    { dramaId },
-    { enabled: !!dramaId }
+    { dramaId: parseInt(dramaId) },
+    { enabled: !!dramaId && !isNaN(parseInt(dramaId)) }
   );
 
-  const toggleWatchedMutation = trpc.episodes.toggleWatched.useMutation({
+  const markWatchedMutation = trpc.episodes.markAsWatched.useMutation({
     onSuccess: () => {
       episodesQuery.refetch();
     },
   });
 
-  const handleToggleWatched = (episodeId: string, watched: boolean) => {
-    toggleWatchedMutation.mutate({ episodeId, watched: !watched });
+  const handleToggleWatched = (episodeNumber: number) => {
+    markWatchedMutation.mutate({ 
+      dramaId: parseInt(dramaId), 
+      episodeNumber 
+    });
   };
 
   const formatAirDate = (dateString?: string) => {
@@ -57,7 +60,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
 
   const getUpcomingEpisodes = (episodes: Episode[]) => {
     const now = new Date();
-    return episodes.filter(ep => ep.air_date && new Date(ep.air_date) > now)
+    return episodes.filter((ep: Episode) => ep.air_date && new Date(ep.air_date) > now)
       .sort((a, b) => new Date(a.air_date!).getTime() - new Date(b.air_date!).getTime());
   };
 
@@ -94,7 +97,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
 
   const episodes = episodesQuery.data || [];
   const upcomingEpisodes = getUpcomingEpisodes(episodes);
-  const watchedCount = episodes.filter(ep => ep.watched).length;
+  const watchedCount = episodes.filter((ep: Episode) => ep.watched).length;
 
   return (
     <View style={styles.container}>
@@ -137,7 +140,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
         style={styles.episodesList}
         contentContainerStyle={styles.episodesContent}
       >
-        {episodes.map((episode) => (
+        {episodes.map((episode: Episode) => (
           <TouchableOpacity
             key={episode.id}
             style={[
@@ -146,7 +149,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
               selectedEpisode?.id === episode.id && styles.selectedEpisode,
             ]}
             onPress={() => setSelectedEpisode(episode)}
-            onLongPress={() => handleToggleWatched(episode.id, episode.watched || false)}
+            onLongPress={() => handleToggleWatched(episode.episode_number)}
           >
             <View style={styles.episodeCardHeader}>
               <Text style={styles.episodeCardNumber}>Ep {episode.episode_number}</Text>
@@ -185,7 +188,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
             </Text>
             <TouchableOpacity
               style={styles.watchButton}
-              onPress={() => handleToggleWatched(selectedEpisode.id, selectedEpisode.watched || false)}
+              onPress={() => handleToggleWatched(selectedEpisode.episode_number)}
             >
               <CheckCircle 
                 size={20} 
