@@ -28,7 +28,7 @@ import OptimizedImage from "@/components/OptimizedImage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/hooks/useUserStore";
-import EpisodesWidget from "@/components/EpisodesWidget";
+
 
 
 const { width } = Dimensions.get("window");
@@ -391,11 +391,7 @@ export default function DramaDetailScreen() {
         <Text style={styles.sectionTitle}>Sinopse</Text>
         <Text style={styles.overview}>{drama.overview || "Sinopse não disponível."}</Text>
       </View>
-      
-      <EpisodesWidget 
-        dramaId={dramaId.toString()} 
-        totalEpisodes={drama.number_of_episodes}
-      />
+
       
       {renderStreamingSection()}
       
