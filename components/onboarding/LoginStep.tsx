@@ -13,7 +13,7 @@ import {
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
-import { hasValidSupabaseConfig } from '@/lib/supabase';
+
 import { router } from 'expo-router';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
@@ -85,13 +85,7 @@ export default function LoginStep({ onSwitchToSignup }: LoginStepProps) {
           Entre na sua conta do Dorama Hub
         </Text>
         
-        {!hasValidSupabaseConfig && (
-          <View style={styles.devNotice}>
-            <Text style={styles.devNoticeText}>
-              🚧 Modo de desenvolvimento: Use demo@example.com / password123
-            </Text>
-          </View>
-        )}
+
 
         {/* Email Field */}
         <View style={styles.inputContainer}>

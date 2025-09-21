@@ -13,7 +13,7 @@ import {
 import { Eye, EyeOff, Mail, User, Lock } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
-import { hasValidSupabaseConfig } from '@/lib/supabase';
+
 
 interface CredentialsStepProps {
   onComplete: () => void;
@@ -86,11 +86,6 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
   };
 
   const canProceed = (): boolean => {
-    if (!hasValidSupabaseConfig) {
-      // Development mode - relaxed validation
-      return username.length >= 3 && email.length > 0 && password.length >= 6;
-    }
-    
     return (
       username.length >= 3 &&
       usernameAvailable === true &&
@@ -159,13 +154,7 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
           Vamos começar criando sua conta no Dorama Hub
         </Text>
         
-        {!hasValidSupabaseConfig && (
-          <View style={styles.devNotice}>
-            <Text style={styles.devNoticeText}>
-              🚧 Modo de desenvolvimento: Qualquer dados funcionarão
-            </Text>
-          </View>
-        )}
+
 
 
 
