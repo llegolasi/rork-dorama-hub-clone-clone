@@ -13,7 +13,7 @@ import {
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter, Stack } from 'expo-router';
-import { Bell, BellRing, Clock, Star } from 'lucide-react-native';
+import { Bell, BellRing, Clock, Star, Settings } from 'lucide-react-native';
 
 import { COLORS } from '@/constants/colors';
 import { getUpcomingDramas } from '@/services/api';
@@ -27,6 +27,7 @@ interface ReleaseItem extends Drama {
 export default function ReleasesCalendarScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState<boolean>(false);
   
   const upcomingQuery = useQuery({
     queryKey: ['upcoming-dramas'],
@@ -90,6 +91,67 @@ export default function ReleasesCalendarScreen() {
       [{ text: 'OK' }]
     );
   };
+
+  const handleNotificationSettings = () => {
+    setShowNotificationSettings(true);
+  };
+
+  const NotificationSettingsModal = () => (
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContent}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Configurações de Notificação</Text>
+          <TouchableOpacity
+            onPress={() => setShowNotificationSettings(false)}
+            style={styles.closeButton}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.settingItem}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingTitle}>Novos Lançamentos</Text>
+            <Text style={styles.settingDescription}>Receba notificações quando novos doramas forem lançados</Text>
+          </View>
+          <TouchableOpacity style={styles.toggleButton}>
+            <View style={[styles.toggleTrack, { backgroundColor: COLORS.accent }]}>
+              <View style={[styles.toggleThumb, { transform: [{ translateX: 20 }] }]} />
+            </View>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.settingItem}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingTitle}>Lembretes Personalizados</Text>
+            <Text style={styles.settingDescription}>Notificações para doramas que você marcou como lembrete</Text>
+          </View>
+          <TouchableOpacity style={styles.toggleButton}>
+            <View style={[styles.toggleTrack, { backgroundColor: COLORS.accent }]}>
+              <View style={[styles.toggleThumb, { transform: [{ translateX: 20 }] }]} />
+            </View>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.settingItem}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingTitle}>Antecedência do Lembrete</Text>
+            <Text style={styles.settingDescription}>Quando receber notificações antes do lançamento</Text>
+          </View>
+          <TouchableOpacity style={styles.timeSelector}>
+            <Text style={styles.timeSelectorText}>1 dia antes</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.saveButton}
+          onPress={() => setShowNotificationSettings(false)}
+        >
+          <Text style={styles.saveButtonText}>Salvar Configurações</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   const groupedData = React.useMemo(() => {
     if (!upcomingQuery.data?.results) return [];
@@ -237,7 +299,16 @@ export default function ReleasesCalendarScreen() {
           title: 'Calendário de Lançamentos',
           headerStyle: { backgroundColor: COLORS.background },
           headerTintColor: COLORS.text,
-          headerTitleStyle: { fontSize: 24, fontWeight: '700' }
+          headerTitleStyle: { fontSize: 24, fontWeight: '700' },
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={handleNotificationSettings}
+              style={styles.headerButton}
+              activeOpacity={0.7}
+            >
+              <Settings size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          )
         }} 
       />
       
@@ -264,6 +335,8 @@ export default function ReleasesCalendarScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         testID="releases-calendar-list"
       />
+      
+      {showNotificationSettings && <NotificationSettingsModal />}
     </View>
   );
 }
@@ -382,5 +455,127 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.border,
     marginHorizontal: 20,
+  },
+  headerButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    padding: 24,
+    margin: 20,
+    maxWidth: 400,
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
+  toggleButton: {
+    padding: 4,
+  },
+  toggleTrack: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  timeSelector: {
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  timeSelectorText: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '500',
+  },
+  saveButton: {
+    backgroundColor: COLORS.accent,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
