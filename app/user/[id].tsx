@@ -28,6 +28,7 @@ import UserStatsDisplay from '@/components/UserStatsDisplay';
 import { ProfileSkeleton } from '@/components/SkeletonLoader';
 import { UserDisplayName, AvatarWithBorder } from '@/components/UserTypeComponents';
 import { UserType } from '@/types/user';
+import CompletedAchievementsDisplay from '@/components/CompletedAchievementsDisplay';
 
 
 type TabType = 'posts' | 'dramas';
@@ -469,6 +470,18 @@ const UserProfileScreen = () => {
         {/* Componente de estatísticas detalhadas */}
         {userProfile?.id && (
           <UserStatsDisplay userId={userProfile.id} isOwnProfile={false} />
+        )}
+
+        {/* Conquistas completas */}
+        {userProfile?.id && (
+          <CompletedAchievementsDisplay 
+            userId={userProfile.id} 
+            isOwnProfile={false}
+            onViewAll={() => {
+              // TODO: Navigate to full achievements screen for this user
+              console.log('Navigate to achievements screen for user:', userProfile.id);
+            }}
+          />
         )}
 
         <View style={styles.tabContainer}>

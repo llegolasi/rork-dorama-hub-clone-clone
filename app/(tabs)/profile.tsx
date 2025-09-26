@@ -18,6 +18,7 @@ import PremiumCoverModal from "@/components/PremiumCoverModal";
 import { ProfileSkeleton } from "@/components/SkeletonLoader";
 import { ACHIEVEMENTS } from "@/constants/achievements";
 import { UserDisplayName } from "@/components/UserTypeComponents";
+import CompletedAchievementsDisplay from "@/components/CompletedAchievementsDisplay";
 
 import type { RankingWithDetails, Achievement, UserStats, PremiumFeatures, UserType } from "@/types/user";
 
@@ -630,6 +631,18 @@ export default function ProfileScreen() {
         {/* Componente de estatísticas detalhadas */}
         {userProfile?.id && userProfile.id !== '' && (
           <UserStatsDisplay userId={userProfile.id} isOwnProfile={true} />
+        )}
+
+        {/* Conquistas completas */}
+        {userProfile?.id && userProfile.id !== '' && (
+          <CompletedAchievementsDisplay 
+            userId={userProfile.id} 
+            isOwnProfile={true}
+            onViewAll={() => {
+              // TODO: Navigate to full achievements screen
+              console.log('Navigate to achievements screen');
+            }}
+          />
         )}
 
         <View style={styles.tabContainer}>

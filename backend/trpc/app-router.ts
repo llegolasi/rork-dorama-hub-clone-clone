@@ -112,6 +112,14 @@ import {
 // Episodes routes
 import { episodesRouter } from "./routes/episodes/route";
 
+// Achievements routes
+import {
+  getUserAchievementsProcedure,
+  getUserCompletedAchievementsProcedure,
+  getUserAchievementStatsProcedure,
+  unlockAchievementProcedure
+} from "./routes/achievements/route";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -222,6 +230,13 @@ export const appRouter = createTRPCRouter({
   }),
   
   episodes: episodesRouter,
+  
+  achievements: createTRPCRouter({
+    getUserAchievements: getUserAchievementsProcedure,
+    getUserCompletedAchievements: getUserCompletedAchievementsProcedure,
+    getUserAchievementStats: getUserAchievementStatsProcedure,
+    unlockAchievement: unlockAchievementProcedure,
+  }),
 });
 
 export type AppRouter = typeof appRouter;
