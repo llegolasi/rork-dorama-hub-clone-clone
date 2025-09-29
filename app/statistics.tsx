@@ -107,36 +107,34 @@ export default function StatisticsScreen() {
       <Animated.View style={[styles.barContainer, { opacity: animatedOpacity }]}>
         <View style={styles.barWrapper}>
           {/* Value label on top of bar */}
-          <Text style={[styles.barTopValue, { opacity: height > 20 ? 1 : 0 }]}>
-            {activeStatType === 'time' ? formatWatchTime(item.value) : item.value.toString()}
-          </Text>
+          {height > 15 && (
+            <Text style={styles.barTopValue}>
+              {activeStatType === 'time' ? formatWatchTime(item.value) : item.value.toString()}
+            </Text>
+          )}
           
           {/* Bar with gradient effect */}
           <Animated.View
             style={[
+              styles.animatedBar,
               {
                 width: barWidth,
                 height: animatedHeight,
-                borderRadius: 8,
-                borderTopLeftRadius: 12,
-                borderTopRightRadius: 12,
-                minHeight: 8,
                 shadowColor: item.color,
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: isHighest ? 0.4 : 0.2,
-                shadowRadius: isHighest ? 6 : 3,
-                elevation: isHighest ? 6 : 3,
-                overflow: 'hidden',
+                shadowOpacity: isHighest ? 0.3 : 0.15,
+                shadowRadius: isHighest ? 4 : 2,
+                elevation: isHighest ? 4 : 2,
               }
             ]}
           >
             <LinearGradient
               colors={[
                 item.color,
-                item.color + 'CC',
-                item.color + '99'
+                item.color + 'E6',
+                item.color + 'CC'
               ]}
-              style={{ flex: 1 }}
+              style={styles.barGradient}
             />
           </Animated.View>
           
@@ -162,23 +160,25 @@ export default function StatisticsScreen() {
     }
 
     const maxValue = Math.max(...data.map(d => d.value));
-    const chartWidth = screenWidth - 64;
-    const barWidth = Math.max(16, (chartWidth - (data.length - 1) * 12) / data.length);
+    const chartWidth = screenWidth - 120; // More space for Y-axis labels
+    const barWidth = Math.min(32, Math.max(20, (chartWidth - (data.length - 1) * 8) / data.length));
 
     return (
       <View style={styles.chartContainer}>
-        <View style={styles.chart}>
-          {data.map((item, index) => {
-            const height = maxValue > 0 ? Math.max(8, (item.value / maxValue) * 140) : 8;
+        {/* Y-axis labels */}
+        <View style={styles.yAxisLabels}>
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
+            const value = Math.round(maxValue * ratio);
             return (
-              <AnimatedBar
-                key={`${item.label}-${index}`}
-                item={item}
-                index={index}
-                height={height}
-                barWidth={barWidth}
-                maxValue={maxValue}
-              />
+              <Text 
+                key={index} 
+                style={[
+                  styles.yAxisLabel, 
+                  { bottom: 50 + (120 * ratio) }
+                ]}
+              >
+                {activeStatType === 'time' ? formatWatchTime(value) : value.toString()}
+              </Text>
             );
           })}
         </View>
@@ -190,26 +190,24 @@ export default function StatisticsScreen() {
               key={index} 
               style={[
                 styles.gridLine, 
-                { bottom: 40 + (140 * ratio) }
+                { bottom: 50 + (120 * ratio) }
               ]} 
             />
           ))}
         </View>
         
-        {/* Y-axis labels */}
-        <View style={styles.yAxisLabels}>
-          {[0.25, 0.5, 0.75, 1].map((ratio, index) => {
-            const value = Math.round(maxValue * ratio);
+        <View style={styles.chart}>
+          {data.map((item, index) => {
+            const height = maxValue > 0 ? Math.max(8, (item.value / maxValue) * 120) : 8;
             return (
-              <Text 
-                key={index} 
-                style={[
-                  styles.yAxisLabel, 
-                  { bottom: 35 + (140 * ratio) }
-                ]}
-              >
-                {activeStatType === 'time' ? formatWatchTime(value) : value.toString()}
-              </Text>
+              <AnimatedBar
+                key={`${item.label}-${index}`}
+                item={item}
+                index={index}
+                height={height}
+                barWidth={barWidth}
+                maxValue={maxValue}
+              />
             );
           })}
         </View>
@@ -776,84 +774,97 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     position: 'relative',
     overflow: 'hidden',
+    minHeight: 220,
   },
   chart: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 180,
-    gap: 12,
-    paddingTop: 20,
+    justifyContent: 'space-around',
+    height: 150,
+    marginLeft: 60,
+    marginRight: 20,
+    paddingTop: 30,
+    gap: 8,
   },
   barContainer: {
     alignItems: 'center',
-    flex: 1,
     position: 'relative',
+    minWidth: 20,
   },
   barWrapper: {
     alignItems: 'center',
     position: 'relative',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  bar: {
-    borderRadius: 8,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+  animatedBar: {
+    borderRadius: 6,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     minHeight: 8,
+    overflow: 'hidden',
+  },
+  barGradient: {
+    flex: 1,
+    borderRadius: 6,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   barBase: {
-    height: 2,
-    backgroundColor: COLORS.border,
+    height: 1.5,
+    backgroundColor: COLORS.border + '60',
     borderRadius: 1,
-    marginTop: 2,
+    marginTop: 1,
   },
   barTopValue: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.text,
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
     position: 'absolute',
-    top: -20,
+    top: -18,
     zIndex: 1,
+    minWidth: 30,
   },
   barLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.textSecondary,
     textAlign: 'center',
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 6,
+    maxWidth: 40,
   },
   chartGrid: {
     position: 'absolute',
-    left: 50,
+    left: 60,
     right: 20,
-    top: 20,
-    bottom: 0,
+    top: 50,
+    bottom: 50,
     pointerEvents: 'none',
   },
   gridLine: {
     position: 'absolute',
     left: 0,
     right: 0,
-    height: 1,
-    backgroundColor: COLORS.border + '30',
+    height: 0.5,
+    backgroundColor: COLORS.border + '40',
   },
   yAxisLabels: {
     position: 'absolute',
     left: 0,
-    top: 20,
-    bottom: 0,
-    width: 45,
+    top: 50,
+    bottom: 50,
+    width: 55,
     pointerEvents: 'none',
   },
   yAxisLabel: {
     position: 'absolute',
-    fontSize: 10,
+    fontSize: 9,
     color: COLORS.textSecondary,
     textAlign: 'right',
-    right: 5,
+    right: 8,
     fontWeight: '500',
+    transform: [{ translateY: -6 }],
   },
   noDataText: {
     fontSize: 14,
