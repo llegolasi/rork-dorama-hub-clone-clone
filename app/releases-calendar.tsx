@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   ActivityIndicator, 
   FlatList, 
@@ -153,7 +153,7 @@ export default function ReleasesCalendarScreen() {
     </View>
   );
 
-  const groupedData = React.useMemo(() => {
+  const groupedData = useMemo(() => {
     if (!upcomingQuery.data?.results) return [];
     
     const groups: { [key: string]: ReleaseItem[] } = {};

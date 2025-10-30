@@ -210,7 +210,7 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
@@ -231,15 +231,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700' as const,
-    color: '#1a1a1a',
+    color: COLORS.text,
     marginLeft: 8,
     flex: 1,
   },
   subtitle: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     fontWeight: '600' as const,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 10,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 8,
-    color: '#666',
+    color: COLORS.textSecondary,
     fontSize: 14,
   },
   emptyContainer: {
@@ -260,16 +260,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#666',
+    color: COLORS.textSecondary,
     fontSize: 14,
   },
   upcomingSection: {
-    backgroundColor: '#f8f9ff',
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e6e8ff',
+    borderColor: COLORS.border,
   },
   upcomingHeader: {
     flexDirection: 'row',
@@ -294,24 +294,24 @@ const styles = StyleSheet.create({
   episodeNumber: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: '#1a1a1a',
+    color: COLORS.text,
   },
   episodeTitle: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   airDateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
   },
   airDate: {
     fontSize: 11,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginLeft: 3,
     fontWeight: '500' as const,
   },
@@ -319,11 +319,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   episodeItem: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
   },
   episodeContent: {
     flexDirection: 'row',
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e6e6e6',
+    backgroundColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -350,10 +350,10 @@ const styles = StyleSheet.create({
   episodeNumberText: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   watchedNumberText: {
-    color: '#fff',
+    color: COLORS.background,
   },
   episodeDetails: {
     flex: 1,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   episodeItemTitle: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: '#1a1a1a',
+    color: COLORS.text,
     marginBottom: 4,
   },
   episodeMetadata: {
@@ -370,12 +370,12 @@ const styles = StyleSheet.create({
   },
   episodeDate: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     fontWeight: '500' as const,
   },
   episodeRuntime: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary,
     fontWeight: '500' as const,
     marginLeft: 4,
   },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#e6e6e6',
+    borderColor: COLORS.border,
   },
   showMoreButton: {
     flexDirection: 'row',
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     marginTop: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
   },
   showMoreText: {
