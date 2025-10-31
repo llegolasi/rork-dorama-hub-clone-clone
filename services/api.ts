@@ -192,6 +192,33 @@ export const getPopularDramas = async (): Promise<Drama[]> => {
   }
 };
 
+// Get popular K-dramas with pagination
+export const getPopularDramasWithPagination = async (page: number = 1): Promise<DramaResponse> => {
+  try {
+    console.log(`Fetching popular dramas page ${page}...`);
+    const response = await fetch(
+      `${TMDB_BASE_URL}/discover/tv?language=pt-BR&with_origin_country=KR&sort_by=popularity.desc&page=${page}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch popular dramas");
+    }
+    
+    const data = await response.json() as DramaResponse;
+    data.results = filterKoreanDramas(data.results);
+    return data;
+  } catch (error) {
+    console.error("Error fetching popular dramas:", error);
+    throw error;
+  }
+};
+
 // Get drama details by ID with improved retry logic
 export const getDramaDetails = async (id: number, retryCount: number = 0): Promise<DramaDetails> => {
   const maxRetries = 3;
