@@ -49,7 +49,7 @@ export interface UserStats {
   monthlyWatchTime: { [month: string]: number };
 }
 
-export type UserType = 'normal' | 'premium' | 'official';
+export type UserType = 'normal' | 'premium' | 'official' | 'founder';
 export type VerificationType = 'official' | 'premium' | 'special';
 export type BadgeType = 'vip' | 'verified' | 'special';
 export type BorderRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'exclusive';

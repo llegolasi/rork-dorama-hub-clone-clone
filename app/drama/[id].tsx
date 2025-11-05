@@ -14,7 +14,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Star, Play } from "lucide-react-native";
+import { ChevronRight, Star, Play, Settings } from "lucide-react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COLORS } from "@/constants/colors";
@@ -28,6 +28,7 @@ import OptimizedImage from "@/components/OptimizedImage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/hooks/useUserStore";
+import FounderCollectionModal from "@/components/FounderCollectionModal";
 
 
 
@@ -37,9 +38,12 @@ export default function DramaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const { isInList, removeFromList, addToList, deleteUserReview, refreshUserProfile } = useUserStore();
+  const { isInList, removeFromList, addToList, deleteUserReview, refreshUserProfile, userProfile } = useUserStore();
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showFounderModal, setShowFounderModal] = useState(false);
+
+  const isFounder = userProfile?.userType === 'founder';
 
   console.log('DramaDetailScreen - received id:', id);
   const dramaId = parseInt(id || "0", 10);
@@ -385,6 +389,17 @@ export default function DramaDetailScreen() {
           totalEpisodes={drama.number_of_episodes}
           size="large"
         />
+        
+        {isFounder && (
+          <TouchableOpacity
+            style={styles.founderButton}
+            onPress={() => setShowFounderModal(true)}
+            activeOpacity={0.7}
+          >
+            <Settings size={20} color={COLORS.accent} />
+            <Text style={styles.founderButtonText}>Gerenciar Coleções</Text>
+          </TouchableOpacity>
+        )}
       </View>
       
       <View style={styles.section}>
@@ -592,6 +607,15 @@ export default function DramaDetailScreen() {
         userName={user?.username || 'Usuário'}
       />
       */}
+      
+      <FounderCollectionModal
+        visible={showFounderModal}
+        onClose={() => setShowFounderModal(false)}
+        dramaId={dramaId}
+        dramaTitle={drama.name}
+        dramaPosterPath={drama.poster_path}
+        dramaYear={drama.first_air_date ? new Date(drama.first_air_date).getFullYear() : null}
+      />
       </ScrollView>
     </SafeAreaView>
   );
@@ -974,5 +998,23 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: COLORS.surface,
+  },
+  founderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+  },
+  founderButtonText: {
+    color: COLORS.accent,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
