@@ -28,7 +28,7 @@ import OptimizedImage from "@/components/OptimizedImage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/hooks/useUserStore";
-import FounderCollectionModal from "@/components/FounderCollectionModal";
+import OfficialCollectionModal from "@/components/OfficialCollectionModal";
 
 
 
@@ -41,9 +41,9 @@ export default function DramaDetailScreen() {
   const { isInList, removeFromList, addToList, deleteUserReview, refreshUserProfile, userProfile } = useUserStore();
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [showFounderModal, setShowFounderModal] = useState(false);
+  const [showOfficialModal, setShowOfficialModal] = useState(false);
 
-  const isFounder = userProfile?.userType === 'founder';
+  const isOfficial = userProfile?.userType === 'official';
 
   console.log('DramaDetailScreen - received id:', id);
   const dramaId = parseInt(id || "0", 10);
@@ -390,14 +390,14 @@ export default function DramaDetailScreen() {
           size="large"
         />
         
-        {isFounder && (
+        {isOfficial && (
           <TouchableOpacity
-            style={styles.founderButton}
-            onPress={() => setShowFounderModal(true)}
+            style={styles.officialButton}
+            onPress={() => setShowOfficialModal(true)}
             activeOpacity={0.7}
           >
             <Settings size={20} color={COLORS.accent} />
-            <Text style={styles.founderButtonText}>Gerenciar Coleções</Text>
+            <Text style={styles.officialButtonText}>Gerenciar Coleções</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -608,9 +608,9 @@ export default function DramaDetailScreen() {
       />
       */}
       
-      <FounderCollectionModal
-        visible={showFounderModal}
-        onClose={() => setShowFounderModal(false)}
+      <OfficialCollectionModal
+        visible={showOfficialModal}
+        onClose={() => setShowOfficialModal(false)}
         dramaId={dramaId}
         dramaTitle={drama.name}
         dramaPosterPath={drama.poster_path}
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: COLORS.surface,
   },
-  founderButton: {
+  officialButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.accent,
   },
-  founderButtonText: {
+  officialButtonText: {
     color: COLORS.accent,
     fontSize: 14,
     fontWeight: '600',
