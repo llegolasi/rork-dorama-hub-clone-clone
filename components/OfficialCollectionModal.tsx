@@ -95,8 +95,8 @@ export default function OfficialCollectionModal({
         .single();
 
       if (error) {
-        console.error('[OfficialCollectionModal] Error creating collection:', error);
-        throw error;
+        console.error('[OfficialCollectionModal] Error creating collection:', JSON.stringify(error, null, 2));
+        throw new Error(error.message || 'Falha ao criar coleção');
       }
 
       return newCollection;
@@ -110,8 +110,9 @@ export default function OfficialCollectionModal({
       Alert.alert('Sucesso', 'Coleção criada com sucesso!');
     },
     onError: (error) => {
-      console.error('[OfficialCollectionModal] Create error:', error);
-      Alert.alert('Erro', 'Falha ao criar coleção');
+      console.error('[OfficialCollectionModal] Create error:', JSON.stringify(error, null, 2));
+      const errorMessage = error instanceof Error ? error.message : 'Falha ao criar coleção';
+      Alert.alert('Erro', errorMessage);
     },
   });
 
@@ -125,7 +126,10 @@ export default function OfficialCollectionModal({
           .eq('collection_id', collectionId)
           .eq('drama_id', dramaId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('[OfficialCollectionModal] Error removing drama:', JSON.stringify(error, null, 2));
+          throw new Error(error.message || 'Falha ao remover drama da coleção');
+        }
       } else {
         console.log('[OfficialCollectionModal] Adding drama to collection');
         
@@ -149,7 +153,10 @@ export default function OfficialCollectionModal({
             display_order: nextOrder,
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('[OfficialCollectionModal] Error adding drama:', JSON.stringify(error, null, 2));
+          throw new Error(error.message || 'Falha ao adicionar drama à coleção');
+        }
       }
     },
     onSuccess: () => {
@@ -157,8 +164,9 @@ export default function OfficialCollectionModal({
       queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
     },
     onError: (error) => {
-      console.error('[OfficialCollectionModal] Toggle error:', error);
-      Alert.alert('Erro', 'Falha ao atualizar coleção');
+      console.error('[OfficialCollectionModal] Toggle error:', JSON.stringify(error, null, 2));
+      const errorMessage = error instanceof Error ? error.message : 'Falha ao atualizar coleção';
+      Alert.alert('Erro', errorMessage);
     },
   });
 
