@@ -1,6 +1,6 @@
 // API Configuration
 export const getApiBaseUrl = (): string => {
-  const vercelUrl = 'https://dorama-hub-backend-3q2k.vercel.app';
+  const vercelUrl = 'https://backend-murex-three-38.vercel.app';
 
   const envCandidate = (process.env.EXPO_PUBLIC_API_URL ?? process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -8,7 +8,7 @@ export const getApiBaseUrl = (): string => {
     try {
       const url = new URL(envCandidate);
       const host = url.host;
-      const isAllowed = host.includes('dorama-hub-backend-3q2k.vercel.app');
+      const isAllowed = host.includes('backend-murex-three-38.vercel.app');
       if (isAllowed) {
         console.log('Using environment API base URL:', envCandidate);
         return envCandidate;
