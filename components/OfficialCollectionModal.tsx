@@ -109,7 +109,7 @@ export default function OfficialCollectionModal({
       setNewCollectionVisible(true);
       Alert.alert('Sucesso', 'Coleção criada com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error('[OfficialCollectionModal] Create error:', JSON.stringify(error, null, 2));
       const errorMessage = error instanceof Error ? error.message : 'Falha ao criar coleção';
       Alert.alert('Erro', errorMessage);
@@ -163,7 +163,7 @@ export default function OfficialCollectionModal({
       queryClient.invalidateQueries({ queryKey: ['drama-collections', dramaId] });
       queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error('[OfficialCollectionModal] Toggle error:', JSON.stringify(error, null, 2));
       const errorMessage = error instanceof Error ? error.message : 'Falha ao atualizar coleção';
       Alert.alert('Erro', errorMessage);
