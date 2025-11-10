@@ -77,7 +77,7 @@ export default function OfficialCollectionModal({
     enabled: visible,
   });
 
-  const createCollectionMutation = useMutation({
+  const createCollectionMutation = useMutation<any, Error, { title: string; description: string; isVisible: boolean }>({
     mutationFn: async (data: { title: string; description: string; isVisible: boolean }) => {
       console.log('[OfficialCollectionModal] Creating new collection:', data);
       
@@ -116,7 +116,7 @@ export default function OfficialCollectionModal({
     },
   });
 
-  const toggleDramaInCollectionMutation = useMutation({
+  const toggleDramaInCollectionMutation = useMutation<void, Error, { collectionId: string; isInCollection: boolean }>({
     mutationFn: async ({ collectionId, isInCollection }: { collectionId: string; isInCollection: boolean }) => {
       if (isInCollection) {
         console.log('[OfficialCollectionModal] Removing drama from collection');
@@ -286,9 +286,9 @@ export default function OfficialCollectionModal({
                   <TouchableOpacity
                     style={[styles.button, styles.createButton]}
                     onPress={handleCreateCollection}
-                    disabled={createCollectionMutation?.isPending}
+                    disabled={createCollectionMutation.isPending}
                   >
-                    {createCollectionMutation?.isPending ? (
+                    {createCollectionMutation.isPending ? (
                       <ActivityIndicator size="small" color={COLORS.background} />
                     ) : (
                       <Text style={styles.createButtonText}>Criar</Text>
@@ -315,7 +315,7 @@ export default function OfficialCollectionModal({
                     <Text style={styles.sectionTitle}>Coleções Existentes</Text>
                     {collections.map((collection: any) => {
                       const isInCollection = dramaCollections?.includes(collection.id) || false;
-                      const isUpdating = toggleDramaInCollectionMutation?.isPending;
+                      const isUpdating = toggleDramaInCollectionMutation.isPending;
 
                       return (
                         <TouchableOpacity
