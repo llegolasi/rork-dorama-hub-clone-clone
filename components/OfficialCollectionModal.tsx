@@ -77,7 +77,7 @@ export default function OfficialCollectionModal({
     enabled: visible,
   });
 
-  const createCollectionMutation = useMutation<any, Error, { title: string; description: string; isVisible: boolean }>({
+  const createCollectionMutation = useMutation({
     mutationFn: async (data: { title: string; description: string; isVisible: boolean }) => {
       console.log('[OfficialCollectionModal] Creating new collection:', data);
       
@@ -116,7 +116,7 @@ export default function OfficialCollectionModal({
     },
   });
 
-  const toggleDramaInCollectionMutation = useMutation<void, Error, { collectionId: string; isInCollection: boolean }>({
+  const toggleDramaInCollectionMutation = useMutation({
     mutationFn: async ({ collectionId, isInCollection }: { collectionId: string; isInCollection: boolean }) => {
       if (isInCollection) {
         console.log('[OfficialCollectionModal] Removing drama from collection');
