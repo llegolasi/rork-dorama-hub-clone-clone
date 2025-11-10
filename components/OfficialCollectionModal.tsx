@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { X, Plus, Check } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
 interface OfficialCollectionModalProps {
@@ -77,18 +77,27 @@ export default function OfficialCollectionModal({
     enabled: visible,
   });
 
-  const createCollectionMutation = useMutation({
-    mutationFn: async (data: { title: string; description: string; isVisible: boolean }) => {
-      console.log('[OfficialCollectionModal] Creating new collection:', data);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  const handleCreateCollection = async () => {
+    if (!newCollectionTitle.trim()) {
+      Alert.alert('Atenção', 'Digite um título para a coleção');
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      console.log('[OfficialCollectionModal] Creating new collection');
       
       const nextOrder = (collections?.length || 0) + 1;
       
       const { data: newCollection, error } = await supabase
         .from('custom_collections')
         .insert({
-          title: data.title,
-          description: data.description || null,
-          is_visible: data.isVisible,
+          title: newCollectionTitle.trim(),
+          description: newCollectionDescription.trim() || null,
+          is_visible: newCollectionVisible,
           display_order: nextOrder,
         })
         .select()
@@ -99,25 +108,26 @@ export default function OfficialCollectionModal({
         throw new Error(error.message || 'Falha ao criar coleção');
       }
 
-      return newCollection;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
       setShowCreateForm(false);
       setNewCollectionTitle('');
       setNewCollectionDescription('');
       setNewCollectionVisible(true);
       Alert.alert('Sucesso', 'Coleção criada com sucesso!');
-    },
-    onError: (error: unknown) => {
-      console.error('[OfficialCollectionModal] Create error:', JSON.stringify(error, null, 2));
-      const errorMessage = error instanceof Error ? error.message : 'Falha ao criar coleção';
+    } catch (err) {
+      console.error('[OfficialCollectionModal] Error in handleCreateCollection:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Falha ao criar coleção';
       Alert.alert('Erro', errorMessage);
-    },
-  });
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
-  const toggleDramaInCollectionMutation = useMutation({
-    mutationFn: async ({ collectionId, isInCollection }: { collectionId: string; isInCollection: boolean }) => {
+  const handleToggleCollection = async (collectionId: string) => {
+    try {
+      setIsToggling(true);
+      const isInCollection = dramaCollections?.includes(collectionId) || false;
+      
       if (isInCollection) {
         console.log('[OfficialCollectionModal] Removing drama from collection');
         const { error } = await supabase
@@ -158,62 +168,15 @@ export default function OfficialCollectionModal({
           throw new Error(error.message || 'Falha ao adicionar drama à coleção');
         }
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['drama-collections', dramaId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
-    },
-    onError: (error: unknown) => {
-      console.error('[OfficialCollectionModal] Toggle error:', JSON.stringify(error, null, 2));
-      const errorMessage = error instanceof Error ? error.message : 'Falha ao atualizar coleção';
-      Alert.alert('Erro', errorMessage);
-    },
-  });
 
-  const handleCreateCollection = () => {
-    if (!newCollectionTitle.trim()) {
-      Alert.alert('Atenção', 'Digite um título para a coleção');
-      return;
-    }
-
-    try {
-      console.log('[OfficialCollectionModal] Mutation object:', createCollectionMutation);
-      console.log('[OfficialCollectionModal] Mutate function type:', typeof createCollectionMutation.mutate);
-      
-      if (typeof createCollectionMutation.mutate !== 'function') {
-        console.error('[OfficialCollectionModal] mutate is not a function!');
-        Alert.alert('Erro', 'Erro interno: função de mutação não disponível');
-        return;
-      }
-
-      createCollectionMutation.mutate({
-        title: newCollectionTitle.trim(),
-        description: newCollectionDescription.trim(),
-        isVisible: newCollectionVisible,
-      });
-    } catch (err) {
-      console.error('[OfficialCollectionModal] Error in handleCreateCollection:', err);
-      Alert.alert('Erro', 'Ocorreu um erro ao criar a coleção');
-    }
-  };
-
-  const handleToggleCollection = (collectionId: string) => {
-    try {
-      const isInCollection = dramaCollections?.includes(collectionId) || false;
-      
-      console.log('[OfficialCollectionModal] Toggle mutation object:', toggleDramaInCollectionMutation);
-      console.log('[OfficialCollectionModal] Toggle mutate function type:', typeof toggleDramaInCollectionMutation.mutate);
-      
-      if (typeof toggleDramaInCollectionMutation.mutate !== 'function') {
-        console.error('[OfficialCollectionModal] toggle mutate is not a function!');
-        Alert.alert('Erro', 'Erro interno: função de mutação não disponível');
-        return;
-      }
-      
-      toggleDramaInCollectionMutation.mutate({ collectionId, isInCollection });
+      await queryClient.invalidateQueries({ queryKey: ['drama-collections', dramaId] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
     } catch (err) {
       console.error('[OfficialCollectionModal] Error in handleToggleCollection:', err);
-      Alert.alert('Erro', 'Ocorreu um erro ao atualizar a coleção');
+      const errorMessage = err instanceof Error ? err.message : 'Falha ao atualizar coleção';
+      Alert.alert('Erro', errorMessage);
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -286,9 +249,9 @@ export default function OfficialCollectionModal({
                   <TouchableOpacity
                     style={[styles.button, styles.createButton]}
                     onPress={handleCreateCollection}
-                    disabled={createCollectionMutation.isPending}
+                    disabled={isCreating}
                   >
-                    {createCollectionMutation.isPending ? (
+                    {isCreating ? (
                       <ActivityIndicator size="small" color={COLORS.background} />
                     ) : (
                       <Text style={styles.createButtonText}>Criar</Text>
@@ -315,7 +278,6 @@ export default function OfficialCollectionModal({
                     <Text style={styles.sectionTitle}>Coleções Existentes</Text>
                     {collections.map((collection: any) => {
                       const isInCollection = dramaCollections?.includes(collection.id) || false;
-                      const isUpdating = toggleDramaInCollectionMutation.isPending;
 
                       return (
                         <TouchableOpacity
@@ -325,7 +287,7 @@ export default function OfficialCollectionModal({
                             isInCollection && styles.collectionItemActive,
                           ]}
                           onPress={() => handleToggleCollection(collection.id)}
-                          disabled={isUpdating}
+                          disabled={isToggling}
                         >
                           <View style={styles.collectionInfo}>
                             <Text style={styles.collectionTitle}>
@@ -344,7 +306,7 @@ export default function OfficialCollectionModal({
                           </View>
 
                           <View style={styles.checkboxContainer}>
-                            {isUpdating ? (
+                            {isToggling ? (
                               <ActivityIndicator size="small" color={COLORS.accent} />
                             ) : isInCollection ? (
                               <View style={styles.checkboxChecked}>
