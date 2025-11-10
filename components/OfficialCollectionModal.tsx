@@ -176,16 +176,45 @@ export default function OfficialCollectionModal({
       return;
     }
 
-    createCollectionMutation.mutate({
-      title: newCollectionTitle.trim(),
-      description: newCollectionDescription.trim(),
-      isVisible: newCollectionVisible,
-    });
+    try {
+      console.log('[OfficialCollectionModal] Mutation object:', createCollectionMutation);
+      console.log('[OfficialCollectionModal] Mutate function type:', typeof createCollectionMutation.mutate);
+      
+      if (typeof createCollectionMutation.mutate !== 'function') {
+        console.error('[OfficialCollectionModal] mutate is not a function!');
+        Alert.alert('Erro', 'Erro interno: função de mutação não disponível');
+        return;
+      }
+
+      createCollectionMutation.mutate({
+        title: newCollectionTitle.trim(),
+        description: newCollectionDescription.trim(),
+        isVisible: newCollectionVisible,
+      });
+    } catch (err) {
+      console.error('[OfficialCollectionModal] Error in handleCreateCollection:', err);
+      Alert.alert('Erro', 'Ocorreu um erro ao criar a coleção');
+    }
   };
 
   const handleToggleCollection = (collectionId: string) => {
-    const isInCollection = dramaCollections?.includes(collectionId) || false;
-    toggleDramaInCollectionMutation.mutate({ collectionId, isInCollection });
+    try {
+      const isInCollection = dramaCollections?.includes(collectionId) || false;
+      
+      console.log('[OfficialCollectionModal] Toggle mutation object:', toggleDramaInCollectionMutation);
+      console.log('[OfficialCollectionModal] Toggle mutate function type:', typeof toggleDramaInCollectionMutation.mutate);
+      
+      if (typeof toggleDramaInCollectionMutation.mutate !== 'function') {
+        console.error('[OfficialCollectionModal] toggle mutate is not a function!');
+        Alert.alert('Erro', 'Erro interno: função de mutação não disponível');
+        return;
+      }
+      
+      toggleDramaInCollectionMutation.mutate({ collectionId, isInCollection });
+    } catch (err) {
+      console.error('[OfficialCollectionModal] Error in handleToggleCollection:', err);
+      Alert.alert('Erro', 'Ocorreu um erro ao atualizar a coleção');
+    }
   };
 
   return (
@@ -257,9 +286,9 @@ export default function OfficialCollectionModal({
                   <TouchableOpacity
                     style={[styles.button, styles.createButton]}
                     onPress={handleCreateCollection}
-                    disabled={createCollectionMutation.isPending}
+                    disabled={createCollectionMutation?.isPending}
                   >
-                    {createCollectionMutation.isPending ? (
+                    {createCollectionMutation?.isPending ? (
                       <ActivityIndicator size="small" color={COLORS.background} />
                     ) : (
                       <Text style={styles.createButtonText}>Criar</Text>
@@ -286,7 +315,7 @@ export default function OfficialCollectionModal({
                     <Text style={styles.sectionTitle}>Coleções Existentes</Text>
                     {collections.map((collection: any) => {
                       const isInCollection = dramaCollections?.includes(collection.id) || false;
-                      const isUpdating = toggleDramaInCollectionMutation.isPending;
+                      const isUpdating = toggleDramaInCollectionMutation?.isPending;
 
                       return (
                         <TouchableOpacity
