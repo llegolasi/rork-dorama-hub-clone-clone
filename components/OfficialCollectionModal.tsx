@@ -92,7 +92,7 @@ export default function OfficialCollectionModal({
       
       const nextOrder = (collections?.length || 0) + 1;
       
-      const { data: newCollection, error } = await supabase
+      const { error } = await supabase
         .from('custom_collections')
         .insert({
           title: newCollectionTitle.trim(),
@@ -104,7 +104,7 @@ export default function OfficialCollectionModal({
         .single();
 
       if (error) {
-        console.error('[OfficialCollectionModal] Error creating collection:', JSON.stringify(error, null, 2));
+        console.error('[OfficialCollectionModal] Error creating collection:', error);
         throw new Error(error.message || 'Falha ao criar coleção');
       }
 
@@ -137,7 +137,7 @@ export default function OfficialCollectionModal({
           .eq('drama_id', dramaId);
 
         if (error) {
-          console.error('[OfficialCollectionModal] Error removing drama:', JSON.stringify(error, null, 2));
+          console.error('[OfficialCollectionModal] Error removing drama:', error);
           throw new Error(error.message || 'Falha ao remover drama da coleção');
         }
       } else {
@@ -164,7 +164,7 @@ export default function OfficialCollectionModal({
           });
 
         if (error) {
-          console.error('[OfficialCollectionModal] Error adding drama:', JSON.stringify(error, null, 2));
+          console.error('[OfficialCollectionModal] Error adding drama:', error);
           throw new Error(error.message || 'Falha ao adicionar drama à coleção');
         }
       }
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   collectionItemActive: {
     borderColor: COLORS.accent,
-    backgroundColor: `${COLORS.accent}15`,
+    backgroundColor: COLORS.accent + '15',
   },
   collectionInfo: {
     flex: 1,
