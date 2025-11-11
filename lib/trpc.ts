@@ -7,8 +7,7 @@ import { getApiBaseUrl } from "@/constants/config";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-
-export const trpcClient = trpc.createClient({
+const clientConfig = {
   links: [
     httpLink({
       url: `${getApiBaseUrl()}/api/trpc`,
@@ -67,4 +66,6 @@ export const trpcClient = trpc.createClient({
       },
     }),
   ],
-});
+};
+
+export const trpcClient = trpc.createClient(clientConfig);

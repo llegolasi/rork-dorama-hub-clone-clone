@@ -19,7 +19,7 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { addToList } = useUserLists();
-
+  
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
   const [cachedDramas, setCachedDramas] = useState<Drama[]>([]);
