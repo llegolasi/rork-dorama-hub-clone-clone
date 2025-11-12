@@ -365,8 +365,8 @@ export const [AuthContext, useAuth] = createContextHook(() => {
               const { error: followError } = await supabase
                 .from('user_follows')
                 .insert({
-                  follower_user_id: data.user.id,
-                  followed_user_id: officialAccountId
+                  follower_id: data.user.id,
+                  following_id: officialAccountId
                 });
                 
               if (followError && followError.code !== '23505') {
@@ -654,8 +654,8 @@ export const [AuthContext, useAuth] = createContextHook(() => {
           const { error: followError } = await supabase
             .from('user_follows')
             .insert({
-              follower_user_id: user.id,
-              followed_user_id: officialAccountId
+              follower_id: user.id,
+              following_id: officialAccountId
             });
             
           if (followError && followError.code !== '23505') {
