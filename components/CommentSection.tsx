@@ -60,6 +60,7 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [reportModalVisible, setReportModalVisible] = useState<boolean>(false);
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+  const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
 
   const bottomPadding = useMemo(() => (insets.bottom > 0 ? insets.bottom : 12), [insets.bottom]);
   const keyboardOffset = useMemo(() => {
@@ -104,6 +105,14 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
     setReportModalVisible(false);
     setSelectedComment(null);
   };
+  
+  const sortedComments = [...comments].sort((a, b) => {
+    if (sortBy === 'recent') {
+      return b.id.localeCompare(a.id);
+    } else {
+      return 0;
+    }
+  });
 
   return (
     <KeyboardAvoidingView
@@ -111,16 +120,37 @@ export default function CommentSection({ dramaId }: CommentSectionProps) {
       keyboardVerticalOffset={keyboardOffset}
       style={styles.container}
     >
-      <Text style={styles.title}>Comments</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>Comments</Text>
+        
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[styles.filterButton, sortBy === 'recent' && styles.filterButtonActive]}
+            onPress={() => setSortBy('recent')}
+          >
+            <Text style={[styles.filterText, sortBy === 'recent' && styles.filterTextActive]}>
+              Mais recentes
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, sortBy === 'popular' && styles.filterButtonActive]}
+            onPress={() => setSortBy('popular')}
+          >
+            <Text style={[styles.filterText, sortBy === 'popular' && styles.filterTextActive]}>
+              Mais populares
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 120 }]}
         keyboardShouldPersistTaps="handled"
       >
-        {comments.length > 0 ? (
+        {sortedComments.length > 0 ? (
           <View style={styles.commentsContainer}>
-            {comments.map((comment) => (
+            {sortedComments.map((comment) => (
               <View key={comment.id} style={styles.commentItem}>
                 <View style={styles.commentHeader}>
                   <View style={styles.commentHeaderLeft}>
@@ -223,12 +253,39 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 24,
   },
+  headerContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
   title: {
     color: COLORS.text,
     fontSize: 18,
     fontWeight: "700",
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  filterButton: {
     paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  filterTextActive: {
+    color: COLORS.text,
   },
   scroll: {
     flex: 1,

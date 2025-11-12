@@ -76,12 +76,19 @@ export default function PreferencesStep({ onComplete }: PreferencesStepProps) {
 
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.content}>
-        <Text style={styles.title}>Seus Gostos</Text>
-        <Text style={styles.subtitle}>
-          Ajude-nos a conhecer suas preferências para personalizar sua experiência
-        </Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Seus Gostos</Text>
+          <Text style={styles.subtitle}>
+            Ajude-nos a conhecer suas preferências para personalizar sua experiência
+          </Text>
+        </View>
 
         {/* Genre Selection */}
         <View style={styles.section}>
@@ -136,32 +143,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
   content: {
-    padding: 24,
-    paddingTop: 40,
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+  },
+  header: {
+    marginBottom: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold' as const,
     color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600' as const,
     color: COLORS.text,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   sectionSubtitle: {
     fontSize: 14,
@@ -172,16 +187,16 @@ const styles = StyleSheet.create({
   genreGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
   },
   genreTag: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.card,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
     gap: 6,
   },
@@ -203,11 +218,11 @@ const styles = StyleSheet.create({
 
   buttonContainer: {
     gap: 12,
-    marginTop: 24,
+    marginTop: 28,
   },
   continueButton: {
     backgroundColor: COLORS.accent,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 12,
   },
   continueButtonDisabled: {

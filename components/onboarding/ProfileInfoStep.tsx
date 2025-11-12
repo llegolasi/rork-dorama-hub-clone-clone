@@ -53,12 +53,19 @@ export default function ProfileInfoStep({ onComplete }: ProfileInfoStepProps) {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.content}>
-        <Text style={styles.title}>Complete seu Perfil</Text>
-        <Text style={styles.subtitle}>
-          Adicione seu nome de exibição e conte um pouco sobre você
-        </Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Complete seu Perfil</Text>
+          <Text style={styles.subtitle}>
+            Adicione seu nome de exibição e conte um pouco sobre você
+          </Text>
+        </View>
 
         {/* Display Name */}
         <View style={styles.inputContainer}>
@@ -120,26 +127,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
   content: {
-    padding: 24,
-    paddingTop: 40,
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    justifyContent: 'center',
+  },
+  header: {
+    marginBottom: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold' as const,
     color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 22,
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -156,9 +172,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 12,
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.text,
   },
   bioInput: {
@@ -183,11 +199,11 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 12,
-    marginTop: 24,
+    marginTop: 20,
   },
   continueButton: {
     backgroundColor: COLORS.accent,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 12,
   },
   continueButtonDisabled: {

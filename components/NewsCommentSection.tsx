@@ -63,6 +63,7 @@ export default function NewsCommentSection(props: CommentSectionProps) {
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const { user } = useAuth();
 
   const inputRef = useRef<TextInput | null>(null);
@@ -101,10 +102,18 @@ export default function NewsCommentSection(props: CommentSectionProps) {
     ? trpc.news.getUserLikedArticle.useQuery({ articleId: id })
     : null;
 
-  // Extract comments from the query result
-  const comments = type === 'news' 
+  // Extract and sort comments from the query result
+  const rawComments = type === 'news' 
     ? (commentsQuery.data as Comment[] | undefined) || []
     : (commentsQuery.data as { comments: Comment[] } | undefined)?.comments || [];
+  
+  const comments = [...rawComments].sort((a, b) => {
+    if (sortBy === 'recent') {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    } else {
+      return (b.like_count || 0) - (a.like_count || 0);
+    }
+  });
 
   // Mutations based on type
   const addCommentMutation = type === 'news'
@@ -367,6 +376,25 @@ export default function NewsCommentSection(props: CommentSectionProps) {
           <Text style={styles.commentsTitle}>
             {comments.length} comentários
           </Text>
+        </View>
+        
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[styles.filterButton, sortBy === 'recent' && styles.filterButtonActive]}
+            onPress={() => setSortBy('recent')}
+          >
+            <Text style={[styles.filterText, sortBy === 'recent' && styles.filterTextActive]}>
+              Mais recentes
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, sortBy === 'popular' && styles.filterButtonActive]}
+            onPress={() => setSortBy('popular')}
+          >
+            <Text style={[styles.filterText, sortBy === 'popular' && styles.filterTextActive]}>
+              Mais populares
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -707,6 +735,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
     marginLeft: 8,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  filterTextActive: {
+    color: COLORS.text,
   },
   inputContainer: {
     backgroundColor: COLORS.card,

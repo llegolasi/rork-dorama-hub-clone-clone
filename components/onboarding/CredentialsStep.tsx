@@ -147,12 +147,19 @@ export default function CredentialsStep({ onComplete, onSwitchToLogin }: Credent
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.content}>
-        <Text style={styles.title}>Criar Conta</Text>
-        <Text style={styles.subtitle}>
-          Vamos começar criando sua conta no Dorama Hub
-        </Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Criar Conta</Text>
+          <Text style={styles.subtitle}>
+            Vamos começar criando sua conta no Dorama Hub
+          </Text>
+        </View>
         
 
 
@@ -329,23 +336,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
   content: {
-    padding: 24,
-    paddingTop: 40,
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    justifyContent: 'center',
+  },
+  header: {
+    marginBottom: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold' as const,
     color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   googleButton: {
     backgroundColor: COLORS.card,
@@ -393,7 +409,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -406,9 +422,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 12,
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.text,
   },
   inputIcon: {
@@ -440,9 +456,9 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     backgroundColor: COLORS.accent,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 12,
-    marginTop: 24,
+    marginTop: 20,
   },
   continueButtonDisabled: {
     backgroundColor: COLORS.border,
@@ -460,7 +476,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 24,
+    paddingBottom: 20,
   },
   loginPromptText: {
     color: COLORS.textSecondary,
