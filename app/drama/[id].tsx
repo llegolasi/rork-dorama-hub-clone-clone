@@ -409,7 +409,7 @@ export default function DramaDetailScreen() {
         <ListToggle 
           dramaId={drama.id} 
           totalEpisodes={drama.number_of_episodes}
-          size="large"
+          dramaTitle={drama.name}
         />
         
         {isOfficial && (

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, Platform } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BookOpen, Check, Eye } from "lucide-react-native";
 
 import { COLORS } from "@/constants/colors";
@@ -8,19 +8,19 @@ import { useUserLists } from "@/hooks/useUserStore";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { calculateDramaTotalRuntime, getDramaDetails } from "@/services/api";
-import CompletionShareModal from "@/components/CompletionShareModal";
-import CompletionShareModalAndroid from "@/components/CompletionShareModal.android";
+import ListManagementModal from "@/components/ListManagementModal";
 
 interface ListToggleProps {
   dramaId: number;
   totalEpisodes?: number;
+  dramaTitle?: string;
 }
 
-export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) {
+export default function ListToggle({ dramaId, totalEpisodes, dramaTitle }: ListToggleProps) {
   const { addToList, removeFromList, getCurrentList } = useUserLists();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
+  const [showManagementModal, setShowManagementModal] = useState<boolean>(false);
   
   const currentList = getCurrentList(dramaId);
   
@@ -53,16 +53,19 @@ export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) 
   };
   
   const handleToggle = async (listType: ListType) => {
+    // Se já está na lista, abrir modal de gerenciamento
+    if (currentList === listType) {
+      setShowManagementModal(true);
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       const wasNotCompleted = currentList !== 'completed';
       const isNowCompleted = listType === 'completed';
       
-      if (currentList === listType) {
-        // Remove from current list
-        removeFromList(dramaId, listType);
-      } else if (currentList) {
+      if (currentList) {
         // Move from one list to another
         removeFromList(dramaId, currentList);
         addToList(dramaId, listType, totalEpisodes);
@@ -85,6 +88,37 @@ export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) 
     }
   };
   
+  const handleChangeList = async (newList: ListType) => {
+    setIsLoading(true);
+    
+    try {
+      const wasNotCompleted = currentList !== 'completed';
+      const isNowCompleted = newList === 'completed';
+      
+      if (currentList) {
+        removeFromList(dramaId, currentList);
+      }
+      addToList(dramaId, newList, totalEpisodes);
+      
+      // If user just completed the drama, show completion sharing modal
+      if (wasNotCompleted && isNowCompleted && user) {
+        setTimeout(() => {
+          handleCompletionShare();
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Error changing list:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleRemoveFromList = () => {
+    if (currentList) {
+      removeFromList(dramaId, currentList);
+    }
+  };
+  
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -93,8 +127,6 @@ export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) 
     );
   }
 
-  const CompletionModal = Platform.OS === 'android' ? CompletionShareModalAndroid : CompletionShareModal;
-  
   return (
     <>
       <View style={styles.container}>
@@ -181,6 +213,17 @@ export default function ListToggle({ dramaId, totalEpisodes }: ListToggleProps) 
         />
       )}
       */}
+      
+      {currentList && (
+        <ListManagementModal
+          visible={showManagementModal}
+          onClose={() => setShowManagementModal(false)}
+          currentList={currentList}
+          onChangeList={handleChangeList}
+          onRemove={handleRemoveFromList}
+          dramaTitle={dramaTitle}
+        />
+      )}
     </>
   );
 }
