@@ -74,10 +74,10 @@ const filterKoreanDramas = (dramas: Drama[]): Drama[] => {
 // Get trending K-dramas
 export const getTrendingDramas = async (): Promise<Drama[]> => {
   try {
-    console.log('Fetching trending dramas (primary: trending/day)...');
+    console.log('Fetching trending dramas (primary: trending/week)...');
 
     const trendingRes = await fetch(
-      `${TMDB_BASE_URL}/trending/tv/day?language=pt-BR`,
+      `${TMDB_BASE_URL}/trending/tv/week?language=pt-BR`,
       {
         headers: {
           'Authorization': `Bearer ${TMDB_API_KEY}`,
