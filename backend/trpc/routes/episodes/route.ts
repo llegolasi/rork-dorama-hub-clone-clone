@@ -8,6 +8,11 @@ export const episodesRouter = createTRPCRouter({
       seasonNumber: z.number().optional(),
     }))
     .query(async ({ input, ctx }) => {
+      console.log('📺 [Episodes Route] Starting getByDramaId');
+      console.log('📺 [Episodes Route] Input:', JSON.stringify(input, null, 2));
+      console.log('📺 [Episodes Route] Drama ID:', input.dramaId);
+      console.log('📺 [Episodes Route] Season Number:', input.seasonNumber || 'ALL SEASONS');
+
       const { data, error } = await ctx.supabase
         .rpc('get_drama_episodes', {
           p_drama_id: input.dramaId,
@@ -15,9 +20,16 @@ export const episodesRouter = createTRPCRouter({
         });
 
       if (error) {
-        console.error('Error fetching drama episodes:', error);
+        console.error('❌ [Episodes Route] Error fetching drama episodes:', error);
+        console.error('❌ [Episodes Route] Error code:', error.code);
+        console.error('❌ [Episodes Route] Error message:', error.message);
+        console.error('❌ [Episodes Route] Error details:', JSON.stringify(error, null, 2));
         throw new Error('Failed to fetch episodes');
       }
+
+      console.log('✅ [Episodes Route] Success!');
+      console.log('✅ [Episodes Route] Episodes found:', data?.length || 0);
+      console.log('✅ [Episodes Route] First 3 episodes:', JSON.stringify(data?.slice(0, 3), null, 2));
 
       return data || [];
     }),

@@ -914,6 +914,7 @@ const styles = StyleSheet.create({
   castContainer: {
     paddingLeft: 20,
     paddingRight: 8,
+    gap: 12,
   },
 
   seasonsContainer: {

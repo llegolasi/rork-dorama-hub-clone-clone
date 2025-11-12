@@ -27,11 +27,19 @@ interface Episode {
 }
 
 const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes }) => {
+  console.log('🎬 [EpisodesWidget] Component mounted');
+  console.log('🎬 [EpisodesWidget] Drama ID (string):', dramaId);
+  console.log('🎬 [EpisodesWidget] Total Episodes prop:', totalEpisodes);
+  
   const [showAll, setShowAll] = useState<boolean>(false);
   
+  const dramaIdNumber = parseInt(dramaId);
+  console.log('🎬 [EpisodesWidget] Drama ID (number):', dramaIdNumber);
+  console.log('🎬 [EpisodesWidget] Is valid number:', !isNaN(dramaIdNumber));
+  
   const episodesQuery = trpc.episodes.getByDramaId.useQuery(
-    { dramaId: parseInt(dramaId) },
-    { enabled: !!dramaId && !isNaN(parseInt(dramaId)) }
+    { dramaId: dramaIdNumber },
+    { enabled: !!dramaId && !isNaN(dramaIdNumber) }
   );
 
   const markWatchedMutation = trpc.episodes.markAsWatched.useMutation({
@@ -64,7 +72,15 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
       .sort((a: Episode, b: Episode) => new Date(a.air_date!).getTime() - new Date(b.air_date!).getTime());
   };
 
+  console.log('🎬 [EpisodesWidget] Query state:', {
+    isLoading: episodesQuery.isLoading,
+    isError: episodesQuery.isError,
+    error: episodesQuery.error,
+    dataLength: episodesQuery.data?.length,
+  });
+
   if (episodesQuery.isLoading) {
+    console.log('⏳ [EpisodesWidget] Loading episodes...');
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -80,6 +96,9 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
   }
 
   if (episodesQuery.error || !episodesQuery.data) {
+    console.log('❌ [EpisodesWidget] Error or no data');
+    console.log('❌ [EpisodesWidget] Error:', episodesQuery.error);
+    console.log('❌ [EpisodesWidget] Data:', episodesQuery.data);
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -90,16 +109,29 @@ const EpisodesWidget: React.FC<EpisodesWidgetProps> = ({ dramaId, totalEpisodes 
           <Text style={styles.emptyText}>
             {totalEpisodes ? `${totalEpisodes} episodes` : 'Episode information not available'}
           </Text>
+          {episodesQuery.error && (
+            <Text style={[styles.emptyText, { color: COLORS.error, marginTop: 8 }]}>
+              Error: {episodesQuery.error.message}
+            </Text>
+          )}
         </View>
       </View>
     );
   }
 
   const episodes = episodesQuery.data || [];
+  console.log('✅ [EpisodesWidget] Episodes loaded successfully');
+  console.log('✅ [EpisodesWidget] Total episodes:', episodes.length);
+  console.log('✅ [EpisodesWidget] First episode:', episodes[0]);
+  
   const upcomingEpisodes = getUpcomingEpisodes(episodes);
   const watchedCount = episodes.filter((ep: Episode) => ep.watched).length;
   const displayedEpisodes = showAll ? episodes : episodes.slice(0, 5);
   const hasMoreEpisodes = episodes.length > 5;
+  
+  console.log('✅ [EpisodesWidget] Upcoming episodes:', upcomingEpisodes.length);
+  console.log('✅ [EpisodesWidget] Watched count:', watchedCount);
+  console.log('✅ [EpisodesWidget] Displayed episodes:', displayedEpisodes.length);
 
   return (
     <View style={styles.container}>

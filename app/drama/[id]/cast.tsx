@@ -83,7 +83,8 @@ const styles = StyleSheet.create({
   },
   row: {
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 0,
+    gap: 16,
   },
   header: {
     marginBottom: 20,
