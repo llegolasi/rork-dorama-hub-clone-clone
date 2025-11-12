@@ -385,17 +385,24 @@ export const searchDramas = async (query: string): Promise<Drama[]> => {
     
     if (!response.ok) {
       console.error(`TMDB API error: ${response.status} ${response.statusText}`);
-      throw new Error("Failed to search dramas");
+      return [];
     }
     
     const data = await response.json() as DramaResponse;
-    console.log(`TMDB returned ${data.results.length} total results`);
+    console.log(`TMDB returned ${data.results?.length || 0} total results`);
+    
+    if (!data.results || !Array.isArray(data.results)) {
+      console.error('Invalid search results received from TMDB');
+      return [];
+    }
     
     // For search, be more lenient with filtering to include more results
     const filteredResults = data.results.filter(drama => {
-      const hasKoreanOrigin = drama.origin_country.includes("KR");
+      if (!drama) return false;
+      
+      const hasKoreanOrigin = drama.origin_country && drama.origin_country.includes("KR");
       const hasKoreanText = drama.original_name && drama.original_name.match(/[가-힣]/);
-      const isAsianContent = drama.origin_country.some(country => ['KR', 'JP', 'CN', 'TW', 'TH'].includes(country));
+      const isAsianContent = drama.origin_country && drama.origin_country.some(country => ['KR', 'JP', 'CN', 'TW', 'TH'].includes(country));
       
       return hasKoreanOrigin || hasKoreanText || (isAsianContent && query.length > 2);
     });
@@ -404,7 +411,7 @@ export const searchDramas = async (query: string): Promise<Drama[]> => {
     return filteredResults;
   } catch (error) {
     console.error(`Error searching dramas with query "${query}":`, error);
-    throw error;
+    return [];
   }
 };
 
