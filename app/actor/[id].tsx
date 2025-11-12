@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   creditsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
     marginTop: 8,
   },
   creditCard: {

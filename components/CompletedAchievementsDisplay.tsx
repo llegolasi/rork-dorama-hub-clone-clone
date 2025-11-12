@@ -20,10 +20,10 @@ export default function CompletedAchievementsDisplay({
 }: CompletedAchievementsDisplayProps) {
   const { data: completedAchievements = [], isLoading, error } = trpc.achievements.getUserCompletedAchievements.useQuery({
     userId,
-    limit: maxDisplay + 1, // Get one extra to know if there are more
+    limit: maxDisplay + 1,
     offset: 0
   }, {
-    enabled: !!userId && userId.length > 0
+    enabled: !!userId && userId !== '' && userId.length > 0
   });
   
   console.log('[CompletedAchievementsDisplay] State:', {

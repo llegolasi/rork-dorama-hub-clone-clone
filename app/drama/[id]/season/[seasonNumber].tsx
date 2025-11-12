@@ -53,11 +53,15 @@ export default function SeasonEpisodesScreen() {
   const { id: dramaId, seasonNumber } = useLocalSearchParams<{ id: string; seasonNumber: string }>();
   const router = useRouter();
   
+  console.log('[SeasonEpisodesScreen] Params:', { dramaId, seasonNumber });
+  
   const { data: season, isLoading, error } = useQuery({
     queryKey: ['season-details', dramaId, seasonNumber],
     queryFn: () => getSeasonDetails(dramaId || '', seasonNumber || '1'),
     enabled: !!dramaId && !!seasonNumber,
   });
+  
+  console.log('[SeasonEpisodesScreen] Query state:', { isLoading, hasError: !!error, hasSeason: !!season });
 
   if (isLoading) {
     return (
