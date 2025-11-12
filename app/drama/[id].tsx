@@ -398,7 +398,7 @@ export default function DramaDetailScreen() {
               </View>
               <View style={styles.statTextContainer}>
                 <Text style={styles.statValue}>{drama.number_of_episodes}</Text>
-                <Text style={styles.statLabel}>Episódios</Text>
+                <Text style={styles.statLabel}>EPS</Text>
               </View>
             </View>
           )}
