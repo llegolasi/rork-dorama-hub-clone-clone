@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import OptimizedImage from '@/components/OptimizedImage';
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Play, Star, Users, Film, X, Bookmark, BookmarkCheck, Plus } from "lucide-react-native";
 
@@ -69,7 +70,7 @@ export default function DiscoverScreen() {
     queryFn: getTrendingDramas,
     retry: 3,
     retryDelay: 1000,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1 * 60 * 1000,
   });
   
   const popularQuery = useQuery({
@@ -77,7 +78,7 @@ export default function DiscoverScreen() {
     queryFn: getPopularDramas,
     retry: 3,
     retryDelay: 1000,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1 * 60 * 1000,
   });
 
   const netflixQuery = useQuery({
@@ -85,8 +86,18 @@ export default function DiscoverScreen() {
     queryFn: () => getNetflixDramas(1),
     retry: 3,
     retryDelay: 1000,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1 * 60 * 1000,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[DiscoverScreen] Screen focused, refetching data...');
+      trendingQuery.refetch();
+      popularQuery.refetch();
+      netflixQuery.refetch();
+      newsQuery.refetch();
+    }, [])
+  );
 
 
 
@@ -95,7 +106,7 @@ export default function DiscoverScreen() {
     popularQuery.refetch();
     netflixQuery.refetch();
     newsQuery.refetch();
-  }, [trendingQuery, popularQuery, netflixQuery, newsQuery]);
+  }, []);
 
   const isLoading = trendingQuery.isLoading || popularQuery.isLoading || netflixQuery.isLoading;
   const isRefreshing = trendingQuery.isFetching || popularQuery.isFetching || netflixQuery.isFetching;
