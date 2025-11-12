@@ -11,7 +11,8 @@ import {
   Alert,
   Switch,
 } from 'react-native';
-import { X, Plus, Check } from 'lucide-react-native';
+import { X, Plus, Check, Settings } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -38,6 +39,7 @@ export default function OfficialCollectionModal({
   const [newCollectionDescription, setNewCollectionDescription] = useState('');
   const [newCollectionVisible, setNewCollectionVisible] = useState(true);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { data: collections, isLoading } = useQuery({
     queryKey: ['admin-collections'],
@@ -280,43 +282,56 @@ export default function OfficialCollectionModal({
                       const isInCollection = dramaCollections?.includes(collection.id) || false;
 
                       return (
-                        <TouchableOpacity
-                          key={collection.id}
-                          style={[
-                            styles.collectionItem,
-                            isInCollection && styles.collectionItemActive,
-                          ]}
-                          onPress={() => handleToggleCollection(collection.id)}
-                          disabled={isToggling}
-                        >
-                          <View style={styles.collectionInfo}>
-                            <Text style={styles.collectionTitle}>
-                              {collection.title}
-                            </Text>
-                            {collection.description && (
-                              <Text style={styles.collectionDescription} numberOfLines={2}>
-                                {collection.description}
+                        <View key={collection.id}>
+                          <TouchableOpacity
+                            style={[
+                              styles.collectionItem,
+                              isInCollection && styles.collectionItemActive,
+                            ]}
+                            onPress={() => handleToggleCollection(collection.id)}
+                            disabled={isToggling}
+                          >
+                            <View style={styles.collectionInfo}>
+                              <Text style={styles.collectionTitle}>
+                                {collection.title}
                               </Text>
-                            )}
-                            <View style={styles.collectionMeta}>
-                              <Text style={styles.collectionMetaText}>
-                                {collection.is_visible ? 'Visível' : 'Oculta'}
-                              </Text>
-                            </View>
-                          </View>
-
-                          <View style={styles.checkboxContainer}>
-                            {isToggling ? (
-                              <ActivityIndicator size="small" color={COLORS.accent} />
-                            ) : isInCollection ? (
-                              <View style={styles.checkboxChecked}>
-                                <Check size={16} color={COLORS.background} />
+                              {collection.description && (
+                                <Text style={styles.collectionDescription} numberOfLines={2}>
+                                  {collection.description}
+                                </Text>
+                              )}
+                              <View style={styles.collectionMeta}>
+                                <Text style={styles.collectionMetaText}>
+                                  {collection.is_visible ? 'Visível' : 'Oculta'}
+                                </Text>
                               </View>
-                            ) : (
-                              <View style={styles.checkboxUnchecked} />
-                            )}
-                          </View>
-                        </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.collectionActions}>
+                              <TouchableOpacity
+                                style={styles.editButton}
+                                onPress={() => {
+                                  onClose();
+                                  router.push(`/collection/edit/${collection.id}`);
+                                }}
+                              >
+                                <Settings size={18} color={COLORS.accent} />
+                              </TouchableOpacity>
+                              
+                              <View style={styles.checkboxContainer}>
+                                {isToggling ? (
+                                  <ActivityIndicator size="small" color={COLORS.accent} />
+                                ) : isInCollection ? (
+                                  <View style={styles.checkboxChecked}>
+                                    <Check size={16} color={COLORS.background} />
+                                  </View>
+                                ) : (
+                                  <View style={styles.checkboxUnchecked} />
+                                )}
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
                       );
                     })}
                   </View>
@@ -498,6 +513,14 @@ const styles = StyleSheet.create({
   collectionMetaText: {
     fontSize: 12,
     color: COLORS.textSecondary,
+  },
+  collectionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  editButton: {
+    padding: 4,
   },
   checkboxContainer: {
     width: 24,

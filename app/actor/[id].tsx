@@ -463,11 +463,14 @@ const styles = StyleSheet.create({
   creditsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'flex-start',
     gap: 12,
     marginTop: 8,
   },
   creditCard: {
     width: (width - 64) / 3,
+    minWidth: (width - 64) / 3,
+    maxWidth: (width - 64) / 3,
     backgroundColor: COLORS.card,
     borderRadius: 12,
     overflow: 'hidden',
