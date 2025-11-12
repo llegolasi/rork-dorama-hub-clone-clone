@@ -638,9 +638,9 @@ export default function ProfileScreen() {
           <CompletedAchievementsDisplay 
             userId={userProfile.id} 
             isOwnProfile={true}
+            maxDisplay={6}
             onViewAll={() => {
-              // TODO: Navigate to full achievements screen
-              console.log('Navigate to achievements screen');
+              router.push('/statistics');
             }}
           />
         )}

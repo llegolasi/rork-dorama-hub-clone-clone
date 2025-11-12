@@ -458,7 +458,11 @@ export default function DramaDetailScreen() {
                 <TouchableOpacity 
                   key={season.id} 
                   style={styles.seasonCard}
-                  onPress={() => console.log('Season selected:', season.season_number)}
+                  onPress={() => {
+                    console.log('Season selected:', season.season_number);
+                    router.push(`/drama/${dramaId}/season/${season.season_number}`);
+                  }}
+                  activeOpacity={0.7}
                 >
                   <OptimizedImage
                     source={{
@@ -475,7 +479,7 @@ export default function DramaDetailScreen() {
                     {season.name}
                   </Text>
                   <Text style={styles.seasonEpisodes}>
-                    {season.episode_count} episódios
+                    {season.episode_count} episódio{season.episode_count !== 1 ? 's' : ''}
                   </Text>
                 </TouchableOpacity>
               ))}
