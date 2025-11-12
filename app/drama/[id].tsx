@@ -14,7 +14,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Star, Play, Settings } from "lucide-react-native";
+import { ChevronRight, Star, Play, Settings, Calendar, Tv2, Clock } from "lucide-react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COLORS } from "@/constants/colors";
@@ -333,12 +333,15 @@ export default function DramaDetailScreen() {
         />
         
         <LinearGradient
-          colors={["transparent", "rgba(0, 0, 0, 0.7)", "rgba(0, 0, 0, 0.95)"]}
+          colors={["transparent", "transparent", "rgba(0, 0, 0, 0.4)", "rgba(0, 0, 0, 0.85)", COLORS.background]}
           style={styles.gradient}
+          locations={[0, 0.3, 0.5, 0.75, 1]}
         />
-        
-        <View style={styles.heroContent}>
-          <View style={styles.posterContainer}>
+      </View>
+      
+      <View style={styles.mainContent}>
+        <View style={styles.posterSection}>
+          <View style={styles.posterWrapper}>
             <OptimizedImage
               source={{ 
                 uri: drama.poster_path 
@@ -351,35 +354,54 @@ export default function DramaDetailScreen() {
               cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
               placeholder="https://via.placeholder.com/342x513/1C1C1E/8E8E93?text=Loading"
             />
+            <View style={styles.posterOverlay}>
+              <LinearGradient
+                colors={["transparent", "rgba(0, 0, 0, 0.7)"]}
+                style={styles.posterGradient}
+              />
+            </View>
           </View>
           
-          <View style={styles.infoContainer}>
+          <View style={styles.titleSection}>
             <Text style={styles.title} numberOfLines={2}>{drama.name}</Text>
             <Text style={styles.originalTitle} numberOfLines={1}>{drama.original_name}</Text>
-            
-            <View style={styles.metaRow}>
-              <View style={styles.ratingBadge}>
-                <Star size={14} color={COLORS.accent} fill={COLORS.accent} />
-                <Text style={styles.ratingText}>{formattedRating}</Text>
-              </View>
-              
-              <View style={styles.metaDivider} />
-              
-              {releaseYear && (
-                <Text style={styles.yearText}>{releaseYear}</Text>
-              )}
-              
-              <View style={styles.metaDivider} />
-              
-              {drama.number_of_episodes > 0 && (
-                <Text style={styles.episodeText}>{drama.number_of_episodes} ep</Text>
-              )}
+          </View>
+        </View>
+        
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <Star size={18} color={COLORS.accent} fill={COLORS.accent} />
             </View>
-            
-            <View style={styles.genresContainer}>
-              {/* Gêneros serão implementados posteriormente no cache */}
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statValue}>{formattedRating}</Text>
+              <Text style={styles.statLabel}>Nota</Text>
             </View>
           </View>
+          
+          {releaseYear && (
+            <View style={styles.statItem}>
+              <View style={styles.statIconContainer}>
+                <Calendar size={18} color={COLORS.accent} />
+              </View>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statValue}>{releaseYear}</Text>
+                <Text style={styles.statLabel}>Ano</Text>
+              </View>
+            </View>
+          )}
+          
+          {drama.number_of_episodes > 0 && (
+            <View style={styles.statItem}>
+              <View style={styles.statIconContainer}>
+                <Tv2 size={18} color={COLORS.accent} />
+              </View>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statValue}>{drama.number_of_episodes}</Text>
+                <Text style={styles.statLabel}>Episódios</Text>
+              </View>
+            </View>
+          )}
         </View>
       </View>
       
@@ -403,8 +425,10 @@ export default function DramaDetailScreen() {
       </View>
       
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Sinopse</Text>
-        <Text style={styles.overview}>{drama.overview || "Sinopse não disponível."}</Text>
+        <View style={styles.synopsisCard}>
+          <Text style={styles.sectionTitle}>Sinopse</Text>
+          <Text style={styles.overview}>{drama.overview || "Sinopse não disponível."}</Text>
+        </View>
       </View>
 
       
@@ -654,11 +678,11 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     position: "relative",
-    marginBottom: 24,
+    marginBottom: -80,
   },
   backdropImage: {
     width: width,
-    height: width * 0.75,
+    height: width * 0.85,
     backgroundColor: COLORS.card,
   },
   gradient: {
@@ -666,84 +690,110 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 200,
+    height: width * 0.7,
   },
-  heroContent: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
+  mainContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    marginTop: 0,
   },
-  posterContainer: {
-    width: 100,
-    height: 150,
-    borderRadius: 12,
+  posterSection: {
+    flexDirection: "row",
+    marginBottom: 24,
+    gap: 16,
+  },
+  posterWrapper: {
+    width: 120,
+    height: 180,
+    borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
+    position: "relative",
   },
   posterImage: {
     width: "100%",
     height: "100%",
     backgroundColor: COLORS.card,
   },
-  infoContainer: {
+  posterOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  posterGradient: {
     flex: 1,
-    marginLeft: 16,
-    justifyContent: "flex-end",
+  },
+  titleSection: {
+    flex: 1,
+    justifyContent: "center",
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: "800",
     color: COLORS.text,
-    marginBottom: 4,
-    lineHeight: 32,
+    marginBottom: 6,
+    lineHeight: 34,
+    letterSpacing: -0.5,
   },
   originalTitle: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: 12,
+    fontWeight: "500",
+    letterSpacing: 0.2,
   },
-  metaRow: {
+  statsContainer: {
+    flexDirection: "row",
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  statItem: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    gap: 10,
   },
-  ratingBadge: {
-    flexDirection: "row",
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    justifyContent: "center",
     alignItems: "center",
   },
-  ratingText: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: "600",
-    marginLeft: 4,
+  statTextContainer: {
+    flex: 1,
   },
-  metaDivider: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.textSecondary,
-    marginHorizontal: 8,
-  },
-  yearText: {
+  statValue: {
+    fontSize: 18,
+    fontWeight: "700",
     color: COLORS.text,
-    fontSize: 14,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
     fontWeight: "500",
-  },
-  episodeText: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: "500",
+    color: COLORS.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   genresContainer: {
     flexDirection: "row",
@@ -840,6 +890,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 20,
   },
+  synopsisCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   streamingContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -892,15 +955,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     color: COLORS.text,
     marginBottom: 12,
+    letterSpacing: -0.3,
   },
   overview: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 24,
     color: COLORS.textSecondary,
+    fontWeight: "400",
+    letterSpacing: 0.1,
   },
   viewAllButton: {
     flexDirection: "row",
@@ -913,53 +979,72 @@ const styles = StyleSheet.create({
   },
   castContainer: {
     paddingLeft: 20,
-    paddingRight: 8,
-    gap: 12,
+    paddingRight: 20,
+    gap: 16,
   },
 
   seasonsContainer: {
     flexDirection: 'row',
     paddingLeft: 20,
-    gap: 12,
+    gap: 16,
   },
   seasonCard: {
-    width: 120,
+    width: 140,
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   seasonPoster: {
     width: '100%',
-    height: 160,
-    borderRadius: 8,
-    marginBottom: 8,
+    height: 190,
     backgroundColor: COLORS.surface,
   },
   seasonTitle: {
     color: COLORS.text,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    marginTop: 12,
+    marginHorizontal: 12,
     marginBottom: 4,
   },
   seasonEpisodes: {
     color: COLORS.textSecondary,
     fontSize: 12,
+    marginHorizontal: 12,
+    marginBottom: 12,
+    fontWeight: '500',
   },
   videosContainer: {
     flexDirection: 'row',
     paddingLeft: 20,
-    gap: 12,
+    gap: 16,
   },
   videoCard: {
-    width: 200,
+    width: 240,
   },
   videoThumbnail: {
     position: 'relative',
     width: '100%',
-    height: 112,
-    borderRadius: 8,
+    height: 135,
+    borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   videoImage: {
     width: '100%',
@@ -970,34 +1055,54 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -12 }, { translateY: -12 }],
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    transform: [{ translateX: -24 }, { translateY: -24 }],
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.accent,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: COLORS.accent,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
   },
   videoTitle: {
     color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     marginBottom: 4,
+    lineHeight: 20,
   },
   videoType: {
     color: COLORS.textSecondary,
     fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   galleryContainer: {
     flexDirection: 'row',
     paddingLeft: 20,
-    gap: 8,
+    gap: 12,
   },
   galleryItem: {
-    width: 160,
-    height: 90,
-    borderRadius: 8,
+    width: 180,
+    height: 110,
+    borderRadius: 12,
     overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
   galleryImage: {
     width: '100%',
