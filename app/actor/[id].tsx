@@ -77,7 +77,7 @@ export default function ActorDetailScreen() {
       day: "numeric" 
     };
     
-    return birthday.toLocaleDateString(undefined, options);
+    return birthday.toLocaleDateString('pt-BR', options);
   };
   
   const formattedBirthday = formatBirthday(actor.birthday);
@@ -174,13 +174,15 @@ export default function ActorDetailScreen() {
                   {actor.known_for_department && (
                     <View style={styles.statBadge}>
                       <Award size={14} color={COLORS.accent} />
-                      <Text style={styles.statBadgeText}>{actor.known_for_department}</Text>
+                      <Text style={styles.statBadgeText}>
+                        {actor.known_for_department === 'Acting' ? 'Atuação' : actor.known_for_department}
+                      </Text>
                     </View>
                   )}
                   {sortedCredits.length > 0 && (
                     <View style={styles.statBadge}>
                       <Film size={14} color={COLORS.accent} />
-                      <Text style={styles.statBadgeText}>{sortedCredits.length} works</Text>
+                      <Text style={styles.statBadgeText}>{sortedCredits.length} trabalhos</Text>
                     </View>
                   )}
                 </View>
@@ -196,9 +198,9 @@ export default function ActorDetailScreen() {
                 <Cake size={20} color={COLORS.accent} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Born</Text>
+                <Text style={styles.infoLabel}>Nascimento</Text>
                 <Text style={styles.infoText}>
-                  {formattedBirthday} {age ? `(${age} years old)` : ""}
+                  {formattedBirthday} {age ? `(${age} anos)` : ""}
                 </Text>
               </View>
             </View>
@@ -210,7 +212,7 @@ export default function ActorDetailScreen() {
                 <MapPin size={20} color={COLORS.accent} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Birthplace</Text>
+                <Text style={styles.infoLabel}>Local de Nascimento</Text>
                 <Text style={styles.infoText}>{actor.place_of_birth}</Text>
               </View>
             </View>
@@ -219,14 +221,14 @@ export default function ActorDetailScreen() {
         
         {actor.biography ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Biography</Text>
+            <Text style={styles.sectionTitle}>Biografia</Text>
             <Text style={styles.biography}>{actor.biography}</Text>
           </View>
         ) : null}
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Filmography</Text>
-          <Text style={styles.sectionSubtitle}>{sortedCredits.length} K-Drama Appearances</Text>
+          <Text style={styles.sectionTitle}>Filmografia</Text>
+          <Text style={styles.sectionSubtitle}>{sortedCredits.length} Participações em K-Dramas</Text>
           
           {sortedCredits.length > 0 ? (
             <View style={styles.creditsGrid}>
@@ -275,7 +277,7 @@ export default function ActorDetailScreen() {
             <View style={styles.emptyContainer}>
               <Film size={48} color={COLORS.textSecondary} />
               <Text style={styles.emptyText}>
-                No K-drama appearances found for this actor.
+                Nenhuma participação em K-dramas encontrada para este ator.
               </Text>
             </View>
           )}

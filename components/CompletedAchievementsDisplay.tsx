@@ -18,16 +18,48 @@ export default function CompletedAchievementsDisplay({
   maxDisplay = 6,
   onViewAll 
 }: CompletedAchievementsDisplayProps) {
-  const { data: completedAchievements = [], isLoading } = trpc.achievements.getUserCompletedAchievements.useQuery({
+  const { data: completedAchievements = [], isLoading, error } = trpc.achievements.getUserCompletedAchievements.useQuery({
     userId,
     limit: maxDisplay + 1, // Get one extra to know if there are more
     offset: 0
+  }, {
+    enabled: !!userId && userId.length > 0
+  });
+  
+  console.log('[CompletedAchievementsDisplay] State:', {
+    userId,
+    isLoading,
+    hasError: !!error,
+    achievementsCount: completedAchievements.length,
+    error: error?.message
   });
 
-  const { data: achievementStats } = trpc.achievements.getUserAchievementStats.useQuery({
+  const { data: achievementStats, error: statsError } = trpc.achievements.getUserAchievementStats.useQuery({
     userId
+  }, {
+    enabled: !!userId && userId.length > 0
+  });
+  
+  console.log('[CompletedAchievementsDisplay] Stats:', {
+    hasStats: !!achievementStats,
+    statsError: statsError?.message
   });
 
+  if (error || statsError) {
+    console.error('[CompletedAchievementsDisplay] Error:', error || statsError);
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Award size={20} color={COLORS.accent} />
+          <Text style={styles.title}>Conquistas</Text>
+        </View>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>Erro ao carregar conquistas</Text>
+        </View>
+      </View>
+    );
+  }
+  
   if (isLoading) {
     return (
       <View style={styles.container}>

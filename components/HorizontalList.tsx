@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingLeft: 16,
     paddingRight: 8,
+    gap: 12,
   },
   loadingContainer: {
     flexDirection: "row",
