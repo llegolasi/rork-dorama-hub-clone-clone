@@ -9,7 +9,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Play, Star, Users, Film, X, Bookmark, BookmarkCheck, Plus } from "lucide-react-native";
 
 import { COLORS } from "@/constants/colors";
-import { getPopularDramas, getTrendingDramas, getNetflixDramas } from "@/services/api";
+import { getPopularDramas, getTrendingDramasWithPagination, getNetflixDramas } from "@/services/api";
 import { TMDB_IMAGE_BASE_URL, BACKDROP_SIZE, POSTER_SIZE, getApiBaseUrl } from "@/constants/config";
 import HorizontalList from "@/components/HorizontalList";
 import UpcomingReleasesCard from "@/components/UpcomingReleasesCard";
@@ -66,8 +66,11 @@ export default function DiscoverScreen() {
   });
 
   const trendingQuery = useQuery({
-    queryKey: ["trending-dramas"],
-    queryFn: getTrendingDramas,
+    queryKey: ["trending-dramas-homepage"],
+    queryFn: async () => {
+      const response = await getTrendingDramasWithPagination(1);
+      return response.results;
+    },
     retry: 3,
     retryDelay: 1000,
     staleTime: 1 * 60 * 1000,
