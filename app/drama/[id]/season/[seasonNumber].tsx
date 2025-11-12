@@ -187,7 +187,7 @@ export default function SeasonEpisodesScreen() {
                 console.log('Episode selected:', episode.episode_number);
               }}
             >
-              <View style={styles.episodeRow}>
+              <View style={styles.episodeContainer}>
                 {episode.still_path ? (
                   <View style={styles.episodeThumbnailContainer}>
                     <OptimizedImage
@@ -199,11 +199,6 @@ export default function SeasonEpisodesScreen() {
                       priority="low"
                       cachePolicy="disk"
                     />
-                    <View style={styles.playOverlay}>
-                      <View style={styles.playButton}>
-                        <Play size={20} color={COLORS.text} fill={COLORS.text} />
-                      </View>
-                    </View>
                   </View>
                 ) : (
                   <View style={[styles.episodeThumbnailContainer, styles.noImage]}>
@@ -360,15 +355,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  episodeRow: {
-    flexDirection: 'row',
+  episodeContainer: {
     gap: 12,
   },
   episodeThumbnailContainer: {
-    width: 140,
-    height: 80,
+    width: '100%',
+    height: 200,
     backgroundColor: COLORS.surface,
-    position: 'relative',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   episodeThumbnail: {
     width: '100%',
@@ -378,26 +373,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  playOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },
-  playButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   episodeInfo: {
-    flex: 1,
     padding: 12,
     gap: 6,
   },

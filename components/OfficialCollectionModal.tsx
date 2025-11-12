@@ -346,8 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '90%',
-    paddingBottom: 20,
+    height: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -374,6 +373,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
+    paddingBottom: 20,
   },
   createNewButton: {
     flexDirection: 'row',
