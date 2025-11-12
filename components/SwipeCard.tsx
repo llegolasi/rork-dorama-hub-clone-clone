@@ -171,10 +171,9 @@ function NativeSwipeCard({
   genres
 }: SwipeCardProps & { releaseYear: number | null; genres: string[] }) {
   // Dynamic imports for native-only dependencies
-  const { PanGestureHandler } = require('react-native-gesture-handler');
+  const { Gesture, GestureDetector } = require('react-native-gesture-handler');
   const Animated = require('react-native-reanimated').default;
   const {
-    useAnimatedGestureHandler,
     useAnimatedStyle,
     useSharedValue,
     withSpring,
@@ -190,22 +189,16 @@ function NativeSwipeCard({
   const scale = useSharedValue(isActive ? 1 : 0.95);
   const opacity = useSharedValue(isActive ? 1 : 0.8);
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
+  const panGesture = Gesture.Pan()
+    .enabled(isActive)
+    .onUpdate((event) => {
       'worklet';
-    },
-    onActive: (event: any) => {
-      'worklet';
-      if (!isActive) return;
-      
       translateX.value = event.translationX;
       // Reduzir movimento vertical no Android para melhor performance
       translateY.value = Platform.OS === 'android' ? event.translationY * 0.05 : event.translationY * 0.1;
-    },
-    onEnd: (event: any) => {
+    })
+    .onEnd((event) => {
       'worklet';
-      if (!isActive) return;
-
       const shouldSwipeLeft = event.translationX < -SWIPE_THRESHOLD;
       const shouldSwipeRight = event.translationX > SWIPE_THRESHOLD;
 
@@ -223,8 +216,7 @@ function NativeSwipeCard({
         translateX.value = withSpring(0, springConfig);
         translateY.value = withSpring(0, springConfig);
       }
-    },
-  });
+    });
 
   const animatedStyle = useAnimatedStyle(() => {
     // Reduzir rotação no Android para melhor performance
@@ -285,7 +277,7 @@ function NativeSwipeCard({
   }, [isActive, scale, opacity, translateX, translateY]);
 
   return (
-    <PanGestureHandler onGestureEvent={gestureHandler} enabled={isActive}>
+    <GestureDetector gesture={panGesture}>
       <Animated.View style={[styles.cardContainer, animatedStyle]} testID={testID}>
         <TouchableOpacity 
           style={styles.card} 
@@ -315,7 +307,7 @@ function NativeSwipeCard({
           <Text style={[styles.actionText, { color: COLORS.accent }]}>CURTIR</Text>
         </Animated.View>
       </Animated.View>
-    </PanGestureHandler>
+    </GestureDetector>
   );
 }
 
