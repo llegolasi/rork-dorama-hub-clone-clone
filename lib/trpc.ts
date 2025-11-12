@@ -1,5 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
-import { httpLink } from "@trpc/client";
+import { createTRPCClient, httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import { supabase } from "@/lib/supabase";
@@ -7,9 +7,7 @@ import { getApiBaseUrl } from "@/constants/config";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-const clientConfig = {
-  links: [
-    httpLink({
+const linkConfig = httpLink({
       url: `${getApiBaseUrl()}/api/trpc`,
       transformer: superjson,
       headers: async () => {
@@ -64,8 +62,12 @@ const clientConfig = {
           throw error as Error;
         }
       },
-    }),
-  ],
-};
+    })
 
-export const trpcClient = trpc.createClient(clientConfig);
+export const trpcClient = trpc.createClient({
+  links: [linkConfig],
+});
+
+export const trpcVanillaClient = createTRPCClient<AppRouter>({
+  links: [linkConfig],
+});
