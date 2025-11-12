@@ -38,15 +38,29 @@ interface SeasonDetails {
 }
 
 async function getSeasonDetails(dramaId: string, seasonNumber: string): Promise<SeasonDetails> {
+  console.log('[getSeasonDetails] Fetching season', seasonNumber, 'for drama', dramaId);
+  
   const response = await fetch(
-    `https://api.themoviedb.org/3/tv/${dramaId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=pt-BR`
+    `https://api.themoviedb.org/3/tv/${dramaId}/season/${seasonNumber}?language=pt-BR`,
+    {
+      headers: {
+        'Authorization': `Bearer ${TMDB_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    }
   );
   
+  console.log('[getSeasonDetails] Response status:', response.status);
+  
   if (!response.ok) {
-    throw new Error('Failed to fetch season details');
+    const errorText = await response.text();
+    console.error('[getSeasonDetails] Error:', response.status, errorText);
+    throw new Error(`Failed to fetch season details: ${response.status}`);
   }
   
-  return response.json();
+  const data = await response.json();
+  console.log('[getSeasonDetails] Episodes found:', data.episodes?.length || 0);
+  return data;
 }
 
 export default function SeasonEpisodesScreen() {
