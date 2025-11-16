@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { AuthUser, OnboardingData } from '@/types/user';
 import { supabase, hasValidSupabaseConfig } from '@/lib/supabase';
 
